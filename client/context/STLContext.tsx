@@ -357,7 +357,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     console.log("✅ Triangle mesh created - pure triangulated data only", {
       vertices: triangulated.attributes.position.count,
       triangles: Math.floor(triangulated.attributes.position.count / 3),
-      hasPolygonFaces: !!(triangulated as any).polygonFaces
+      hasPolygonFaces: !!(triangulated as any).polygonFaces,
     });
 
     setWorkingMeshTri(triangulated);
@@ -387,7 +387,8 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       );
 
       // Apply coplanar face merging using EdgeAdjacentMerger (respects right-hand rule)
-      const mergedFaces = EdgeAdjacentMerger.mergeCoplanarTriangles(triangulated);
+      const mergedFaces =
+        EdgeAdjacentMerger.mergeCoplanarTriangles(triangulated);
 
       if (mergedFaces.length > 0) {
         // Apply the merged faces to the preview geometry
@@ -401,7 +402,10 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
           return counts;
         }, {});
 
-        console.log(`✅ Created merged preview with ${mergedFaces.length} polygon faces:`, faceTypeCounts);
+        console.log(
+          `✅ Created merged preview with ${mergedFaces.length} polygon faces:`,
+          faceTypeCounts,
+        );
       } else {
         // Fallback: create basic triangle structure
         const positions = preview.attributes.position.array as Float32Array;
@@ -453,9 +457,14 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
 
     if (defaultMeshType === "merged") {
       initialGeometry = prepareGeometryForViewing(preview, "merged_display");
-      console.log(`✅ Initial display set to MERGED with ${(preview as any).polygonFaces?.length || 0} polygon faces`);
+      console.log(
+        `✅ Initial display set to MERGED with ${(preview as any).polygonFaces?.length || 0} polygon faces`,
+      );
     } else {
-      initialGeometry = prepareGeometryForViewing(triangulated, "triangle_display");
+      initialGeometry = prepareGeometryForViewing(
+        triangulated,
+        "triangle_display",
+      );
       console.log(`✅ Initial display set to TRIANGLE`);
     }
 
@@ -805,7 +814,9 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = filename.endsWith(".obj") ? filename : `${filename}.obj`;
+        link.download = filename.endsWith(".obj")
+          ? filename
+          : `${filename}.obj`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -816,7 +827,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
           vertices: result.vertexCount,
           faces: result.faceCount,
           hasQuads: result.hasQuads,
-          hasPolygons: result.hasPolygons
+          hasPolygons: result.hasPolygons,
         });
       } else {
         console.error("❌ OBJ export failed:", result.error);
@@ -1026,14 +1037,14 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     // Triangle mesh should ONLY show triangle data, never polygon faces
     // This ensures pure triangulated statistics for triangle mode
     const polygonBreakdown: Array<{ type: string; count: number }> = [
-      { type: "triangle", count: triangles }
+      { type: "triangle", count: triangles },
     ];
 
     console.log("📊 Triangle mesh stats - pure triangulated data:", {
       vertices,
       edges,
       triangles,
-      hasPolygonFaces: !!(workingMeshTri as any).polygonFaces
+      hasPolygonFaces: !!(workingMeshTri as any).polygonFaces,
     });
 
     return {
@@ -1441,7 +1452,9 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
 
     if (meshType === "merged") {
       if (previewMeshMerged) {
-        console.log(`✅ Using previewMeshMerged with ${(previewMeshMerged as any).polygonFaces?.length || 0} polygon faces`);
+        console.log(
+          `✅ Using previewMeshMerged with ${(previewMeshMerged as any).polygonFaces?.length || 0} polygon faces`,
+        );
         const displayGeometry = prepareGeometryForViewing(
           previewMeshMerged,
           "merged_display",
@@ -1480,7 +1493,13 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         setGeometry(displayGeometry);
       }
     }
-  }, [viewerSettings.meshType, mergedGeometry, workingMeshTri, previewMeshMerged, addError]);
+  }, [
+    viewerSettings.meshType,
+    mergedGeometry,
+    workingMeshTri,
+    previewMeshMerged,
+    addError,
+  ]);
 
   // Update viewer when mesh type setting changes or when meshes are ready
   useEffect(() => {

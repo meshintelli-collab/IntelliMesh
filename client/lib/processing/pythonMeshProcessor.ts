@@ -40,7 +40,10 @@ export class PythonMeshProcessor {
       return false;
     } catch (error) {
       // Only log if it's not a common network error
-      if (error instanceof Error && !error.message.includes("Failed to fetch")) {
+      if (
+        error instanceof Error &&
+        !error.message.includes("Failed to fetch")
+      ) {
         console.log("🐍 Python service check failed:", error.message);
       } else {
         console.log("🐍 Python service not available (no connection)");
@@ -64,9 +67,7 @@ export class PythonMeshProcessor {
     // Check service health first
     const isHealthy = await this.checkServiceHealth();
     if (!isHealthy) {
-      throw new Error(
-        "Python service unavailable - using JavaScript fallback",
-      );
+      throw new Error("Python service unavailable - using JavaScript fallback");
     }
 
     // Check if geometry has polygon structure

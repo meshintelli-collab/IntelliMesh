@@ -320,22 +320,35 @@ export class EdgeAdjacentMerger {
 
     // Get unique vertices and remove center vertices (from triangle fans)
     const uniqueVertices = this.removeDuplicateVertices(allVertices);
-    const componentFaces = componentIndices.map(index => faces[index]);
-    const perimeterVertices = this.removeInteriorVertices(uniqueVertices, componentFaces);
+    const componentFaces = componentIndices.map((index) => faces[index]);
+    const perimeterVertices = this.removeInteriorVertices(
+      uniqueVertices,
+      componentFaces,
+    );
     const normal = this.ensureVector3(faces[componentIndices[0]].normal);
     let orderedVertices = this.orderPolygonVertices(perimeterVertices, normal);
 
     // Ensure right-hand rule compliance by checking face winding
     // Calculate face normal from ordered vertices
     if (orderedVertices.length >= 3) {
-      const edge1 = new THREE.Vector3().subVectors(orderedVertices[1], orderedVertices[0]);
-      const edge2 = new THREE.Vector3().subVectors(orderedVertices[2], orderedVertices[0]);
-      const calculatedNormal = new THREE.Vector3().crossVectors(edge1, edge2).normalize();
+      const edge1 = new THREE.Vector3().subVectors(
+        orderedVertices[1],
+        orderedVertices[0],
+      );
+      const edge2 = new THREE.Vector3().subVectors(
+        orderedVertices[2],
+        orderedVertices[0],
+      );
+      const calculatedNormal = new THREE.Vector3()
+        .crossVectors(edge1, edge2)
+        .normalize();
 
       // If calculated normal doesn't match expected normal, reverse vertex order
       if (calculatedNormal.dot(normal) < 0) {
         orderedVertices = orderedVertices.reverse();
-        console.log(`   ✅ Applied right-hand rule: reversed vertex order for ${orderedVertices.length}-vertex face`);
+        console.log(
+          `   ✅ Applied right-hand rule: reversed vertex order for ${orderedVertices.length}-vertex face`,
+        );
       }
     }
 
@@ -409,20 +422,27 @@ export class EdgeAdjacentMerger {
    */
   private static removeInteriorVertices(
     vertices: THREE.Vector3[],
-    faces: PolygonFace[]
+    faces: PolygonFace[],
   ): THREE.Vector3[] {
     if (vertices.length <= 3) {
       return vertices; // Can't remove vertices from triangles
     }
 
     // Count how many triangles each vertex appears in
-    const vertexUsageCount = new Map<string, { vertex: THREE.Vector3; count: number; triangles: number[] }>();
+    const vertexUsageCount = new Map<
+      string,
+      { vertex: THREE.Vector3; count: number; triangles: number[] }
+    >();
 
     faces.forEach((face, faceIndex) => {
       face.originalVertices.forEach((vertex) => {
         const key = `${vertex.x.toFixed(6)},${vertex.y.toFixed(6)},${vertex.z.toFixed(6)}`;
         if (!vertexUsageCount.has(key)) {
-          vertexUsageCount.set(key, { vertex: vertex.clone(), count: 0, triangles: [] });
+          vertexUsageCount.set(key, {
+            vertex: vertex.clone(),
+            count: 0,
+            triangles: [],
+          });
         }
         const entry = vertexUsageCount.get(key)!;
         entry.count++;
@@ -438,14 +458,18 @@ export class EdgeAdjacentMerger {
     for (const [key, entry] of vertexUsageCount) {
       // If a vertex appears in ALL triangles, it's likely a center vertex
       if (entry.count === totalTriangles && totalTriangles > 2) {
-        console.log(`   🗑️ Removing center vertex that appears in all ${totalTriangles} triangles`);
+        console.log(
+          `   🗑️ Removing center vertex that appears in all ${totalTriangles} triangles`,
+        );
         continue; // Skip center vertices
       }
 
       perimeterVertices.push(entry.vertex);
     }
 
-    console.log(`   ✅ Filtered vertices: ${vertices.length} → ${perimeterVertices.length} (removed ${vertices.length - perimeterVertices.length} center vertices)`);
+    console.log(
+      `   ✅ Filtered vertices: ${vertices.length} → ${perimeterVertices.length} (removed ${vertices.length - perimeterVertices.length} center vertices)`,
+    );
 
     return perimeterVertices.length >= 3 ? perimeterVertices : vertices; // Fallback to original if filtering went wrong
   }
