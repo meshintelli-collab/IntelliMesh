@@ -145,7 +145,7 @@ const defaultViewerSettings: ViewerSettings = {
   autoSpin: false,
   highlightColor: "#ff0000",
   enableHighlighting: true,
-  meshType: "triangle",
+  meshType: "merged",
 };
 
 const STLContext = createContext<STLContextType | undefined>(undefined);
