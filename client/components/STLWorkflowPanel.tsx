@@ -1279,7 +1279,10 @@ export default function STLWorkflowPanel({
                     Standard Export
                   </div>
                   <Button
-                    onClick={() => handleExportClick("complete")}
+                    onClick={() => {
+                      setCurrentExportType("complete");
+                      setShowExportDialog(true);
+                    }}
                     disabled={!geometry}
                     className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold h-10"
                   >
