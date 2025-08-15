@@ -2423,17 +2423,17 @@ export default function STLWorkflowPanel({
                         {geometry && (
                           <div className="mt-2 pt-2 border-t border-green-400/30">
                             <div className="text-xs text-green-100 space-y-1">
-                              {exportType === "complete" && sizeEstimate && (
+                              {currentExportType === "complete" && sizeEstimate && (
                                 <>
                                   <div className="flex justify-between">
-                                    <span>���� File size:</span>
+                                    <span>📄 File size:</span>
                                     <span className="font-mono">
                                       {sizeEstimate.stl.formatted}
                                     </span>
                                   </div>
                                 </>
                               )}
-                              {exportType === "parts" && partsEstimate && (
+                              {currentExportType === "parts" && partsEstimate && (
                                 <>
                                   <div className="flex justify-between">
                                     <span>📦 Total download:</span>
@@ -2625,7 +2625,7 @@ function MobileWorkflowContent(props: any) {
     const file = event.target.files?.[0];
     if (file) {
       loadModelFromFile(file).catch((err) => {
-        console.error("������� Upload failed:", err);
+        console.error("�������� Upload failed:", err);
         alert(`Upload failed: ${err.message}`);
       });
     }
