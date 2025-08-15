@@ -15,8 +15,9 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       // Configure HMR for cloud environment
       port: 8080,
-      // Use the current host for WebSocket connections instead of localhost
-      host: "localhost", // Will be overridden by the environment
+      // Use the current hostname for WebSocket connections
+      // This will automatically use the correct domain in cloud environments
+      clientPort: 8080,
     },
   },
   build: {
