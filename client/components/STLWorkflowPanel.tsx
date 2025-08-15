@@ -2389,7 +2389,24 @@ export default function STLWorkflowPanel({
                   return (
                     <>
                       <button
-                        onClick={() => exportSTL()}
+                        onClick={() => {
+                          setShowExportDialog(false);
+                          if (currentExportType === "complete") {
+                            exportSTL();
+                          } else if (currentExportType === "parts") {
+                            exportParts({
+                              ...triangleOptions,
+                              format: "stl",
+                              useTriangulated: triangleOptions.modelType === "triangle",
+                            });
+                          } else if (currentExportType === "chamfered") {
+                            exportChamferedParts({
+                              ...chamferedOptions,
+                              format: "stl",
+                              useTriangulated: chamferedOptions.modelType === "triangle",
+                            });
+                          }
+                        }}
                         className="w-full p-4 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
                       >
                         <div className="flex items-center gap-3 mb-2">
