@@ -321,7 +321,21 @@ export class EdgeAdjacentMerger {
     // Get unique vertices and order them around the perimeter
     const uniqueVertices = this.removeDuplicateVertices(allVertices);
     const normal = this.ensureVector3(faces[componentIndices[0]].normal);
-    const orderedVertices = this.orderPolygonVertices(uniqueVertices, normal);
+    let orderedVertices = this.orderPolygonVertices(uniqueVertices, normal);
+
+    // Ensure right-hand rule compliance by checking face winding
+    // Calculate face normal from ordered vertices
+    if (orderedVertices.length >= 3) {
+      const edge1 = new THREE.Vector3().subVectors(orderedVertices[1], orderedVertices[0]);
+      const edge2 = new THREE.Vector3().subVectors(orderedVertices[2], orderedVertices[0]);
+      const calculatedNormal = new THREE.Vector3().crossVectors(edge1, edge2).normalize();
+
+      // If calculated normal doesn't match expected normal, reverse vertex order
+      if (calculatedNormal.dot(normal) < 0) {
+        orderedVertices = orderedVertices.reverse();
+        console.log(`   ✅ Applied right-hand rule: reversed vertex order for ${orderedVertices.length}-vertex face`);
+      }
+    }
 
     // Determine face type
     const faceType =
