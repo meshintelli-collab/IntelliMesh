@@ -65,7 +65,7 @@ export class PythonMeshProcessor {
     const isHealthy = await this.checkServiceHealth();
     if (!isHealthy) {
       throw new Error(
-        "Python mesh processing service is not available. Please start the service.",
+        "Python mesh processing service is not available. Using JavaScript fallback.",
       );
     }
 
