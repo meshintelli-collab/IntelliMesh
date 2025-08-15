@@ -557,6 +557,9 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       try {
         // Apply repairs and polygon reconstruction in background
         const repairedMesh = repairGeometry(basicMesh.clone());
+        delete (repairedMesh as any).polygonFaces;
+        delete (repairedMesh as any).polygonType;
+        delete (repairedMesh as any).isProcedurallyGenerated;
         setWorkingMeshTri(repairedMesh);
 
         // Only do polygon reconstruction if needed for parts export
