@@ -2374,11 +2374,11 @@ export default function STLWorkflowPanel({
                 {(() => {
                   // Get size estimates based on export type
                   const sizeEstimate =
-                    exportType === "complete"
+                    currentExportType === "complete"
                       ? estimateModelFileSize(geometry)
                       : null;
                   const partsEstimate =
-                    exportType === "parts"
+                    currentExportType === "parts"
                       ? estimatePartsFileSize(
                           geometry,
                           triangleOptions.partThickness,
