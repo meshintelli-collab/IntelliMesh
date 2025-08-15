@@ -27,6 +27,8 @@ export class PythonMeshProcessor {
         headers: {
           Accept: "application/json",
         },
+        // Add timeout and signal to prevent hanging
+        signal: AbortSignal.timeout(3000), // 3 second timeout
       });
 
       if (response.ok) {
@@ -34,9 +36,15 @@ export class PythonMeshProcessor {
         console.log("🐍 Python service is healthy:", health);
         return true;
       }
+      console.log("🐍 Python service responded with error:", response.status);
       return false;
     } catch (error) {
-      console.log("🐍 Python service not available:", error);
+      // Only log if it's not a common network error
+      if (error instanceof Error && !error.message.includes("Failed to fetch")) {
+        console.log("🐍 Python service check failed:", error.message);
+      } else {
+        console.log("🐍 Python service not available (no connection)");
+      }
       return false;
     }
   }
