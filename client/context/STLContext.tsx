@@ -365,19 +365,24 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       ).isProcedurallyGenerated;
     }
 
-    // Apply coplanar merging for clean preview if geometry supports it
-    if (
-      (loadedGeometry as any).isProcedurallyGenerated &&
-      (loadedGeometry as any).polygonFaces
-    ) {
-      // For procedural geometry, polygon structure is already perfect
-    } else {
-      // For loaded files, apply polygon reconstruction to create merged faces
-      const polygonFaces =
-        PolygonFaceReconstructor.reconstructPolygonFaces(triangulated);
-      if (polygonFaces.length > 0) {
-        PolygonFaceReconstructor.applyReconstructedFaces(preview, polygonFaces);
-        (preview as any).polygonType = "reconstructed_merged";
+    // ALWAYS apply coplanar merging to create proper merged versions
+    // This works for both procedural models and loaded files
+    try {
+      // Import EdgeAdjacentMerger dynamically if needed
+      const { EdgeAdjacentMerger } = await import(
+        "../lib/processing/edgeAdjacentMerger"
+      );
+
+      // Apply coplanar face merging using EdgeAdjacentMerger (respects right-hand rule)
+      const mergedFaces = EdgeAdjacentMerger.mergeCoplanarTriangles(triangulated);
+
+      if (mergedFaces.length > 0) {
+        // Apply the merged faces to the preview geometry
+        PolygonFaceReconstructor.applyReconstructedFaces(preview, mergedFaces);
+        (preview as any).polygonFaces = mergedFaces;
+        (preview as any).polygonType = "edge_adjacent_merged";
+
+        console.log(`✅ Created merged preview with ${mergedFaces.length} polygon faces`);
       } else {
         // Fallback: create basic triangle structure
         const positions = preview.attributes.position.array as Float32Array;
@@ -394,6 +399,30 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
 
         (preview as any).polygonFaces = fallbackFaces;
         (preview as any).polygonType = "fallback_triangles";
+        console.log("⚠️ Fallback to triangulated faces for merged preview");
+      }
+    } catch (error) {
+      console.error("❌ Error during coplanar merging:", error);
+      // Fallback: use original polygon structure if available
+      if ((loadedGeometry as any).polygonFaces) {
+        (preview as any).polygonFaces = (loadedGeometry as any).polygonFaces;
+        (preview as any).polygonType = "preserved_original";
+      } else {
+        // Final fallback: basic triangles
+        const positions = preview.attributes.position.array as Float32Array;
+        const fallbackFaces: any[] = [];
+
+        for (let i = 0; i < positions.length; i += 9) {
+          fallbackFaces.push({
+            type: "triangle",
+            startVertex: i / 3,
+            endVertex: i / 3 + 2,
+            triangleCount: 1,
+          });
+        }
+
+        (preview as any).polygonFaces = fallbackFaces;
+        (preview as any).polygonType = "error_fallback_triangles";
       }
     }
 
