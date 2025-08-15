@@ -1144,11 +1144,13 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
           for (let i = 0; i < 3; i++) {
             const vertexIndex = triangleIndex * 3 + i;
             if (vertexIndex < positionAttribute.count) {
-              vertices.push(new THREE.Vector3(
-                positionAttribute.getX(vertexIndex),
-                positionAttribute.getY(vertexIndex),
-                positionAttribute.getZ(vertexIndex)
-              ));
+              vertices.push(
+                new THREE.Vector3(
+                  positionAttribute.getX(vertexIndex),
+                  positionAttribute.getY(vertexIndex),
+                  positionAttribute.getZ(vertexIndex),
+                ),
+              );
             }
           }
 
@@ -1158,8 +1160,14 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
           }
 
           // Calculate triangle area
-          const edge1 = new THREE.Vector3().subVectors(vertices[1], vertices[0]);
-          const edge2 = new THREE.Vector3().subVectors(vertices[2], vertices[0]);
+          const edge1 = new THREE.Vector3().subVectors(
+            vertices[1],
+            vertices[0],
+          );
+          const edge2 = new THREE.Vector3().subVectors(
+            vertices[2],
+            vertices[0],
+          );
           const cross = new THREE.Vector3().crossVectors(edge1, edge2);
           const triangleArea = cross.length() / 2;
 
@@ -1195,7 +1203,11 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
           let targetFace = null;
           let targetFaceIndex = -1;
 
-          for (let faceIndex = 0; faceIndex < polygonFaces.length; faceIndex++) {
+          for (
+            let faceIndex = 0;
+            faceIndex < polygonFaces.length;
+            faceIndex++
+          ) {
             const face = polygonFaces[faceIndex];
             if (
               face.triangleIndices &&
