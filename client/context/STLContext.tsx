@@ -1229,8 +1229,13 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         );
 
         if (result.success && result.geometry) {
-          // Update working mesh
-          setWorkingMeshTri(result.geometry);
+          // Update working mesh - ensure it stays pure triangulated
+          const cleanTriangleMesh = result.geometry;
+          delete (cleanTriangleMesh as any).polygonFaces;
+          delete (cleanTriangleMesh as any).polygonType;
+          delete (cleanTriangleMesh as any).isProcedurallyGenerated;
+
+          setWorkingMeshTri(cleanTriangleMesh);
 
           // Clear merged mesh since triangle mesh changed
           clearMergedMesh();
