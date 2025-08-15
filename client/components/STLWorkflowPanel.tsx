@@ -181,6 +181,10 @@ export default function STLWorkflowPanel({
 
   // Triangle export settings
   const [showTriangleSettings, setShowTriangleSettings] = useState(false);
+
+  // Export format dialog state
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [currentExportType, setCurrentExportType] = useState<"complete" | "parts" | "chamfered">("complete");
   const [triangleOptions, setTriangleOptions] = useState({
     partThickness: 2,
     scale: 1,
@@ -2602,7 +2606,7 @@ function MobileWorkflowContent(props: any) {
     const file = event.target.files?.[0];
     if (file) {
       loadModelFromFile(file).catch((err) => {
-        console.error("����� Upload failed:", err);
+        console.error("������� Upload failed:", err);
         alert(`Upload failed: ${err.message}`);
       });
     }
