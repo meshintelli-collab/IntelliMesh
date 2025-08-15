@@ -2363,9 +2363,11 @@ export default function STLWorkflowPanel({
                 Choose Export Format
               </h3>
               <p className="text-white/70 text-sm mb-6 text-center">
-                {exportType === "complete"
+                {currentExportType === "complete"
                   ? "Select format for complete model export:"
-                  : "Select format for polygon parts export:"}
+                  : currentExportType === "parts"
+                  ? "Select format for polygon parts export:"
+                  : "Select format for chamfered parts export:"}
               </p>
 
               <div className="space-y-3">
