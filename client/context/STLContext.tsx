@@ -905,8 +905,13 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         if (result.geometry) {
           console.log("✅ Updating meshes after decimation...");
 
-          // Update working mesh
-          setWorkingMeshTri(result.geometry);
+          // Update working mesh - ensure it stays pure triangulated
+          const cleanTriangleMesh = result.geometry;
+          delete (cleanTriangleMesh as any).polygonFaces;
+          delete (cleanTriangleMesh as any).polygonType;
+          delete (cleanTriangleMesh as any).isProcedurallyGenerated;
+
+          setWorkingMeshTri(cleanTriangleMesh);
 
           // Create proper preview mesh with reconstructed faces
           const newPreview = createPreviewFromWorkingMesh(
