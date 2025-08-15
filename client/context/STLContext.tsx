@@ -328,7 +328,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
   ];
 
   // Set up dual mesh system
-  const setupDualMeshSystem = (loadedGeometry: THREE.BufferGeometry) => {
+  const setupDualMeshSystem = async (loadedGeometry: THREE.BufferGeometry) => {
     // 1. Store original mesh (keep untouched)
     const original = loadedGeometry.clone();
     setOriginalMesh(original);
