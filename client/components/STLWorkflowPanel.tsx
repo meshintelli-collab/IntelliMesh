@@ -239,7 +239,7 @@ export default function STLWorkflowPanel({
     onReducePoints(vertexClusteringTolerance, "vertex_clustering");
   };
 
-  // Open3D Quadric Decimation with STL conversion and fallback to JavaScript implementation
+  // Quadric Decimation using JavaScript implementation (cloud environment)
   const handleQuadricDecimation = async () => {
     if (!geometry) {
       toast({
@@ -254,63 +254,10 @@ export default function STLWorkflowPanel({
     updateViewerSettings({ meshType: "triangle" });
 
     try {
-      // First, check if Python service is available
-      console.log("🔍 Checking Python Open3D service availability...");
-      const serviceAvailable = await PythonMeshProcessor.checkServiceHealth();
-
-      if (serviceAvailable) {
-        // Use Python service (Open3D simple_quadric_decimation)
-        toast({
-          title: "🐍 Open3D Decimation Started",
-          description: `Converting mesh to STL and reducing triangles by ${Math.round(quadricReduction * 100)}% using Open3D...`,
-          duration: 2000,
-        });
-
-        console.log("📤 Converting Three.js mesh to STL and sending to Python service...");
-
-        try {
-          const result = await PythonMeshProcessor.decimateMesh(
-            geometry,
-            quadricReduction,
-          );
-
-          if (result && result.geometry) {
-            // Update triangle mesh with Python service result
-            const decimationResult = await onReducePoints(
-              quadricReduction,
-              "quadric_edge_collapse",
-            );
-
-            toast({
-              title: "✅ Open3D Decimation Complete",
-              description: `Reduced triangles by ${Math.round(result.reductionAchieved * 100)}% in ${result.processingTime}ms using Open3D`,
-              duration: 3000,
-            });
-
-            setSimplificationStats({
-              originalVertices: result.originalVertices,
-              finalVertices: result.finalVertices,
-              originalTriangles: result.originalTriangles,
-              finalTriangles: result.finalTriangles,
-              reductionAchieved: result.reductionAchieved,
-              processingTime: result.processingTime,
-            });
-
-            console.log("🐍 ✅ Open3D decimation complete - triangle mesh updated");
-            return; // Success, exit early
-          }
-        } catch (pythonError) {
-          console.log("🐍 ❌ Python service failed, falling back to JavaScript:", pythonError);
-          // Don't re-throw, let it fall through to JavaScript fallback
-        }
-      } else {
-        console.log("🐍 ❌ Python Open3D service not available, using JavaScript fallback");
-      }
-
-      // Fallback to JavaScript quadric edge collapse implementation
+      // Use JavaScript quadric edge collapse implementation
       toast({
-        title: "⚡ JavaScript Decimation",
-        description: `Python Open3D service unavailable. Using JavaScript quadric edge collapse to reduce triangles by ${Math.round(quadricReduction * 100)}%...`,
+        title: "⚡ Starting Quadric Decimation",
+        description: `Reducing triangles by ${Math.round(quadricReduction * 100)}% using JavaScript quadric edge collapse algorithm...`,
         duration: 2000,
       });
 
@@ -321,13 +268,13 @@ export default function STLWorkflowPanel({
 
       if (result?.success) {
         toast({
-          title: "✅ Decimation Complete (Fallback)",
+          title: "✅ Decimation Complete",
           description: `Reduced triangles by ${result.stats?.reductionAchieved ? Math.round(result.stats.reductionAchieved * 100) : 0}% in ${result.stats?.processingTime || 0}ms`,
           duration: 3000,
         });
         setSimplificationStats(result.stats || {});
         console.log(
-          "🟡 JavaScript decimation fallback complete - triangle mesh updated",
+          "⚡ JavaScript quadric decimation complete - triangle mesh updated",
         );
       } else {
         throw new Error(result?.message || "Decimation failed");
