@@ -347,6 +347,18 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     triangulated = repairGeometry(triangulated);
     ensureNormals(triangulated);
 
+    // CRITICAL: Ensure triangle mesh has NO polygon metadata
+    // This should be pure triangulated data only
+    delete (triangulated as any).polygonFaces;
+    delete (triangulated as any).polygonType;
+    delete (triangulated as any).isProcedurallyGenerated;
+
+    console.log("✅ Triangle mesh created - pure triangulated data only", {
+      vertices: triangulated.attributes.position.count,
+      triangles: Math.floor(triangulated.attributes.position.count / 3),
+      hasPolygonFaces: !!(triangulated as any).polygonFaces
+    });
+
     setWorkingMeshTri(triangulated);
 
     // 3. Create merged preview mesh with coplanar face merging
