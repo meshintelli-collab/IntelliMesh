@@ -12,6 +12,12 @@ export default defineConfig(({ mode }) => ({
       allow: ["./client", "./shared"],
       deny: [".env", ".env.*", "*.{crt,pem}", "**/.git/**", "server/**"],
     },
+    hmr: {
+      // Configure HMR for cloud environment
+      port: 8080,
+      // Use the current host for WebSocket connections instead of localhost
+      host: "localhost", // Will be overridden by the environment
+    },
   },
   build: {
     outDir: "dist/spa",
