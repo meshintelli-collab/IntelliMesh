@@ -2356,7 +2356,7 @@ export default function STLWorkflowPanel({
         </div>
 
         {/* Export Format Selection Dialog */}
-        {false && (
+        {showExportDialog && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
             <div className="bg-black/90 backdrop-blur-md border border-white/20 rounded-xl p-6 max-w-md w-full mx-4">
               <h3 className="text-white text-lg font-semibold mb-4 text-center">
