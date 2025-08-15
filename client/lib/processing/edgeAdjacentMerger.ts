@@ -403,6 +403,52 @@ export class EdgeAdjacentMerger {
     return unique;
   }
 
+  /**
+   * Remove interior vertices (like triangle fan centers) that aren't part of the polygon perimeter
+   */
+  private static removeInteriorVertices(
+    vertices: THREE.Vector3[],
+    faces: PolygonFace[]
+  ): THREE.Vector3[] {
+    if (vertices.length <= 3) {
+      return vertices; // Can't remove vertices from triangles
+    }
+
+    // Count how many triangles each vertex appears in
+    const vertexUsageCount = new Map<string, { vertex: THREE.Vector3; count: number; triangles: number[] }>();
+
+    faces.forEach((face, faceIndex) => {
+      face.originalVertices.forEach((vertex) => {
+        const key = `${vertex.x.toFixed(6)},${vertex.y.toFixed(6)},${vertex.z.toFixed(6)}`;
+        if (!vertexUsageCount.has(key)) {
+          vertexUsageCount.set(key, { vertex: vertex.clone(), count: 0, triangles: [] });
+        }
+        const entry = vertexUsageCount.get(key)!;
+        entry.count++;
+        entry.triangles.push(faceIndex);
+      });
+    });
+
+    // Interior vertices (like triangle fan centers) appear in ALL triangles of the component
+    // Perimeter vertices appear in exactly 2 triangles (shared edge) or 1 triangle (boundary)
+    const totalTriangles = faces.length;
+    const perimeterVertices: THREE.Vector3[] = [];
+
+    for (const [key, entry] of vertexUsageCount) {
+      // If a vertex appears in ALL triangles, it's likely a center vertex
+      if (entry.count === totalTriangles && totalTriangles > 2) {
+        console.log(`   🗑️ Removing center vertex that appears in all ${totalTriangles} triangles`);
+        continue; // Skip center vertices
+      }
+
+      perimeterVertices.push(entry.vertex);
+    }
+
+    console.log(`   ✅ Filtered vertices: ${vertices.length} → ${perimeterVertices.length} (removed ${vertices.length - perimeterVertices.length} center vertices)`);
+
+    return perimeterVertices.length >= 3 ? perimeterVertices : vertices; // Fallback to original if filtering went wrong
+  }
+
   private static orderPolygonVertices(
     vertices: THREE.Vector3[],
     normal: THREE.Vector3,
