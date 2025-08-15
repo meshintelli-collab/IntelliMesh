@@ -434,14 +434,13 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
 
     setPreviewMeshMerged(preview);
 
-    // 4. Set display geometry (use preview for viewing)
-    const displayGeometry = prepareGeometryForViewing(preview, "display");
-    console.log("✅ Normal processing complete - display geometry prepared", {
-      vertices: displayGeometry.attributes.position.count,
-      hasNormals: !!displayGeometry.attributes.normal,
-      hasGeometry: !!displayGeometry,
+    // 4. Let updateViewerGeometry handle display based on meshType setting
+    console.log("✅ Normal processing complete - dual mesh system ready", {
+      triangleVertices: triangulated.attributes.position.count,
+      mergedVertices: preview.attributes.position.count,
+      polygonFaces: (preview as any).polygonFaces?.length || 0,
+      hasNormals: !!preview.attributes.normal,
     });
-    setGeometry(displayGeometry);
   };
 
   // Minimal setup for very large files (>500KB) - NO heavy processing to prevent timeouts
