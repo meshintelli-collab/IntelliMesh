@@ -2459,6 +2459,79 @@ export default function STLWorkflowPanel({
                           </div>
                         )}
                       </button>
+
+                      {/* OBJ Export Button */}
+                      <button
+                        onClick={() => {
+                          setShowExportDialog(false);
+                          if (currentExportType === "complete") {
+                            exportOBJ();
+                          } else if (currentExportType === "parts") {
+                            exportParts({
+                              ...triangleOptions,
+                              format: "obj",
+                              useTriangulated: triangleOptions.modelType === "triangle",
+                            });
+                          } else if (currentExportType === "chamfered") {
+                            exportChamferedParts({
+                              ...chamferedOptions,
+                              format: "obj",
+                              useTriangulated: chamferedOptions.modelType === "triangle",
+                            });
+                          }
+                        }}
+                        className="w-full p-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                      >
+                        <div className="flex items-center gap-3 mb-2">
+                          <Download className="w-5 h-5" />
+                          <div className="text-left flex-1">
+                            <div className="font-semibold">OBJ Format</div>
+                            <div className="text-sm text-blue-100">
+                              Best for CAD software and polygon preservation
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* OBJ File Size Info */}
+                        {geometry && (
+                          <div className="mt-2 pt-2 border-t border-blue-400/30">
+                            <div className="text-xs text-blue-100 space-y-1">
+                              {currentExportType === "complete" && sizeEstimate && (
+                                <>
+                                  <div className="flex justify-between">
+                                    <span>📄 File size:</span>
+                                    <span className="font-mono">
+                                      {sizeEstimate.obj?.formatted || "~" + (Math.round(sizeEstimate.stl.bytes * 1.2 / 1024)) + "KB"}
+                                    </span>
+                                  </div>
+                                </>
+                              )}
+                              {currentExportType === "parts" && partsEstimate && (
+                                <>
+                                  <div className="flex justify-between">
+                                    <span>📦 Total download:</span>
+                                    <span className="font-mono">
+                                      {partsEstimate.totalFormatted}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>📄 Per part average:</span>
+                                    <span className="font-mono">
+                                      {partsEstimate.averageFormatted}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>🗃️ Number of files:</span>
+                                    <span className="font-mono">
+                                      {partsEstimate.partCount}
+                                    </span>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </button>
                     </>
                   );
                 })()}
