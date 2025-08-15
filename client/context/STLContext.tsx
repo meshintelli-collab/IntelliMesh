@@ -493,9 +493,17 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     // Always recompute normals for large files to fix any malformed faces from STL
     loadedGeometry.computeVertexNormals();
 
-    // Use the same geometry for everything - no dual mesh system
+    // Even for large files, maintain separate triangle and merged meshes
     setOriginalMesh(loadedGeometry);
-    setWorkingMeshTri(loadedGeometry);
+
+    // Create clean triangle mesh (no polygon metadata)
+    const triangleMesh = loadedGeometry.clone();
+    delete (triangleMesh as any).polygonFaces;
+    delete (triangleMesh as any).polygonType;
+    delete (triangleMesh as any).isProcedurallyGenerated;
+    setWorkingMeshTri(triangleMesh);
+
+    // Create merged mesh (with polygon metadata if available)
     setPreviewMeshMerged(loadedGeometry);
     setGeometry(loadedGeometry);
 
