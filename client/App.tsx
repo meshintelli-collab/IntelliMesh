@@ -43,6 +43,7 @@ const App = () => (
 );
 
 // Ensure createRoot is only called once to prevent double mounting warnings
+// Ensure createRoot is only called once to prevent double mounting warnings
 const rootElement = document.getElementById("root")!;
 if (!rootElement._reactRoot) {
   const root = createRoot(rootElement);
