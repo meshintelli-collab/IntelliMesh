@@ -1309,7 +1309,10 @@ export default function STLWorkflowPanel({
 
                   <div className="flex gap-2">
                     <Button
-                      onClick={() => handleExportClick("parts")}
+                      onClick={() => {
+                        setCurrentExportType("parts");
+                        setShowExportDialog(true);
+                      }}
                       disabled={!geometry}
                       className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold h-10"
                     >
