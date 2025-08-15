@@ -258,8 +258,9 @@ export default function STLWorkflowPanel({
       let serviceAvailable = false;
       try {
         serviceAvailable = await PythonMeshProcessor.checkServiceHealth();
+        console.log("🐍 Python service health check result:", serviceAvailable);
       } catch (healthCheckError) {
-        console.log("🐍 Python service health check failed, using JavaScript fallback");
+        console.log("🐍 Python service health check failed, using JavaScript fallback:", healthCheckError);
         serviceAvailable = false;
       }
 
@@ -2169,7 +2170,7 @@ export default function STLWorkflowPanel({
                                       (fallback)
                                     </div>
                                     <div>
-                                      ��� Thickness:{" "}
+                                      ����� Thickness:{" "}
                                       {chamferedOptions.partThickness}
                                       mm, Scale: {chamferedOptions.scale}x
                                     </div>
