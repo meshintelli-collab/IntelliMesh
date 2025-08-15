@@ -797,7 +797,6 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       if (!previewMeshMerged) return;
 
       const filename = customFilename || fileName || "model.obj";
-      const { OBJConverter } = require("../lib/processing/objConverter");
       const result = OBJConverter.geometryToOBJ(previewMeshMerged, filename);
 
       if (result.success !== false && result.objString) {
