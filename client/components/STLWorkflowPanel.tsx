@@ -65,7 +65,7 @@ interface STLWorkflowPanelProps {
       | "python_vertex"
       | "quadric_edge_collapse"
       | "vertex_clustering",
-  ) => void;
+  ) => Promise<any>;
   isProcessing: boolean;
   geometryStats: {
     vertices: number;
