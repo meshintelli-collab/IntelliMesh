@@ -21,44 +21,10 @@ export class PythonMeshProcessor {
    * Check if Python service is available
    */
   static async checkServiceHealth(): Promise<boolean> {
-    try {
-      console.log("🐍 Checking Python service health...");
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
-
-      const response = await fetch(`${this.SERVICE_URL}/health`, {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-        },
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const health = await response.json();
-        console.log("🐍 ✅ Python service is healthy:", health);
-        return true;
-      } else {
-        console.log("🐍 ❌ Python service responded with error:", response.status);
-        return false;
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          console.log("🐍 ❌ Python service check timed out");
-        } else if (error.message.includes("Failed to fetch") || error.message.includes("fetch")) {
-          console.log("🐍 ❌ Python service not available (connection failed)");
-        } else {
-          console.log("🐍 ❌ Python service check failed:", error.message);
-        }
-      } else {
-        console.log("🐍 ❌ Python service check failed with unknown error");
-      }
-      return false;
-    }
+    // For cloud environment, Python service is not available
+    // Skip the network check to avoid fetch errors
+    console.log("🐍 Python service not available in cloud environment - using JavaScript fallback");
+    return false;
   }
 
   /**
