@@ -1401,9 +1401,9 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         setGeometry(displayGeometry);
       }
     }
-  }, [viewerSettings.meshType, mergedGeometry, workingMeshTri, addError]);
+  }, [viewerSettings.meshType, mergedGeometry, workingMeshTri, previewMeshMerged, addError]);
 
-  // Update viewer when mesh type setting changes
+  // Update viewer when mesh type setting changes or when meshes are ready
   useEffect(() => {
     updateViewerGeometry();
   }, [updateViewerGeometry]);
