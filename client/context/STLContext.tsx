@@ -1527,6 +1527,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     availableModels,
     updateViewerSettings,
     exportSTL,
+    exportOBJ,
     exportParts,
     exportChamferedParts,
     clearError,
