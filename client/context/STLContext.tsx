@@ -96,6 +96,7 @@ interface STLContextType {
   availableModels: Array<{ name: string; description: string }>;
   updateViewerSettings: (settings: Partial<ViewerSettings>) => void;
   exportSTL: (customFilename?: string) => void;
+  exportOBJ: (customFilename?: string) => void;
   exportParts: (options?: {
     format?: "stl" | "obj";
     partThickness?: number;
