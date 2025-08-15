@@ -320,7 +320,8 @@ export class EdgeAdjacentMerger {
 
     // Get unique vertices and remove center vertices (from triangle fans)
     const uniqueVertices = this.removeDuplicateVertices(allVertices);
-    const perimeterVertices = this.removeInteriorVertices(uniqueVertices, faces.slice(componentIndices[0], componentIndices[0] + componentIndices.length));
+    const componentFaces = componentIndices.map(index => faces[index]);
+    const perimeterVertices = this.removeInteriorVertices(uniqueVertices, componentFaces);
     const normal = this.ensureVector3(faces[componentIndices[0]].normal);
     let orderedVertices = this.orderPolygonVertices(perimeterVertices, normal);
 
