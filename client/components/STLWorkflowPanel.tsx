@@ -2538,7 +2538,7 @@ export default function STLWorkflowPanel({
               </div>
 
               <button
-                onClick={() => {}}
+                onClick={() => setShowExportDialog(false)}
                 className="w-full mt-4 p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
               >
                 Cancel
