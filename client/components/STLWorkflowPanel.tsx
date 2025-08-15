@@ -51,6 +51,7 @@ import {
 } from "../lib/utilities/fileSizeEstimator";
 import { HexColorPicker } from "react-colorful";
 import { useToast } from "../hooks/use-toast";
+import { PythonMeshProcessor } from "../lib/processing/pythonMeshProcessor";
 
 interface STLWorkflowPanelProps {
   activeToolMode: STLToolMode;
