@@ -440,7 +440,11 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       mergedVertices: preview.attributes.position.count,
       polygonFaces: (preview as any).polygonFaces?.length || 0,
       hasNormals: !!preview.attributes.normal,
+      meshType: viewerSettings.meshType,
     });
+
+    // Trigger updateViewerGeometry to display the correct mesh type
+    setTimeout(() => updateViewerGeometry(), 10);
   };
 
   // Minimal setup for very large files (>500KB) - NO heavy processing to prevent timeouts
