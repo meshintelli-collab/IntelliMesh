@@ -1127,147 +1127,206 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     (triangleIndex: number | null) => {
       setHighlightedTriangleState(triangleIndex);
 
-      if (triangleIndex !== null && previewMeshMerged) {
-        const polygonFaces = (previewMeshMerged as any).polygonFaces;
+      if (triangleIndex !== null) {
+        // Check if we're in triangle mode or merged mode
+        const isTriangleMode = viewerSettings.meshType === "triangle";
 
-        if (!polygonFaces || !Array.isArray(polygonFaces)) {
-          setTriangleStats(null);
-          return;
-        }
-
-        // Find the face that contains this triangle
-        let targetFace = null;
-        let targetFaceIndex = -1;
-
-        for (let faceIndex = 0; faceIndex < polygonFaces.length; faceIndex++) {
-          const face = polygonFaces[faceIndex];
-          if (
-            face.triangleIndices &&
-            face.triangleIndices.includes(triangleIndex)
-          ) {
-            targetFace = face;
-            targetFaceIndex = faceIndex;
-            break;
+        if (isTriangleMode && workingMeshTri) {
+          // Calculate actual triangle information from the triangle mesh
+          const positionAttribute = workingMeshTri.attributes.position;
+          if (!positionAttribute) {
+            setTriangleStats(null);
+            return;
           }
-        }
 
-        if (!targetFace) {
-          setTriangleStats(null);
-          return;
-        }
+          // Get the three vertices of this triangle
+          const vertices: THREE.Vector3[] = [];
+          for (let i = 0; i < 3; i++) {
+            const vertexIndex = triangleIndex * 3 + i;
+            if (vertexIndex < positionAttribute.count) {
+              vertices.push(new THREE.Vector3(
+                positionAttribute.getX(vertexIndex),
+                positionAttribute.getY(vertexIndex),
+                positionAttribute.getZ(vertexIndex)
+              ));
+            }
+          }
 
-        // Get the face vertices
-        let faceVertices: THREE.Vector3[] = [];
-        if (
-          targetFace.originalVertices &&
-          Array.isArray(targetFace.originalVertices)
-        ) {
-          faceVertices = targetFace.originalVertices.map(
-            (v: any) => new THREE.Vector3(v.x, v.y, v.z),
-          );
-        } else {
-          setTriangleStats(null);
-          return;
-        }
+          if (vertices.length !== 3) {
+            setTriangleStats(null);
+            return;
+          }
 
-        // Calculate perimeter
-        let facePerimeter = 0;
-        for (let i = 0; i < faceVertices.length; i++) {
-          const current = faceVertices[i];
-          const next = faceVertices[(i + 1) % faceVertices.length];
-          facePerimeter += current.distanceTo(next);
-        }
-
-        // Calculate area using shoelace formula for planar polygons
-        let faceArea = 0;
-        if (faceVertices.length === 3) {
-          // Triangle area
-          const edge1 = new THREE.Vector3().subVectors(
-            faceVertices[1],
-            faceVertices[0],
-          );
-          const edge2 = new THREE.Vector3().subVectors(
-            faceVertices[2],
-            faceVertices[0],
-          );
+          // Calculate triangle area
+          const edge1 = new THREE.Vector3().subVectors(vertices[1], vertices[0]);
+          const edge2 = new THREE.Vector3().subVectors(vertices[2], vertices[0]);
           const cross = new THREE.Vector3().crossVectors(edge1, edge2);
-          faceArea = cross.length() / 2;
-        } else if (faceVertices.length === 4) {
-          // Quad area using two triangles
-          const edge1 = new THREE.Vector3().subVectors(
-            faceVertices[1],
-            faceVertices[0],
-          );
-          const edge2 = new THREE.Vector3().subVectors(
-            faceVertices[2],
-            faceVertices[0],
-          );
-          const cross1 = new THREE.Vector3().crossVectors(edge1, edge2);
+          const triangleArea = cross.length() / 2;
 
-          const edge3 = new THREE.Vector3().subVectors(
-            faceVertices[2],
-            faceVertices[0],
-          );
-          const edge4 = new THREE.Vector3().subVectors(
-            faceVertices[3],
-            faceVertices[0],
-          );
-          const cross2 = new THREE.Vector3().crossVectors(edge3, edge4);
+          // Calculate triangle perimeter
+          const trianglePerimeter =
+            vertices[0].distanceTo(vertices[1]) +
+            vertices[1].distanceTo(vertices[2]) +
+            vertices[2].distanceTo(vertices[0]);
 
-          faceArea = (cross1.length() + cross2.length()) / 2;
-        } else {
-          // Polygon area using fan triangulation from first vertex
-          for (let i = 1; i < faceVertices.length - 1; i++) {
+          // Calculate triangle normal
+          const triangleNormal = cross.normalize();
+
+          setTriangleStats({
+            index: triangleIndex,
+            vertices: vertices,
+            area: triangleArea,
+            perimeter: trianglePerimeter,
+            normal: triangleNormal,
+            faceType: "triangle",
+            vertexCount: 3,
+            parentFaceIndex: null, // No parent face in triangle mode
+          });
+        } else if (!isTriangleMode && previewMeshMerged) {
+          // Merged mode - show polygon face information
+          const polygonFaces = (previewMeshMerged as any).polygonFaces;
+
+          if (!polygonFaces || !Array.isArray(polygonFaces)) {
+            setTriangleStats(null);
+            return;
+          }
+
+          // Find the face that contains this triangle
+          let targetFace = null;
+          let targetFaceIndex = -1;
+
+          for (let faceIndex = 0; faceIndex < polygonFaces.length; faceIndex++) {
+            const face = polygonFaces[faceIndex];
+            if (
+              face.triangleIndices &&
+              face.triangleIndices.includes(triangleIndex)
+            ) {
+              targetFace = face;
+              targetFaceIndex = faceIndex;
+              break;
+            }
+          }
+
+          if (!targetFace) {
+            setTriangleStats(null);
+            return;
+          }
+
+          // Get the face vertices
+          let faceVertices: THREE.Vector3[] = [];
+          if (
+            targetFace.originalVertices &&
+            Array.isArray(targetFace.originalVertices)
+          ) {
+            faceVertices = targetFace.originalVertices.map(
+              (v: any) => new THREE.Vector3(v.x, v.y, v.z),
+            );
+          } else {
+            setTriangleStats(null);
+            return;
+          }
+
+          // Calculate perimeter
+          let facePerimeter = 0;
+          for (let i = 0; i < faceVertices.length; i++) {
+            const current = faceVertices[i];
+            const next = faceVertices[(i + 1) % faceVertices.length];
+            facePerimeter += current.distanceTo(next);
+          }
+
+          // Calculate area using shoelace formula for planar polygons
+          let faceArea = 0;
+          if (faceVertices.length === 3) {
+            // Triangle area
             const edge1 = new THREE.Vector3().subVectors(
-              faceVertices[i],
+              faceVertices[1],
               faceVertices[0],
             );
             const edge2 = new THREE.Vector3().subVectors(
-              faceVertices[i + 1],
+              faceVertices[2],
               faceVertices[0],
             );
             const cross = new THREE.Vector3().crossVectors(edge1, edge2);
-            faceArea += cross.length() / 2;
+            faceArea = cross.length() / 2;
+          } else if (faceVertices.length === 4) {
+            // Quad area using two triangles
+            const edge1 = new THREE.Vector3().subVectors(
+              faceVertices[1],
+              faceVertices[0],
+            );
+            const edge2 = new THREE.Vector3().subVectors(
+              faceVertices[2],
+              faceVertices[0],
+            );
+            const cross1 = new THREE.Vector3().crossVectors(edge1, edge2);
+
+            const edge3 = new THREE.Vector3().subVectors(
+              faceVertices[2],
+              faceVertices[0],
+            );
+            const edge4 = new THREE.Vector3().subVectors(
+              faceVertices[3],
+              faceVertices[0],
+            );
+            const cross2 = new THREE.Vector3().crossVectors(edge3, edge4);
+
+            faceArea = (cross1.length() + cross2.length()) / 2;
+          } else {
+            // Polygon area using fan triangulation from first vertex
+            for (let i = 1; i < faceVertices.length - 1; i++) {
+              const edge1 = new THREE.Vector3().subVectors(
+                faceVertices[i],
+                faceVertices[0],
+              );
+              const edge2 = new THREE.Vector3().subVectors(
+                faceVertices[i + 1],
+                faceVertices[0],
+              );
+              const cross = new THREE.Vector3().crossVectors(edge1, edge2);
+              faceArea += cross.length() / 2;
+            }
           }
-        }
 
-        // Calculate normal
-        let faceNormal = new THREE.Vector3();
-        if (targetFace.normal) {
-          faceNormal = new THREE.Vector3(
-            targetFace.normal.x,
-            targetFace.normal.y,
-            targetFace.normal.z,
-          );
+          // Calculate normal
+          let faceNormal = new THREE.Vector3();
+          if (targetFace.normal) {
+            faceNormal = new THREE.Vector3(
+              targetFace.normal.x,
+              targetFace.normal.y,
+              targetFace.normal.z,
+            );
+          } else {
+            const edge1 = new THREE.Vector3().subVectors(
+              faceVertices[1],
+              faceVertices[0],
+            );
+            const edge2 = new THREE.Vector3().subVectors(
+              faceVertices[2],
+              faceVertices[0],
+            );
+            faceNormal = new THREE.Vector3()
+              .crossVectors(edge1, edge2)
+              .normalize();
+          }
+
+          setTriangleStats({
+            index: triangleIndex,
+            vertices: faceVertices,
+            area: faceArea,
+            perimeter: facePerimeter,
+            normal: faceNormal,
+            faceType: targetFace.type,
+            vertexCount: faceVertices.length,
+            parentFaceIndex: targetFaceIndex,
+          });
         } else {
-          const edge1 = new THREE.Vector3().subVectors(
-            faceVertices[1],
-            faceVertices[0],
-          );
-          const edge2 = new THREE.Vector3().subVectors(
-            faceVertices[2],
-            faceVertices[0],
-          );
-          faceNormal = new THREE.Vector3()
-            .crossVectors(edge1, edge2)
-            .normalize();
+          setTriangleStats(null);
         }
-
-        setTriangleStats({
-          index: triangleIndex,
-          vertices: faceVertices,
-          area: faceArea,
-          perimeter: facePerimeter,
-          normal: faceNormal,
-          faceType: targetFace.type,
-          vertexCount: faceVertices.length,
-          parentFaceIndex: targetFaceIndex,
-        });
       } else {
         setTriangleStats(null);
       }
     },
-    [previewMeshMerged],
+    [viewerSettings.meshType, workingMeshTri, previewMeshMerged],
   );
 
   const decimateEdge = useCallback(
