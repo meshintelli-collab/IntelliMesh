@@ -304,14 +304,14 @@ export default function STLWorkflowPanel({
           // Don't re-throw, let it fall through to JavaScript fallback
         }
       } else {
-        console.log("🐍 ❌ Python service not available, using JavaScript fallback");
+        console.log("🐍 ❌ Python Open3D service not available, using JavaScript fallback");
       }
 
       // Fallback to JavaScript quadric edge collapse implementation
       toast({
-        title: "🟡 Using JavaScript Decimation",
-        description: `Python service unavailable. Reducing triangles by ${Math.round(quadricReduction * 100)}% using JavaScript fallback...`,
-        duration: 1500,
+        title: "⚡ JavaScript Decimation",
+        description: `Python Open3D service unavailable. Using JavaScript quadric edge collapse to reduce triangles by ${Math.round(quadricReduction * 100)}%...`,
+        duration: 2000,
       });
 
       const result = await onReducePoints(
