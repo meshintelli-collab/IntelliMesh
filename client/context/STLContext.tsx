@@ -611,7 +611,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         if (isLargeModel) {
           await setupDualMeshSystemProgressive(loadedGeometry, updateProgress);
         } else {
-          setupDualMeshSystem(loadedGeometry);
+          await setupDualMeshSystem(loadedGeometry);
         }
       }
 
@@ -700,7 +700,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       updateProgress(80, "Processing", "Setting up mesh system...");
 
       // Set up dual mesh system
-      setupDualMeshSystem(bufferGeometry);
+      await setupDualMeshSystem(bufferGeometry);
 
       setFileName(`${modelName}.stl`);
       setOriginalFormat("stl");
