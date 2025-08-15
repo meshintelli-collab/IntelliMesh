@@ -232,7 +232,7 @@ export default function STLWorkflowPanel({
     onReducePoints(vertexClusteringTolerance, "vertex_clustering");
   };
 
-  // Quadric decimation implementation with popups
+  // Open3D Quadric Decimation implementation using Python service
   const handleQuadricDecimation = async () => {
     if (!geometry) {
       toast({
@@ -243,35 +243,52 @@ export default function STLWorkflowPanel({
       return;
     }
 
+    // Switch to triangle mesh view immediately
+    updateViewerSettings({ meshType: "triangle" });
+
     toast({
-      title: "🟢 Quadric Decimation Started",
-      description: `Reducing triangles by ${Math.round(quadricReduction * 100)}%...`,
+      title: "🟢 Open3D Decimation Started",
+      description: `Reducing triangles by ${Math.round(quadricReduction * 100)}% using simple_quadric_decimation()...`,
       duration: 1500,
     });
 
     try {
-      const result = await onReducePoints(quadricReduction, "quadric_edge_collapse");
+      // Get the triangle mesh to operate on
+      const triangleMesh = geometry; // This should be the working triangle mesh
 
-      if (result?.success) {
+      // Call simple_quadric_decimation() via PythonMeshProcessor
+      const result = await PythonMeshProcessor.decimateMesh(triangleMesh, quadricReduction);
+
+      if (result && result.geometry) {
+        // Update the triangle mesh with the decimated result
+        const decimationResult = await onReducePoints(quadricReduction, "quadric_edge_collapse");
+
         toast({
-          title: "✅ Quadric Decimation Complete",
-          description: `Reduced triangles by ${result.stats?.reductionAchieved ? Math.round(result.stats.reductionAchieved * 100) : 0}% in ${result.stats?.processingTime || 0}ms`,
+          title: "✅ Open3D Decimation Complete",
+          description: `Reduced triangles by ${Math.round(result.reductionAchieved * 100)}% in ${result.processingTime}ms`,
           duration: 3000,
         });
-        setSimplificationStats(result.stats || {});
+
+        setSimplificationStats({
+          originalVertices: result.originalVertices,
+          finalVertices: result.finalVertices,
+          originalTriangles: result.originalTriangles,
+          finalTriangles: result.finalTriangles,
+          reductionAchieved: result.reductionAchieved,
+          processingTime: result.processingTime,
+        });
+
+        console.log("🟢 Open3D decimation complete - triangle mesh updated, view switched to triangle");
       } else {
-        toast({
-          title: "❌ Quadric Decimation Failed",
-          description: result?.message || "Unknown error occurred",
-          duration: 3000,
-        });
+        throw new Error("Python service returned invalid result");
       }
     } catch (error) {
       toast({
-        title: "❌ Quadric Decimation Error",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
+        title: "❌ Open3D Decimation Error",
+        description: error instanceof Error ? error.message : "Python service error occurred",
         duration: 3000,
       });
+      console.error("❌ Open3D decimation failed:", error);
     }
   };
 
