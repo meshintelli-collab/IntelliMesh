@@ -968,25 +968,18 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     const triangles = Math.floor(vertices / 3);
     const edges = (triangles * 3) / 2; // Approximate for manifold mesh
 
-    // Create polygon breakdown from geometry metadata
-    const polygonFaces = (workingMeshTri as any).polygonFaces;
-    let polygonBreakdown: Array<{ type: string; count: number }> = [];
+    // Triangle mesh should ONLY show triangle data, never polygon faces
+    // This ensures pure triangulated statistics for triangle mode
+    const polygonBreakdown: Array<{ type: string; count: number }> = [
+      { type: "triangle", count: triangles }
+    ];
 
-    if (polygonFaces && Array.isArray(polygonFaces)) {
-      const typeCount: Record<string, number> = {};
-      polygonFaces.forEach((face: any) => {
-        const type = face.type || "triangle";
-        typeCount[type] = (typeCount[type] || 0) + 1;
-      });
-
-      polygonBreakdown = Object.entries(typeCount).map(([type, count]) => ({
-        type,
-        count,
-      }));
-    } else {
-      // Fallback to triangles
-      polygonBreakdown = [{ type: "triangle", count: triangles }];
-    }
+    console.log("📊 Triangle mesh stats - pure triangulated data:", {
+      vertices,
+      edges,
+      triangles,
+      hasPolygonFaces: !!(workingMeshTri as any).polygonFaces
+    });
 
     return {
       vertices,
