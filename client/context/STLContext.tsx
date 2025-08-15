@@ -434,17 +434,27 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
 
     setPreviewMeshMerged(preview);
 
-    // 4. Let updateViewerGeometry handle display based on meshType setting
+    // 4. Set initial display geometry based on default meshType
+    const defaultMeshType = defaultViewerSettings.meshType;
+    let initialGeometry: THREE.BufferGeometry;
+
+    if (defaultMeshType === "merged") {
+      initialGeometry = prepareGeometryForViewing(preview, "merged_display");
+      console.log(`✅ Initial display set to MERGED with ${(preview as any).polygonFaces?.length || 0} polygon faces`);
+    } else {
+      initialGeometry = prepareGeometryForViewing(triangulated, "triangle_display");
+      console.log(`✅ Initial display set to TRIANGLE`);
+    }
+
+    setGeometry(initialGeometry);
+
     console.log("✅ Normal processing complete - dual mesh system ready", {
       triangleVertices: triangulated.attributes.position.count,
       mergedVertices: preview.attributes.position.count,
       polygonFaces: (preview as any).polygonFaces?.length || 0,
       hasNormals: !!preview.attributes.normal,
-      meshType: viewerSettings.meshType,
+      initialMeshType: defaultMeshType,
     });
-
-    // Trigger updateViewerGeometry to display the correct mesh type
-    setTimeout(() => updateViewerGeometry(), 10);
   };
 
   // Minimal setup for very large files (>500KB) - NO heavy processing to prevent timeouts
