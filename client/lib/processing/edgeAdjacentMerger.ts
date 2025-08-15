@@ -318,10 +318,11 @@ export class EdgeAdjacentMerger {
       allTriangleIndices.push(...(face.triangleIndices || []));
     }
 
-    // Get unique vertices and order them around the perimeter
+    // Get unique vertices and remove center vertices (from triangle fans)
     const uniqueVertices = this.removeDuplicateVertices(allVertices);
+    const perimeterVertices = this.removeInteriorVertices(uniqueVertices, faces.slice(componentIndices[0], componentIndices[0] + componentIndices.length));
     const normal = this.ensureVector3(faces[componentIndices[0]].normal);
-    let orderedVertices = this.orderPolygonVertices(uniqueVertices, normal);
+    let orderedVertices = this.orderPolygonVertices(perimeterVertices, normal);
 
     // Ensure right-hand rule compliance by checking face winding
     // Calculate face normal from ordered vertices
