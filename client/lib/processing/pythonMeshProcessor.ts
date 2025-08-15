@@ -22,14 +22,19 @@ export class PythonMeshProcessor {
    */
   static async checkServiceHealth(): Promise<boolean> {
     try {
+      // Use a more robust timeout approach
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+
       const response = await fetch(`${this.SERVICE_URL}/health`, {
         method: "GET",
         headers: {
           Accept: "application/json",
         },
-        // Add timeout and signal to prevent hanging
-        signal: AbortSignal.timeout(3000), // 3 second timeout
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const health = await response.json();
@@ -39,14 +44,17 @@ export class PythonMeshProcessor {
       console.log("🐍 Python service responded with error:", response.status);
       return false;
     } catch (error) {
-      // Only log if it's not a common network error
-      if (
-        error instanceof Error &&
-        !error.message.includes("Failed to fetch")
-      ) {
-        console.log("🐍 Python service check failed:", error.message);
+      // Comprehensive error handling - all errors should return false, not throw
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          console.log("🐍 Python service check timed out");
+        } else if (error.message.includes("Failed to fetch") || error.message.includes("fetch")) {
+          console.log("🐍 Python service not available (network error)");
+        } else {
+          console.log("🐍 Python service check failed:", error.message);
+        }
       } else {
-        console.log("🐍 Python service not available (no connection)");
+        console.log("🐍 Python service check failed with unknown error");
       }
       return false;
     }
