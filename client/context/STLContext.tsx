@@ -791,6 +791,40 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     [previewMeshMerged, fileName],
   );
 
+  const exportOBJ = useCallback(
+    (customFilename?: string) => {
+      if (!previewMeshMerged) return;
+
+      const filename = customFilename || fileName || "model.obj";
+      const { OBJConverter } = require("../lib/processing/objConverter");
+      const result = OBJConverter.geometryToOBJ(previewMeshMerged, filename);
+
+      if (result.success !== false && result.objString) {
+        // Create and download the OBJ file
+        const blob = new Blob([result.objString], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename.endsWith(".obj") ? filename : `${filename}.obj`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        console.log("✅ OBJ export complete:", {
+          filename: link.download,
+          vertices: result.vertexCount,
+          faces: result.faceCount,
+          hasQuads: result.hasQuads,
+          hasPolygons: result.hasPolygons
+        });
+      } else {
+        console.error("❌ OBJ export failed:", result.error);
+      }
+    },
+    [previewMeshMerged, fileName],
+  );
+
   const addError = useCallback((message: string) => {
     const error: ErrorMessage = {
       id: Date.now().toString(),
