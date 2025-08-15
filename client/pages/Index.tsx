@@ -72,10 +72,14 @@ export default function Index() {
     const result = await reducePoints(reduction, backendMethod);
     if (result.success) {
       // Success message will be shown in console logs
+      console.log("✅ Reduction successful:", result.message);
     } else {
       console.error("❌ Reduction failed:", result.message);
       addError(result.message);
     }
+
+    // Return the result for the caller to handle
+    return result;
   };
 
   const handleRandomColorsChange = (checked: boolean) => {
