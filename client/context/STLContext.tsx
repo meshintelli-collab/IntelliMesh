@@ -1408,12 +1408,18 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     updateViewerGeometry();
   }, [updateViewerGeometry]);
 
-  // Clear merged mesh when triangle mesh is updated
+  // Clear merged mesh when triangle mesh is updated (but not during initial setup)
   useEffect(() => {
-    if (workingMeshTri) {
-      clearMergedMesh();
+    // Only clear merged mesh if we have a preview mesh (meaning we're not in initial setup)
+    if (workingMeshTri && previewMeshMerged && !isLoading) {
+      // Check if this is a real update (not initial setup) by seeing if the geometries are different
+      const isInitialSetup = workingMeshTri === previewMeshMerged;
+      if (!isInitialSetup) {
+        console.log("🧹 Clearing merged mesh due to triangle mesh update");
+        clearMergedMesh();
+      }
     }
-  }, [workingMeshTri, clearMergedMesh]);
+  }, [workingMeshTri, clearMergedMesh, previewMeshMerged, isLoading]);
 
   const contextValue: STLContextType = {
     geometry,
