@@ -382,7 +382,13 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         (preview as any).polygonFaces = mergedFaces;
         (preview as any).polygonType = "edge_adjacent_merged";
 
-        console.log(`✅ Created merged preview with ${mergedFaces.length} polygon faces`);
+        // Detailed logging for merged faces
+        const faceTypeCounts = mergedFaces.reduce((counts: any, face: any) => {
+          counts[face.type] = (counts[face.type] || 0) + 1;
+          return counts;
+        }, {});
+
+        console.log(`✅ Created merged preview with ${mergedFaces.length} polygon faces:`, faceTypeCounts);
       } else {
         // Fallback: create basic triangle structure
         const positions = preview.attributes.position.array as Float32Array;
