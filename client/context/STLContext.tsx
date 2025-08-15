@@ -537,8 +537,13 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     }
     ensureNormals(basicMesh);
 
-    // Set for immediate display
-    setWorkingMeshTri(basicMesh);
+    // Set for immediate display - maintain separate meshes
+    const triangleMesh = basicMesh.clone();
+    delete (triangleMesh as any).polygonFaces;
+    delete (triangleMesh as any).polygonType;
+    delete (triangleMesh as any).isProcedurallyGenerated;
+    setWorkingMeshTri(triangleMesh);
+
     setPreviewMeshMerged(basicMesh);
 
     // 3. Set up basic display geometry immediately
