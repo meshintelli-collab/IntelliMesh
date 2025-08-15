@@ -1530,7 +1530,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         // No merged mesh available, show error and revert to triangle
         console.log(`❌ No merged mesh available, reverting to triangle view`);
         addError(
-          "No merged mesh found. Please run Merge Coplanar Faces first.",
+          "⚠️ Merged mesh not available. Please run 'Merge Coplanar Faces' first to create the merged version.",
         );
         setViewerSettings((prev) => ({ ...prev, meshType: "triangle" }));
         if (workingMeshTri) {
