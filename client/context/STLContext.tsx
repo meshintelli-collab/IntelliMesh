@@ -869,7 +869,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
           method,
         );
 
-        console.log("🔧 Decimation result:", {
+        console.log("�� Decimation result:", {
           hasGeometry: !!result.geometry,
           originalVertices: result.originalStats.vertices,
           newVertices: result.newStats.vertices,
@@ -1359,9 +1359,18 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
   // Function to update viewer geometry based on mesh type setting
   const updateViewerGeometry = useCallback(() => {
     const meshType = viewerSettings.meshType;
+    console.log(`🔄 Switching to ${meshType} mesh view`);
 
     if (meshType === "merged") {
-      if (mergedGeometry) {
+      if (previewMeshMerged) {
+        console.log(`✅ Using previewMeshMerged with ${(previewMeshMerged as any).polygonFaces?.length || 0} polygon faces`);
+        const displayGeometry = prepareGeometryForViewing(
+          previewMeshMerged,
+          "merged_display",
+        );
+        setGeometry(displayGeometry);
+      } else if (mergedGeometry) {
+        console.log(`✅ Using mergedGeometry fallback`);
         const displayGeometry = prepareGeometryForViewing(
           mergedGeometry,
           "merged_display",
@@ -1369,6 +1378,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         setGeometry(displayGeometry);
       } else {
         // No merged mesh available, show error and revert to triangle
+        console.log(`❌ No merged mesh available, reverting to triangle view`);
         addError(
           "No merged mesh found. Please run Merge Coplanar Faces first.",
         );
@@ -1383,6 +1393,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       }
     } else {
       // Show triangle mesh
+      console.log(`✅ Using workingMeshTri (triangle mesh)`);
       if (workingMeshTri) {
         const displayGeometry = prepareGeometryForViewing(
           workingMeshTri,
