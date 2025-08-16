@@ -623,20 +623,9 @@ export class ChamferedPartsExporter {
       const chamferAngleRad = (chamferAngle * Math.PI) / 180;
       let inwardMovement = thickness * Math.tan(chamferAngleRad);
 
-      // Safety limit: prevent excessive inward movement that causes intersections
-      // Calculate the distance to polygon center to avoid over-chamfering
-      const polygonCenter = new THREE.Vector3();
-      originalVertices.forEach(v => polygonCenter.add(v));
-      polygonCenter.divideScalar(originalVertices.length);
-
-      const distanceToCenter = vertex.distanceTo(polygonCenter);
-      const maxSafeMovement = distanceToCenter * 0.4; // Limit to 40% of distance to center
-
-      inwardMovement = Math.min(inwardMovement, maxSafeMovement);
-
       // Debug logging for first few vertices
       if (i < 2) {
-        console.log(`🔍 Vertex ${i}: chamfer ${chamferAngle}°, raw movement ${(thickness * Math.tan(chamferAngleRad)).toFixed(3)}, limited to ${inwardMovement.toFixed(3)}`);
+        console.log(`🔍 Vertex ${i}: chamfer ${chamferAngle}°, inward movement ${inwardMovement.toFixed(3)}mm`);
       }
 
       // Calculate the inward direction (toward polygon center)
