@@ -664,10 +664,10 @@ export class ChamferedPartsExporter {
     faceInfo: any, // Original face info with triangulation data
   ): ParametricGeometry {
     const vertices = new Map<string, ParametricVertex>();
-    const triangles: ParametricTriangle[] = [];
+    const polygons: ParametricPolygon[] = [];
 
     console.log(
-      `🔧 Building parametric geometry with ${originalVertices.length} vertices`,
+      `🔧 Building parametric polygon geometry with ${originalVertices.length} vertices`,
     );
 
     // Create parametric vertices
@@ -940,7 +940,7 @@ export class ChamferedPartsExporter {
     let content = "";
 
     console.log(
-      `🔧 Generating STL from parametric geometry: ${geometry.triangles.length} triangles`,
+      `���� Generating STL from parametric geometry: ${geometry.triangles.length} triangles`,
     );
 
     for (const triangle of geometry.triangles) {
@@ -1162,7 +1162,7 @@ export class ChamferedPartsExporter {
             if (movementCount <= 5) {
               // Log first few movements for debugging
               console.log(
-                `   Moved vertex: (${vertex.x.toFixed(3)}, ${vertex.y.toFixed(3)}, ${vertex.z.toFixed(3)}) → (${movedVertex.x.toFixed(3)}, ${movedVertex.y.toFixed(3)}, ${movedVertex.z.toFixed(3)})`,
+                `   Moved vertex: (${vertex.x.toFixed(3)}, ${vertex.y.toFixed(3)}, ${vertex.z.toFixed(3)}) ��� (${movedVertex.x.toFixed(3)}, ${movedVertex.y.toFixed(3)}, ${movedVertex.z.toFixed(3)})`,
               );
             }
           } else {
