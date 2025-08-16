@@ -188,6 +188,22 @@ export class EdgeAdjacentMerger {
       if (neighbors.size > 0) connectedFaces++;
     }
 
+    console.log(`   📊 Found ${sharedEdgeCount} shared edges among ${faces.length} faces`);
+    console.log(`   📊 ${connectedFaces} faces have connections, ${faces.length - connectedFaces} are isolated`);
+
+    if (sharedEdgeCount === 0) {
+      console.warn(`   ⚠️ NO SHARED EDGES FOUND! This suggests triangles don't share complete edges`);
+      console.log(`   📊 Edge tolerance: ${this.EDGE_TOLERANCE}, Normal tolerance: ${this.NORMAL_TOLERANCE}`);
+
+      // Debug first few triangles to understand the issue
+      for (let i = 0; i < Math.min(2, faces.length); i++) {
+        const face = faces[i];
+        console.log(`   🔍 Face ${i} edges:`, face.originalVertices.map((v, idx) =>
+          `${idx}: (${v.x.toFixed(3)}, ${v.y.toFixed(3)}, ${v.z.toFixed(3)})`
+        ));
+      }
+    }
+
     return graph;
   }
 
