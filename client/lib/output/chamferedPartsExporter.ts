@@ -606,62 +606,73 @@ export class ChamferedPartsExporter {
   }
 
   /**
-   * Generate chamfered vertices to create correct chamfer angles
-   * For a cube (90° edges), chamfer angle = 90 - 90/2 = 45°
-   * For 45° chamfer: inward movement = thickness (since tan(45°) = 1)
+   * Generate edge chamfers by creating angled cuts along each edge
+   * Creates additional geometry for 45° chamfer surfaces on each edge
    */
-  private static generateChamferedVertices(
+  private static generateEdgeChamfers(
     originalVertices: THREE.Vector3[],
     edges: EdgeInfo[],
-    thickness: number, // Use thickness instead of chamferDepth
-  ): THREE.Vector3[] {
-    const chamferedVertices: THREE.Vector3[] = [];
+    chamferSize: number, // Size of the chamfer cut
+  ): {
+    chamferedFaces: THREE.Vector3[][];
+    chamferFaces: THREE.Vector3[][];
+  } {
+    const chamferedFaces: THREE.Vector3[][] = [];
+    const chamferFaces: THREE.Vector3[][] = [];
 
-    console.log(`🔧 Generating chamfered vertices for correct chamfer angles (thickness: ${thickness})`);
+    console.log(`🔧 Generating edge chamfers (chamfer size: ${chamferSize})`);
 
     for (let i = 0; i < originalVertices.length; i++) {
-      const vertex = originalVertices[i];
-      const prevEdge = edges[(i - 1 + edges.length) % edges.length];
-      const nextEdge = edges[i];
+      const v1 = originalVertices[i];
+      const v2 = originalVertices[(i + 1) % originalVertices.length];
+      const edge = edges[i];
 
-      // Use the bigger edge angle from adjacent edges
-      const correspondingEdge = prevEdge.edgeAngle > nextEdge.edgeAngle ? prevEdge : nextEdge;
-      const chamferAngle = correspondingEdge.chamferAngle;
+      // Calculate chamfer points along this edge
+      const edgeVector = new THREE.Vector3().subVectors(v2, v1);
+      const edgeLength = edgeVector.length();
+      const edgeDir = edgeVector.normalize();
 
-      // Calculate inward movement to create the correct chamfer angle
-      // For chamfer angle θ, inward movement = thickness * tan(θ)
-      const chamferAngleRad = (chamferAngle * Math.PI) / 180;
-      let inwardMovement = thickness * Math.tan(chamferAngleRad);
+      // Create chamfer cuts at both ends of the edge (45° chamfer)
+      const chamferDistance = Math.min(chamferSize, edgeLength * 0.4); // Limit to 40% of edge length
 
-      // Debug logging for first few vertices
-      if (i < 2) {
-        console.log(`🔍 Vertex ${i}: chamfer ${chamferAngle}°, inward movement ${inwardMovement.toFixed(3)}mm`);
+      // Chamfer points: move inward from each vertex along the edge
+      const chamferV1 = v1.clone().add(edgeDir.clone().multiplyScalar(chamferDistance));
+      const chamferV2 = v2.clone().add(edgeDir.clone().multiplyScalar(-chamferDistance));
+
+      // Create the chamfered edge (shortened edge)
+      if (chamferV1.distanceTo(chamferV2) > 0.001) {
+        // Store the chamfered edge
+        chamferedFaces.push([chamferV1, chamferV2]);
+
+        // Create 45° chamfer faces at each end
+        // Calculate perpendicular direction for chamfer faces
+        const perpDir = new THREE.Vector3().crossVectors(edgeDir, new THREE.Vector3(0, 0, 1)).normalize();
+        const chamferHeight = chamferDistance; // 45° means height = distance
+
+        // Chamfer face at v1 end
+        const chamferFace1 = [
+          v1,
+          chamferV1,
+          chamferV1.clone().add(new THREE.Vector3(0, 0, chamferHeight)),
+          v1.clone().add(new THREE.Vector3(0, 0, chamferHeight))
+        ];
+        chamferFaces.push(chamferFace1);
+
+        // Chamfer face at v2 end
+        const chamferFace2 = [
+          chamferV2,
+          v2,
+          v2.clone().add(new THREE.Vector3(0, 0, chamferHeight)),
+          chamferV2.clone().add(new THREE.Vector3(0, 0, chamferHeight))
+        ];
+        chamferFaces.push(chamferFace2);
       }
 
-      // Calculate the inward direction (toward polygon center)
-      const prevVertex = originalVertices[(i - 1 + originalVertices.length) % originalVertices.length];
-      const nextVertex = originalVertices[(i + 1) % originalVertices.length];
-
-      // Calculate the angle bisector pointing inward
-      const edge1 = new THREE.Vector3().subVectors(prevVertex, vertex).normalize();
-      const edge2 = new THREE.Vector3().subVectors(nextVertex, vertex).normalize();
-      const bisector = new THREE.Vector3().addVectors(edge1, edge2).normalize();
-
-      // If bisector is zero (180° angle), use perpendicular to one edge
-      if (bisector.length() < 0.001) {
-        bisector.crossVectors(edge1, new THREE.Vector3(0, 0, 1)).normalize();
-      }
-
-      // Move vertex inward by calculated amount
-      const chamferedVertex = vertex.clone().add(bisector.multiplyScalar(inwardMovement));
-
-      console.log(`   Vertex ${i}: chamfer ${chamferAngle.toFixed(1)}°, inward ${inwardMovement.toFixed(3)}mm`);
-
-      chamferedVertices.push(chamferedVertex);
+      console.log(`   Edge ${i}: chamfered ${chamferDistance.toFixed(3)}mm at each end`);
     }
 
-    console.log(`✅ Generated ${chamferedVertices.length} vertices with correct chamfer angles`);
-    return chamferedVertices;
+    console.log(`✅ Generated ${chamferedFaces.length} chamfered edges with ${chamferFaces.length} chamfer faces`);
+    return { chamferedFaces, chamferFaces };
   }
 
   /**
