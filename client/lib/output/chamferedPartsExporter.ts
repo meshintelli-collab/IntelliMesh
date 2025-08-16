@@ -1464,7 +1464,7 @@ export class ChamferedPartsExporter {
   }
 
   /**
-   * Create chamfered OBJ file with proper edge angle calculation
+   * Create chamfered OBJ file using parametric geometry approach
    */
   private static createChamferedPolygonOBJ(
     chamferedFace: ChamferedFaceInfo,
@@ -1474,7 +1474,7 @@ export class ChamferedPartsExporter {
   ): string {
     const faceInfo = chamferedFace.faceInfo;
 
-    // Generate chamfered vertices based on calculated edge angles
+    // Handle missing originalVertices by falling back to vertices
     const sourceVertices = faceInfo.originalVertices || faceInfo.vertices;
 
     if (!sourceVertices || !Array.isArray(sourceVertices)) {
@@ -1489,63 +1489,46 @@ export class ChamferedPartsExporter {
       v.clone(),
     );
 
-    // Use original thickness (geometry is already scaled)
-    const partThickness = thickness;
-    const chamferedVertices = this.generateChamferedVertices(
-      originalVertices,
-      chamferedFace.edges,
-      partThickness,
-    );
+    if (originalVertices.length < 3) {
+      console.warn(
+        `⚠️ Face ${chamferedFace.partIndex} has insufficient vertices (${originalVertices.length})`,
+      );
+      return `# Error: Insufficient vertices for chamfering\n`;
+    }
 
-    // Create basic OBJ structure with chamfered vertices
-    let objContent = `# Chamfered OBJ Part ${chamferedFace.partIndex + 1}\n`;
-    objContent += `# Generated with edge-angle-based chamfering\n\n`;
-
-    // Add front face vertices (chamfered)
-    chamferedVertices.forEach((v, i) => {
-      objContent += `v ${v.x.toFixed(6)} ${v.y.toFixed(6)} ${v.z.toFixed(6)}\n`;
-    });
-
-    // Add back face vertices (chamfered + offset)
     const normal = faceInfo.normal
       ? faceInfo.normal.clone().normalize()
       : new THREE.Vector3(0, 0, 1);
-    const offset = normal.clone().multiplyScalar(partThickness);
-    chamferedVertices.forEach((v, i) => {
-      const backV = v.clone().add(offset);
-      objContent += `v ${backV.x.toFixed(6)} ${backV.y.toFixed(6)} ${backV.z.toFixed(6)}\n`;
-    });
+    const partThickness = thickness;
 
-    objContent += `\n# Faces\n`;
+    console.log(`🔧 Using parametric geometry approach for OBJ chamfering`);
 
-    // Front face (using chamfered vertices)
-    if (chamferedVertices.length >= 3) {
-      objContent += `f`;
-      for (let i = 0; i < chamferedVertices.length; i++) {
-        objContent += ` ${i + 1}`;
-      }
-      objContent += `\n`;
+    // Extract face data with proper winding and parametrization
+    const properFaceData = this.extractProperFaceData(faceInfo, originalVertices, normal);
 
-      // Back face (reversed order)
-      objContent += `f`;
-      for (let i = chamferedVertices.length - 1; i >= 0; i--) {
-        objContent += ` ${i + 1 + chamferedVertices.length}`;
-      }
-      objContent += `\n`;
+    // Build parametric geometry with vertex IDs that can be transformed
+    const parametricGeometry = this.buildParametricGeometry(
+      properFaceData.vertices,
+      properFaceData.normal,
+      partThickness,
+      chamferedFace.edges,
+      properFaceData, // Pass corrected face info
+    );
 
-      // Side faces
-      for (let i = 0; i < chamferedVertices.length; i++) {
-        const next = (i + 1) % chamferedVertices.length;
-        const v1 = i + 1; // front current
-        const v2 = next + 1; // front next
-        const v3 = next + 1 + chamferedVertices.length; // back next
-        const v4 = i + 1 + chamferedVertices.length; // back current
+    // Apply chamfer transformations to the parametric vertices
+    this.applyChamferTransformations(
+      parametricGeometry,
+      chamferedFace.edges,
+      normal,
+      partThickness,
+    );
 
-        objContent += `f ${v1} ${v2} ${v3} ${v4}\n`;
-      }
-    }
-
-    return objContent;
+    // Generate OBJ from parametric geometry
+    return this.generateOBJFromParametricGeometry(
+      parametricGeometry,
+      chamferedFace.partIndex,
+      faceInfo.type,
+    );
   }
 
   /**
