@@ -574,17 +574,15 @@ export class ChamferedPartsExporter {
     }
     console.log(`✅ Added ${backTriangles.length} back face triangles`);
 
-    // Add chamfered side walls connecting original and chamfered vertices
-    const backChamferedVertices = chamferedVertices.map((v: THREE.Vector3) => v.clone().add(offset));
-    const backOriginalVertices = originalVertices.map((v: THREE.Vector3) => v.clone().add(offset));
-
+    // Add angled side walls that create the chamfer effect
     stlContent += this.addChamferedPerimeterWalls(
-      originalVertices,     // Original front vertices
-      chamferedVertices,    // Chamfered front vertices
-      backOriginalVertices, // Original back vertices
-      backChamferedVertices,// Chamfered back vertices
+      frontFaceVertices,    // Front face vertices (full or chamfered)
+      backFaceVertices,     // Back face vertices (chamfered or full)
+      originalVertices,     // Original vertices for reference
+      chamferedVertices,    // Chamfered vertices for reference
+      offset,               // Thickness offset
       chamferedFace.edges,
-      chamferDepth * scale,
+      useFrontFullSize,     // Which face is full size
     );
 
     stlContent += `endsolid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n`;
