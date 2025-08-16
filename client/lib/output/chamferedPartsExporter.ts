@@ -417,27 +417,17 @@ export class ChamferedPartsExporter {
               const dot = faceNormal.dot(otherNormal);
               const clampedDot = Math.max(-1, Math.min(1, dot));
 
-              // Calculate the actual angle between faces (0° to 180°)
+              // Calculate the angle between face normals (0° to 180°)
               const faceAngle = (Math.acos(Math.abs(clampedDot)) * 180) / Math.PI;
 
-              // Determine if this is convex or concave by checking the edge direction
-              const edgeVector = new THREE.Vector3().subVectors(v2, v1).normalize();
-              const crossProduct = new THREE.Vector3().crossVectors(faceNormal, otherNormal);
-              isConvex = crossProduct.dot(edgeVector) > 0;
+              // For cube: faceAngle = 90° (perpendicular faces)
+              // Internal edge angle = 360° - faceAngle = 270°
+              // But for chamfering, we want the "corner angle" which is faceAngle = 90°
+              edgeAngle = faceAngle;
 
-              // For convex edges (external corners): edge angle < 180°
-              // For concave edges (internal corners): edge angle > 180°
-              edgeAngle = isConvex ? faceAngle : (360 - faceAngle);
-
-              // Apply chamfer formula: chamfer angle = 90° - (edge angle)/2
-              // But adjust for convex vs concave
-              if (isConvex) {
-                // Convex: chamfer the outside face
-                chamferAngle = 90 - edgeAngle / 2;
-              } else {
-                // Concave: chamfer the inside face
-                chamferAngle = 90 - (360 - edgeAngle) / 2;
-              }
+              // Simple chamfer formula: chamfer angle = 90° - (corner angle)/2
+              // For cube: chamfer angle = 90° - 90°/2 = 45°
+              chamferAngle = 90 - edgeAngle / 2;
 
               // Ensure reasonable chamfer angles (15° to 75°)
               chamferAngle = Math.max(15, Math.min(75, Math.abs(chamferAngle)));
