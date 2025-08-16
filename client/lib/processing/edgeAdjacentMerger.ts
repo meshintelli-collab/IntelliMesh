@@ -147,7 +147,7 @@ export class EdgeAdjacentMerger {
     }
 
     console.log(
-      `✅ CONSERVATIVE OUTPUT: ${mergedFaces.length} faces (preserved complex shapes)`,
+      `✅ SMART MERGE OUTPUT: ${mergedFaces.length} faces (balanced merging with shape preservation)`,
     );
     return mergedFaces;
   }
