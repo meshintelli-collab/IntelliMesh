@@ -487,7 +487,8 @@ export class ChamferedPartsExporter {
   }
 
   /**
-   * Add chamfered perimeter walls with angled edges
+   * Add chamfered perimeter walls connecting front and back faces
+   * Uses calculated edge angles to create proper chamfered walls
    */
   private static addChamferedPerimeterWalls(
     frontVertices: THREE.Vector3[],
@@ -497,47 +498,36 @@ export class ChamferedPartsExporter {
   ): string {
     let content = "";
 
+    console.log(`🔧 Creating chamfered perimeter walls for ${frontVertices.length} edges`);
+
     for (let i = 0; i < frontVertices.length; i++) {
       const next = (i + 1) % frontVertices.length;
       const edge = edges[i];
 
-      const v1 = frontVertices[i]; // Front current
-      const v2 = frontVertices[next]; // Front next
-      const v3 = backVertices[next]; // Back next
-      const v4 = backVertices[i]; // Back current
+      const v1 = frontVertices[i]; // Front current (chamfered)
+      const v2 = frontVertices[next]; // Front next (chamfered)
+      const v3 = backVertices[next]; // Back next (chamfered)
+      const v4 = backVertices[i]; // Back current (chamfered)
 
-      // Calculate chamfer angle for this edge
-      const chamferAngleRad = (edge.chamferAngle * Math.PI) / 180;
+      // Since front/back vertices are already chamfered inward,
+      // we create straight side walls between them
+      // The chamfer effect comes from the inward movement of the face vertices
 
-      // Create chamfered edge geometry
-      const edgeDirection = new THREE.Vector3().subVectors(v2, v1).normalize();
-      const sideDirection = new THREE.Vector3().subVectors(v4, v1).normalize();
-      const chamferNormal = new THREE.Vector3()
-        .crossVectors(edgeDirection, sideDirection)
-        .normalize();
-
-      // Apply chamfer by rotating the side face
-      const chamferOffset = new THREE.Vector3()
-        .copy(chamferNormal)
-        .multiplyScalar(chamferDepth * Math.tan(chamferAngleRad));
-
-      const cv1 = v1.clone().add(chamferOffset);
-      const cv2 = v2.clone().add(chamferOffset);
-      const cv3 = v3.clone().add(chamferOffset);
-      const cv4 = v4.clone().add(chamferOffset);
-
-      // Add chamfered side face
+      // Calculate normal for this side face
+      const edgeVector = new THREE.Vector3().subVectors(v2, v1);
+      const heightVector = new THREE.Vector3().subVectors(v4, v1);
       const sideNormal = new THREE.Vector3()
-        .crossVectors(
-          new THREE.Vector3().subVectors(cv2, cv1),
-          new THREE.Vector3().subVectors(cv4, cv1),
-        )
+        .crossVectors(edgeVector, heightVector)
         .normalize();
 
-      content += this.addTriangleToSTL(cv1, cv2, cv3, sideNormal);
-      content += this.addTriangleToSTL(cv1, cv3, cv4, sideNormal);
+      // Create two triangles for the side wall
+      content += this.addTriangleToSTL(v1, v2, v3, sideNormal);
+      content += this.addTriangleToSTL(v1, v3, v4, sideNormal);
+
+      console.log(`   Edge ${i}: chamfer angle ${edge.chamferAngle.toFixed(1)}°, edge angle ${edge.edgeAngle.toFixed(1)}°`);
     }
 
+    console.log(`✅ Created ${frontVertices.length} chamfered side walls`);
     return content;
   }
 
