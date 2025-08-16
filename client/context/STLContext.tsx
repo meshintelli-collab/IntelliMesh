@@ -1601,11 +1601,22 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
 
           let response;
           try {
+            // Check if signal is already aborted before making request
+            if (mergeController.signal.aborted) {
+              throw new Error('Request was cancelled before starting');
+            }
+
             response = await fetch('http://localhost:8001/merge_coplanar_faces', {
               method: 'POST',
               body: formData,
               signal: mergeController.signal
             });
+          } catch (fetchError) {
+            clearTimeout(mergeTimeout);
+            if (fetchError instanceof Error && (fetchError.name === 'AbortError' || fetchError.message.includes('aborted'))) {
+              throw new Error('Merge request timed out - processing may be taking too long');
+            }
+            throw fetchError;
           } finally {
             clearTimeout(mergeTimeout);
           }
