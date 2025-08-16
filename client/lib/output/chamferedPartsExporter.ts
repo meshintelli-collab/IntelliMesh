@@ -522,11 +522,35 @@ export class ChamferedPartsExporter {
       chamferDepth * scale,
     );
 
-    // Generate front and back faces using chamfered vertices
-    console.log(`🔧 Generating front/back faces for ${chamferedVertices.length} chamfered vertices`);
+    // Determine which face should be full size based on edge convexity
+    const hasConvexEdges = chamferedFace.edges.some(edge => edge.isConvex);
+    const hasConcaveEdges = chamferedFace.edges.some(edge => !edge.isConvex);
 
-    // Front face: triangulate the chamfered polygon
-    const frontTriangles = this.triangulatePolygon(chamferedVertices, normal);
+    console.log(`🔧 Generating faces - Convex: ${hasConvexEdges}, Concave: ${hasConcaveEdges}`);
+
+    // For mixed or convex shapes: front face full size, back face chamfered
+    // For purely concave shapes: front face chamfered, back face full size
+    const useFrontFullSize = hasConvexEdges || (!hasConvexEdges && !hasConcaveEdges);
+
+    let frontFaceVertices: THREE.Vector3[];
+    let backFaceVertices: THREE.Vector3[];
+
+    if (useFrontFullSize) {
+      // Front face: original size (where extrusion starts)
+      frontFaceVertices = originalVertices;
+      // Back face: chamfered size (where extrusion ends, angled inward)
+      backFaceVertices = chamferedVertices.map((v: THREE.Vector3) => v.clone().add(offset));
+      console.log(`📐 Using front face full size, back face chamfered`);
+    } else {
+      // Front face: chamfered size (angled inward)
+      frontFaceVertices = chamferedVertices;
+      // Back face: original size
+      backFaceVertices = originalVertices.map((v: THREE.Vector3) => v.clone().add(offset));
+      console.log(`📐 Using front face chamfered, back face full size`);
+    }
+
+    // Front face triangulation
+    const frontTriangles = this.triangulatePolygon(frontFaceVertices, normal);
     for (const triangle of frontTriangles) {
       stlContent += this.addTriangleToSTL(
         triangle[0],
@@ -537,9 +561,8 @@ export class ChamferedPartsExporter {
     }
     console.log(`✅ Added ${frontTriangles.length} front face triangles`);
 
-    // Back face: same triangulation offset by thickness, reversed winding
-    const backVertices = chamferedVertices.map((v: THREE.Vector3) => v.clone().add(offset));
-    const backTriangles = this.triangulatePolygon(backVertices, normal.clone().negate());
+    // Back face triangulation (reversed winding)
+    const backTriangles = this.triangulatePolygon(backFaceVertices, normal.clone().negate());
     for (const triangle of backTriangles) {
       const reversedTriangle = [triangle[2], triangle[1], triangle[0]]; // Reverse winding
       stlContent += this.addTriangleToSTL(
