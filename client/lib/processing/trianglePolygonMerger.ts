@@ -109,8 +109,11 @@ export class TrianglePolygonMerger {
    * Build adjacency graph based on shared edges and coplanarity
    */
   private static buildAdjacencyGraph(triangles: Triangle[]): Map<number, Set<number>> {
+    console.log(`   🔍 BUILDING ADJACENCY GRAPH: Checking ${triangles.length} triangles for edge adjacency`);
+
     const graph = new Map<number, Set<number>>();
-    
+    let adjacentPairs = 0;
+
     // Initialize
     triangles.forEach((_, index) => {
       graph.set(index, new Set());
@@ -119,13 +122,17 @@ export class TrianglePolygonMerger {
     // Check each pair of triangles
     for (let i = 0; i < triangles.length; i++) {
       for (let j = i + 1; j < triangles.length; j++) {
+        console.log(`   🔍 Checking triangles ${i} and ${j}:`);
         if (this.canMergeTriangles(triangles[i], triangles[j])) {
           graph.get(i)!.add(j);
           graph.get(j)!.add(i);
+          adjacentPairs++;
+          console.log(`   ✅ Added adjacency: ${i} ↔ ${j}`);
         }
       }
     }
 
+    console.log(`   📊 Found ${adjacentPairs} adjacent pairs out of ${(triangles.length * (triangles.length - 1)) / 2} possible pairs`);
     return graph;
   }
 
