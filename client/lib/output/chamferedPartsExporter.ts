@@ -861,7 +861,7 @@ export class ChamferedPartsExporter {
 
     // Add back face vertices (chamfered + offset)
     const normal = faceInfo.normal ? faceInfo.normal.clone().normalize() : new THREE.Vector3(0, 0, 1);
-    const offset = normal.clone().multiplyScalar(scaledThickness);
+    const offset = normal.clone().multiplyScalar(partThickness);
     chamferedVertices.forEach((v, i) => {
       const backV = v.clone().add(offset);
       objContent += `v ${backV.x.toFixed(6)} ${backV.y.toFixed(6)} ${backV.z.toFixed(6)}\n`;
