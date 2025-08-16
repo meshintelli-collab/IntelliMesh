@@ -684,47 +684,71 @@ export class ChamferedPartsExporter {
   }
 
   /**
-   * Add chamfered perimeter walls connecting front and back faces
-   * Uses calculated edge angles to create proper chamfered walls
+   * Add chamfered perimeter walls creating angled chamfer geometry
+   * Creates chamfered walls between original and chamfered vertices
    */
   private static addChamferedPerimeterWalls(
-    frontVertices: THREE.Vector3[],
-    backVertices: THREE.Vector3[],
+    frontOriginal: THREE.Vector3[],
+    frontChamfered: THREE.Vector3[],
+    backOriginal: THREE.Vector3[],
+    backChamfered: THREE.Vector3[],
     edges: EdgeInfo[],
     chamferDepth: number,
   ): string {
     let content = "";
 
-    console.log(`🔧 Creating chamfered perimeter walls for ${frontVertices.length} edges`);
+    console.log(`🔧 Creating angled chamfer walls for ${frontOriginal.length} edges`);
 
-    for (let i = 0; i < frontVertices.length; i++) {
-      const next = (i + 1) % frontVertices.length;
+    for (let i = 0; i < frontOriginal.length; i++) {
+      const next = (i + 1) % frontOriginal.length;
       const edge = edges[i];
 
-      const v1 = frontVertices[i]; // Front current (chamfered)
-      const v2 = frontVertices[next]; // Front next (chamfered)
-      const v3 = backVertices[next]; // Back next (chamfered)
-      const v4 = backVertices[i]; // Back current (chamfered)
+      // Original edge (full size)
+      const o1 = frontOriginal[i];     // Front original current
+      const o2 = frontOriginal[next];  // Front original next
+      const o3 = backOriginal[next];   // Back original next
+      const o4 = backOriginal[i];      // Back original current
 
-      // Since front/back vertices are already chamfered inward,
-      // we create straight side walls between them
-      // The chamfer effect comes from the inward movement of the face vertices
+      // Chamfered edge (reduced size)
+      const c1 = frontChamfered[i];    // Front chamfered current
+      const c2 = frontChamfered[next]; // Front chamfered next
+      const c3 = backChamfered[next];  // Back chamfered next
+      const c4 = backChamfered[i];     // Back chamfered current
 
-      // Calculate normal for this side face
-      const edgeVector = new THREE.Vector3().subVectors(v2, v1);
-      const heightVector = new THREE.Vector3().subVectors(v4, v1);
-      const sideNormal = new THREE.Vector3()
-        .crossVectors(edgeVector, heightVector)
+      // Create chamfered wall geometry:
+      // 1. Outer face (between original vertices) - full wall
+      const outerNormal = new THREE.Vector3()
+        .crossVectors(
+          new THREE.Vector3().subVectors(o2, o1),
+          new THREE.Vector3().subVectors(o4, o1)
+        )
         .normalize();
 
-      // Create two triangles for the side wall
-      content += this.addTriangleToSTL(v1, v2, v3, sideNormal);
-      content += this.addTriangleToSTL(v1, v3, v4, sideNormal);
+      content += this.addTriangleToSTL(o1, o2, o3, outerNormal);
+      content += this.addTriangleToSTL(o1, o3, o4, outerNormal);
 
-      console.log(`   Edge ${i}: chamfer angle ${edge.chamferAngle.toFixed(1)}°, edge angle ${edge.edgeAngle.toFixed(1)}°`);
+      // 2. Chamfer face (angled connection between original and chamfered)
+      const chamferNormal = new THREE.Vector3()
+        .crossVectors(
+          new THREE.Vector3().subVectors(c1, o1),
+          new THREE.Vector3().subVectors(c2, o2)
+        )
+        .normalize();
+
+      // Front chamfer face
+      content += this.addTriangleToSTL(o1, c1, c2, chamferNormal);
+      content += this.addTriangleToSTL(o1, c2, o2, chamferNormal);
+
+      // Back chamfer face
+      const backChamferNormal = chamferNormal.clone().negate();
+      content += this.addTriangleToSTL(o4, c3, c4, backChamferNormal);
+      content += this.addTriangleToSTL(o4, o3, c3, backChamferNormal);
+
+      const convexity = edge.isConvex ? "convex" : "concave";
+      console.log(`   Edge ${i}: ${convexity} chamfer ${edge.chamferAngle.toFixed(1)}° created`);
     }
 
-    console.log(`✅ Created ${frontVertices.length} chamfered side walls`);
+    console.log(`✅ Created angled chamfer geometry for ${frontOriginal.length} edges`);
     return content;
   }
 
