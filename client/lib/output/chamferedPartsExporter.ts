@@ -693,30 +693,55 @@ export class ChamferedPartsExporter {
       });
     }
 
-    // Create front and back polygons (no triangulation yet!)
-    console.log(`   Creating front and back polygons (preserving original shape)`);
+    // Use original triangulation to preserve exact polygon shapes
+    if (faceInfo.triangleIndices && faceInfo.triangleIndices.length > 0) {
+      console.log(`   Using original triangulation to preserve exact shape (${faceInfo.triangleIndices.length} triangles)`);
 
-    // Front face polygon
-    const frontVertexIds: string[] = [];
-    for (let i = 0; i < originalVertices.length; i++) {
-      frontVertexIds.push(`front_${i}`);
-    }
-    polygons.push({
-      vertexIds: frontVertexIds,
-      normal: normal.clone(),
-      type: 'front'
-    });
+      // Extract original triangles from the geometry
+      const originalTriangles = this.extractOriginalTriangles(faceInfo.triangleIndices, faceInfo, originalVertices);
 
-    // Back face polygon (reversed vertex order for correct winding)
-    const backVertexIds: string[] = [];
-    for (let i = originalVertices.length - 1; i >= 0; i--) {
-      backVertexIds.push(`back_${i}`);
+      // Create front face polygons using original triangulation
+      for (const triangle of originalTriangles) {
+        polygons.push({
+          vertexIds: [`front_${triangle[0]}`, `front_${triangle[1]}`, `front_${triangle[2]}`],
+          normal: normal.clone(),
+          type: 'front'
+        });
+      }
+
+      // Create back face polygons (reversed winding)
+      for (const triangle of originalTriangles) {
+        polygons.push({
+          vertexIds: [`back_${triangle[2]}`, `back_${triangle[1]}`, `back_${triangle[0]}`], // Reversed for back face
+          normal: normal.clone().negate(),
+          type: 'back'
+        });
+      }
+    } else {
+      console.log(`   Creating single polygon (simple shape with ${originalVertices.length} vertices)`);
+
+      // Fallback: single polygon for simple shapes
+      const frontVertexIds: string[] = [];
+      for (let i = 0; i < originalVertices.length; i++) {
+        frontVertexIds.push(`front_${i}`);
+      }
+      polygons.push({
+        vertexIds: frontVertexIds,
+        normal: normal.clone(),
+        type: 'front'
+      });
+
+      // Back face polygon (reversed vertex order for correct winding)
+      const backVertexIds: string[] = [];
+      for (let i = originalVertices.length - 1; i >= 0; i--) {
+        backVertexIds.push(`back_${i}`);
+      }
+      polygons.push({
+        vertexIds: backVertexIds,
+        normal: normal.clone().negate(),
+        type: 'back'
+      });
     }
-    polygons.push({
-      vertexIds: backVertexIds,
-      normal: normal.clone().negate(),
-      type: 'back'
-    });
 
     // Create side wall polygons (will be modified by chamfering)
     for (let i = 0; i < originalVertices.length; i++) {
