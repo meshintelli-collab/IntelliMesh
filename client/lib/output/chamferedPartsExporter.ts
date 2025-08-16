@@ -268,21 +268,32 @@ export class ChamferedPartsExporter {
         continue;
       }
 
-      const partContent =
-        format === "obj"
-          ? this.createChamferedPolygonOBJ(
-              chamferedFace,
-              partThickness,
-              chamferDepth,
-              scale,
-            )
-          : this.createChamferedPolygonSTL(
-              chamferedFace,
-              partThickness,
-              chamferDepth,
-              scale,
-              geometry,
-            );
+      // Use clean extrusion + chamfering approach
+      console.log(`🔧 Creating chamfered part ${i + 1}: ${polygonFace.type} with ${polygonFace.vertices?.length || 0} vertices`);
+
+      // Convert PolygonFace to Face interface
+      const face: Face = {
+        vertices: polygonFace.vertices || [],
+        normal: polygonFace.normal || new THREE.Vector3(0, 0, 1),
+        type: polygonFace.type || "polygon"
+      };
+
+      // First extrude the face
+      const extrudedFace = FaceExtruder.extrudeFace(face, partThickness);
+
+      // Then apply chamfering
+      const chamferedFaceResult = FaceChamferer.chamferExtrudedFace(
+        extrudedFace,
+        chamferDepth,
+        geometry
+      );
+
+      // Generate chamfered part content
+      const partContent = FaceChamferer.createChamferedPart(
+        chamferedFaceResult,
+        partThickness,
+        format
+      );
 
       const partFilename = `part_${String(i + 1).padStart(4, "0")}_${polygonFace.type || "polygon"}_chamfered.${fileExtension}`;
 
