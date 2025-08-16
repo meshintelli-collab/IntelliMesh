@@ -522,39 +522,34 @@ export class ChamferedPartsExporter {
       chamferDepth * scale,
     );
 
-    // Front face: use chamfered triangulation
-    if (faceInfo.triangleIndices && faceInfo.triangleIndices.length > 0) {
-      // Use original triangulation but with chamfered vertices
-      const chamferedTriangles = this.adaptTriangulationToChamferedVertices(
-        faceInfo.triangleIndices,
-        originalGeometry,
-        originalVertices,
-        chamferedVertices,
-        scale,
+    // Generate front and back faces using chamfered vertices
+    console.log(`🔧 Generating front/back faces for ${chamferedVertices.length} chamfered vertices`);
+
+    // Front face: triangulate the chamfered polygon
+    const frontTriangles = this.triangulatePolygon(chamferedVertices, normal);
+    for (const triangle of frontTriangles) {
+      stlContent += this.addTriangleToSTL(
+        triangle[0],
+        triangle[1],
+        triangle[2],
+        normal,
       );
-
-      for (const triangle of chamferedTriangles) {
-        stlContent += this.addTriangleToSTL(
-          triangle[0],
-          triangle[1],
-          triangle[2],
-          normal,
-        );
-      }
-
-      // Back face: same triangles offset by thickness, reversed winding
-      for (const triangle of chamferedTriangles) {
-        const backTriangle = triangle
-          .map((v) => v.clone().add(offset))
-          .reverse();
-        stlContent += this.addTriangleToSTL(
-          backTriangle[0],
-          backTriangle[1],
-          backTriangle[2],
-          normal.clone().negate(),
-        );
-      }
     }
+    console.log(`✅ Added ${frontTriangles.length} front face triangles`);
+
+    // Back face: same triangulation offset by thickness, reversed winding
+    const backVertices = chamferedVertices.map((v: THREE.Vector3) => v.clone().add(offset));
+    const backTriangles = this.triangulatePolygon(backVertices, normal.clone().negate());
+    for (const triangle of backTriangles) {
+      const reversedTriangle = [triangle[2], triangle[1], triangle[0]]; // Reverse winding
+      stlContent += this.addTriangleToSTL(
+        reversedTriangle[0],
+        reversedTriangle[1],
+        reversedTriangle[2],
+        normal.clone().negate(),
+      );
+    }
+    console.log(`✅ Added ${backTriangles.length} back face triangles`);
 
     // Add chamfered side walls
     stlContent += this.addChamferedPerimeterWalls(
