@@ -839,15 +839,15 @@ export class ChamferedPartsExporter {
       return `# Error: No valid vertices for chamfering\n`;
     }
 
-    const originalVertices = sourceVertices.map((v: THREE.Vector3) =>
-      v.clone().multiplyScalar(scale),
-    );
+    // Vertices are already scaled in polygon faces
+    const originalVertices = sourceVertices.map((v: THREE.Vector3) => v.clone());
 
-    const scaledThickness = thickness * scale; // Account for scaling
+    // Use original thickness (geometry is already scaled)
+    const partThickness = thickness;
     const chamferedVertices = this.generateChamferedVertices(
       originalVertices,
       chamferedFace.edges,
-      scaledThickness, // Use scaled thickness for correct chamfer angle
+      partThickness,
     );
 
     // Create basic OBJ structure with chamfered vertices
