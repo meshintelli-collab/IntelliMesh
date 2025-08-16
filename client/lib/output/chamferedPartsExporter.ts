@@ -621,8 +621,14 @@ export class ChamferedPartsExporter {
 
       // Calculate inward movement to create the correct chamfer angle
       // For chamfer angle θ, inward movement = thickness * tan(θ)
+      // This creates the angled wall at the specified chamfer angle
       const chamferAngleRad = (chamferAngle * Math.PI) / 180;
       const inwardMovement = thickness * Math.tan(chamferAngleRad);
+
+      // Debug logging for first few vertices
+      if (i < 2) {
+        console.log(`🔍 Vertex ${i}: chamfer angle ${chamferAngle}° → inward movement ${inwardMovement.toFixed(3)}`);
+      }
 
       // Calculate the inward direction (toward polygon center)
       const prevVertex = originalVertices[(i - 1 + originalVertices.length) % originalVertices.length];
