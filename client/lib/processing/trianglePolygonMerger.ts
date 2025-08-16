@@ -202,7 +202,6 @@ export class TrianglePolygonMerger {
       for (let j = 0; j < tri2.edges.length; j++) {
         const edge2 = tri2.edges[j];
         if (this.edgesMatch(edge1, edge2)) {
-          console.log(`     🔗 Found shared edge: Tri${tri1.index} edge ${i} matches Tri${tri2.index} edge ${j}`);
           return true;
         }
       }
