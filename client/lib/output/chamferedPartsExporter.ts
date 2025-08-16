@@ -569,25 +569,13 @@ export class ChamferedPartsExporter {
     }
     console.log(`✅ Added ${chamferFaces.length} chamfer face sections`);
 
-    // Crop intersecting surfaces by limiting part height
-    // Find the min/max Z of the original part to define crop bounds
-    const originalMinZ = Math.min(...originalVertices.map(v => v.z));
-    const originalMaxZ = originalMinZ + scaledThickness;
-
-    const croppedFrontVertices = this.cropVerticesAtHeight(frontFaceVertices, originalMinZ, originalMaxZ);
-    const croppedBackVertices = this.cropVerticesAtHeight(backFaceVertices, originalMinZ, originalMaxZ);
-
-    console.log(`🔧 Cropped vertices: front ${frontFaceVertices.length}→${croppedFrontVertices.length}, back ${backFaceVertices.length}→${croppedBackVertices.length}`);
-
-    // Add angled side walls that create the chamfer effect (using cropped vertices)
+    // Add side walls connecting front and back faces (with chamfered edges)
     stlContent += this.addChamferedPerimeterWalls(
-      croppedFrontVertices, // Cropped front face vertices
-      croppedBackVertices,  // Cropped back face vertices
-      originalVertices,     // Original vertices for reference
-      chamferedVertices,    // Chamfered vertices for reference
-      offset,               // Thickness offset
-      chamferedFace.edges,
-      useFrontFullSize,     // Which face is full size
+      originalVertices,          // Front face vertices
+      backVertices,              // Back face vertices
+      chamferedFaces,            // Chamfered edge information
+      offset,                    // Thickness offset
+      chamferSize,               // Chamfer size for edge cuts
     );
 
     stlContent += `endsolid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n`;
