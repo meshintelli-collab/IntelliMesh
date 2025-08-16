@@ -124,9 +124,23 @@ export class EdgeAdjacentMerger {
           mergedFaces.push(faces[component[0]]);
           mergedFaces.push(faces[component[1]]);
         }
+      } else if (component.length <= 8) {
+        // Medium component (3-8 triangles) - try to merge into polygon
+        console.log(`   🔧 ATTEMPTING to merge ${component.length} triangles into polygon`);
+        const polygonResult = this.mergeComponent(component, faces);
+        if (polygonResult && this.isReasonablePolygon(polygonResult)) {
+          mergedFaces.push(polygonResult);
+          console.log(`   ✅ Created ${polygonResult.type} from ${component.length} triangles`);
+        } else {
+          // Fallback: keep as separate triangles
+          console.log(`   ⚠️ Merge failed, preserving ${component.length} triangles separately`);
+          for (const triangleIndex of component) {
+            mergedFaces.push(faces[triangleIndex]);
+          }
+        }
       } else {
-        // Complex component (3+ triangles) - DON'T MERGE to avoid windmilling
-        console.log(`   ���� PRESERVING ${component.length} triangles separately (avoid windmilling)`);
+        // Very complex component (9+ triangles) - DON'T MERGE to avoid windmilling
+        console.log(`   ���� PRESERVING ${component.length} triangles separately (too complex, avoid windmilling)`);
         for (const triangleIndex of component) {
           mergedFaces.push(faces[triangleIndex]);
         }
