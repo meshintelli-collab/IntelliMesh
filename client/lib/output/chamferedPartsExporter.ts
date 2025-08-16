@@ -657,6 +657,118 @@ export class ChamferedPartsExporter {
   }
 
   /**
+   * Extract face data with proper winding order and parametrization
+   * Ensures Right Hand Rule compliance and correct vertex ordering
+   */
+  private static extractProperFaceData(
+    faceInfo: any,
+    originalVertices: THREE.Vector3[],
+    normal: THREE.Vector3
+  ): {vertices: THREE.Vector3[], normal: THREE.Vector3, triangulation: number[][], isClockwise: boolean} {
+    console.log(`🔧 Extracting proper face data with winding validation`);
+
+    // Start with original vertices
+    let vertices = originalVertices.map(v => v.clone());
+    let faceNormal = normal.clone().normalize();
+
+    // Check if the current winding follows Right Hand Rule
+    const windingInfo = this.analyzeWindingOrder(vertices, faceNormal);
+    console.log(`   Current winding: ${windingInfo.isClockwise ? 'Clockwise' : 'Counter-clockwise'}, Area: ${windingInfo.area.toFixed(3)}`);
+
+    // Ensure counter-clockwise winding (Right Hand Rule for outward normal)
+    if (windingInfo.isClockwise) {
+      console.log(`   Correcting winding order to follow Right Hand Rule`);
+      vertices.reverse();
+      // If we reverse vertices, we may need to flip the normal
+      faceNormal.negate();
+    }
+
+    // Extract triangulation data with corrected vertex indices
+    let triangulation: number[][] = [];
+    if (faceInfo.triangleIndices && faceInfo.triangleIndices.length > 0) {
+      console.log(`   Processing ${faceInfo.triangleIndices.length} triangle indices`);
+
+      // Convert triangle indices to vertex indices within our vertex array
+      for (let i = 0; i < faceInfo.triangleIndices.length; i += 3) {
+        if (i + 2 < faceInfo.triangleIndices.length) {
+          let v1 = faceInfo.triangleIndices[i] % vertices.length;
+          let v2 = faceInfo.triangleIndices[i + 1] % vertices.length;
+          let v3 = faceInfo.triangleIndices[i + 2] % vertices.length;
+
+          // If we reversed vertices, adjust triangle indices accordingly
+          if (windingInfo.isClockwise) {
+            [v1, v2, v3] = [v3, v2, v1]; // Reverse triangle winding
+          }
+
+          triangulation.push([v1, v2, v3]);
+        }
+      }
+    } else {
+      console.log(`   No triangle indices found, will use vertex order`);
+    }
+
+    console.log(`✅ Extracted proper face data: ${vertices.length} vertices, ${triangulation.length} triangles`);
+
+    return {
+      vertices,
+      normal: faceNormal,
+      triangulation,
+      isClockwise: windingInfo.isClockwise
+    };
+  }
+
+  /**
+   * Analyze the winding order of vertices to ensure Right Hand Rule compliance
+   */
+  private static analyzeWindingOrder(
+    vertices: THREE.Vector3[],
+    normal: THREE.Vector3
+  ): {isClockwise: boolean, area: number} {
+    if (vertices.length < 3) {
+      return { isClockwise: false, area: 0 };
+    }
+
+    // Calculate signed area using shoelace formula projected onto face plane
+    // Project vertices onto a 2D plane perpendicular to the normal
+    const u = new THREE.Vector3(1, 0, 0);
+    const v = new THREE.Vector3(0, 1, 0);
+
+    // Choose better basis vectors if normal is parallel to world axes
+    if (Math.abs(normal.dot(u)) > 0.9) {
+      u.set(0, 1, 0);
+    }
+    if (Math.abs(normal.dot(v)) > 0.9) {
+      v.set(0, 0, 1);
+    }
+
+    // Create orthonormal basis
+    u.crossVectors(normal, v).normalize();
+    v.crossVectors(u, normal).normalize();
+
+    // Project vertices to 2D and calculate signed area
+    let signedArea = 0;
+    for (let i = 0; i < vertices.length; i++) {
+      const curr = vertices[i];
+      const next = vertices[(i + 1) % vertices.length];
+
+      const currU = curr.dot(u);
+      const currV = curr.dot(v);
+      const nextU = next.dot(u);
+      const nextV = next.dot(v);
+
+      signedArea += (currU * nextV - nextU * currV);
+    }
+
+    signedArea /= 2;
+
+    // Positive area = counter-clockwise, negative = clockwise
+    return {
+      isClockwise: signedArea < 0,
+      area: Math.abs(signedArea)
+    };
+  }
+
+  /**
    * Build parametric geometry with vertex IDs that can be transformed
    */
   private static buildParametricGeometry(
