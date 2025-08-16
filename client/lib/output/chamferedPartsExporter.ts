@@ -602,8 +602,14 @@ export class ChamferedPartsExporter {
 
     console.log(`🔧 Applied ${vertexMap.size} vertex movements to ensure connectivity`);
 
+    // Remove any existing solid/endsolid lines from the content to avoid duplicates
+    const cleanedContent = updatedFrontContent
+      .replace(/^solid\s+.*$/gm, '')
+      .replace(/^endsolid\s+.*$/gm, '')
+      .trim();
+
     return `solid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n` +
-           updatedFrontContent +
+           cleanedContent + '\n' +
            wallsContent +
            `endsolid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n`;
   }
@@ -672,7 +678,7 @@ export class ChamferedPartsExporter {
       if (!existingCb1) {
         vertexMap.set(b1Key, cb1.clone());
         if (i < 3) {
-          console.log(`   NEW vertex movement: (${b1.x.toFixed(3)}, ${b1.y.toFixed(3)}, ${b1.z.toFixed(3)}) → (${cb1.x.toFixed(3)}, ${cb1.y.toFixed(3)}, ${cb1.z.toFixed(3)})`);
+          console.log(`   NEW vertex movement: (${b1.x.toFixed(3)}, ${b1.y.toFixed(3)}, ${b1.z.toFixed(3)}) �� (${cb1.x.toFixed(3)}, ${cb1.y.toFixed(3)}, ${cb1.z.toFixed(3)})`);
         }
       } else {
         // Average the movements if vertex is affected by multiple edges
