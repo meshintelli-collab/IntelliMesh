@@ -251,34 +251,36 @@ export class PolygonPartsExporter {
 
     // Use ORIGINAL triangulation from the mesh - NO re-triangulation!
     if (faceInfo.triangleIndices && faceInfo.triangleIndices.length > 0) {
-      // Extract the original triangles from the geometry
-      const originalTriangles = this.extractOriginalTriangles(
-        faceInfo.triangleIndices,
-        originalGeometry,
-        scale,
-      );
+      console.log(`   Using original triangulation to preserve exact shape (${faceInfo.triangleIndices.length} triangles)`);
+
+      // Extract original triangle vertex indices
+      const originalTriangleIndices = this.extractOriginalTriangleIndices(faceInfo.triangleIndices, vertices);
 
       // Front face: use exact original triangulation
-      for (const triangle of originalTriangles) {
-        stlContent += this.addTriangleToSTL(
-          triangle[0],
-          triangle[1],
-          triangle[2],
-          normal,
-        );
+      for (const triangle of originalTriangleIndices) {
+        const v1 = vertices[triangle[0]];
+        const v2 = vertices[triangle[1]];
+        const v3 = vertices[triangle[2]];
+
+        if (v1 && v2 && v3) {
+          stlContent += this.addTriangleToSTL(v1, v2, v3, normal);
+        }
       }
 
       // Back face: same triangles offset by thickness, reversed winding
-      for (const triangle of originalTriangles) {
-        const backTriangle = triangle
-          .map((v) => v.clone().add(offset))
-          .reverse();
-        stlContent += this.addTriangleToSTL(
-          backTriangle[0],
-          backTriangle[1],
-          backTriangle[2],
-          normal.clone().negate(),
-        );
+      for (const triangle of originalTriangleIndices) {
+        const v1 = vertices[triangle[0]];
+        const v2 = vertices[triangle[1]];
+        const v3 = vertices[triangle[2]];
+
+        if (v1 && v2 && v3) {
+          const backV1 = v1.clone().add(offset);
+          const backV2 = v2.clone().add(offset);
+          const backV3 = v3.clone().add(offset);
+
+          // Reverse winding for back face
+          stlContent += this.addTriangleToSTL(backV3, backV2, backV1, normal.clone().negate());
+        }
       }
     }
 
