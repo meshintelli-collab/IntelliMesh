@@ -661,21 +661,39 @@ export class ChamferedPartsExporter {
       const cb1 = b1.clone().add(edgePerp.clone().multiplyScalar(-chamferOffset));
       const cb2 = b2.clone().add(edgePerp.clone().multiplyScalar(-chamferOffset));
 
-      // Track vertex movements
+      // Track vertex movements - ensure we track all edge vertices
       const b1Key = getVertexKey(b1);
       const b2Key = getVertexKey(b2);
 
-      if (!vertexMap.has(b1Key)) {
+      // Always update vertex map with the latest position (in case multiple edges affect same vertex)
+      const existingCb1 = vertexMap.get(b1Key);
+      const existingCb2 = vertexMap.get(b2Key);
+
+      if (!existingCb1) {
         vertexMap.set(b1Key, cb1.clone());
-        if (i < 2) {
-          console.log(`   Tracked vertex movement: (${b1.x.toFixed(2)}, ${b1.y.toFixed(2)}, ${b1.z.toFixed(2)}) → (${cb1.x.toFixed(2)}, ${cb1.y.toFixed(2)}, ${cb1.z.toFixed(2)})`);
+        if (i < 3) {
+          console.log(`   NEW vertex movement: (${b1.x.toFixed(3)}, ${b1.y.toFixed(3)}, ${b1.z.toFixed(3)}) → (${cb1.x.toFixed(3)}, ${cb1.y.toFixed(3)}, ${cb1.z.toFixed(3)})`);
+        }
+      } else {
+        // Average the movements if vertex is affected by multiple edges
+        const avgVertex = new THREE.Vector3().addVectors(existingCb1, cb1).multiplyScalar(0.5);
+        vertexMap.set(b1Key, avgVertex);
+        if (i < 3) {
+          console.log(`   AVERAGED vertex movement: (${b1.x.toFixed(3)}, ${b1.y.toFixed(3)}, ${b1.z.toFixed(3)}) → (${avgVertex.x.toFixed(3)}, ${avgVertex.y.toFixed(3)}, ${avgVertex.z.toFixed(3)})`);
         }
       }
 
-      if (!vertexMap.has(b2Key)) {
+      if (!existingCb2) {
         vertexMap.set(b2Key, cb2.clone());
-        if (i < 2) {
-          console.log(`   Tracked vertex movement: (${b2.x.toFixed(2)}, ${b2.y.toFixed(2)}, ${b2.z.toFixed(2)}) → (${cb2.x.toFixed(2)}, ${cb2.y.toFixed(2)}, ${cb2.z.toFixed(2)})`);
+        if (i < 3) {
+          console.log(`   NEW vertex movement: (${b2.x.toFixed(3)}, ${b2.y.toFixed(3)}, ${b2.z.toFixed(3)}) → (${cb2.x.toFixed(3)}, ${cb2.y.toFixed(3)}, ${cb2.z.toFixed(3)})`);
+        }
+      } else {
+        // Average the movements if vertex is affected by multiple edges
+        const avgVertex = new THREE.Vector3().addVectors(existingCb2, cb2).multiplyScalar(0.5);
+        vertexMap.set(b2Key, avgVertex);
+        if (i < 3) {
+          console.log(`   AVERAGED vertex movement: (${b2.x.toFixed(3)}, ${b2.y.toFixed(3)}, ${b2.z.toFixed(3)}) → (${avgVertex.x.toFixed(3)}, ${avgVertex.y.toFixed(3)}, ${avgVertex.z.toFixed(3)})`);
         }
       }
 
