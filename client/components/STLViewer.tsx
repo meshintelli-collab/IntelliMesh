@@ -1203,10 +1203,62 @@ function STLMesh() {
   // POLYGON-AWARE coloring with enforced flat shading per polygon face
   useEffect(() => {
     if (geometry && viewerSettings.randomColors && !viewerSettings.wireframe) {
-      // Applying fresh vertex colors to geometry
+      console.log("🔍 COLORING DEBUG: Starting comprehensive analysis");
+      console.log(`   📊 Geometry info:`);
+      console.log(`      Vertices: ${geometry.attributes.position.count}`);
+      console.log(`      Triangles: ${geometry.attributes.position.count / 3}`);
+      console.log(`      Has index: ${!!geometry.index}`);
+      console.log(`      Has normals: ${!!geometry.attributes.normal}`);
+      console.log(`      UUID: ${geometry.uuid}`);
+
+      // Analyze normals for flatness
+      if (geometry.attributes.normal) {
+        const normals = geometry.attributes.normal.array;
+        console.log(`   📐 Normal analysis:`);
+        console.log(`      Normal count: ${geometry.attributes.normal.count}`);
+        console.log(`      Array length: ${normals.length}`);
+
+        // Check if normals are flat per triangle
+        let flatTriangles = 0;
+        let blendedTriangles = 0;
+        const totalTriangles = Math.floor(normals.length / 9);
+
+        for (let i = 0; i < totalTriangles; i++) {
+          const offset = i * 9;
+          // Get normals for all 3 vertices of this triangle
+          const n1 = [normals[offset], normals[offset+1], normals[offset+2]];
+          const n2 = [normals[offset+3], normals[offset+4], normals[offset+5]];
+          const n3 = [normals[offset+6], normals[offset+7], normals[offset+8]];
+
+          // Check if all 3 normals are the same (flat shading)
+          const tolerance = 0.001;
+          const same12 = Math.abs(n1[0] - n2[0]) < tolerance && Math.abs(n1[1] - n2[1]) < tolerance && Math.abs(n1[2] - n2[2]) < tolerance;
+          const same13 = Math.abs(n1[0] - n3[0]) < tolerance && Math.abs(n1[1] - n3[1]) < tolerance && Math.abs(n1[2] - n3[2]) < tolerance;
+
+          if (same12 && same13) {
+            flatTriangles++;
+          } else {
+            blendedTriangles++;
+            if (i < 3) { // Log first few blended triangles for debugging
+              console.log(`      ⚠️ Triangle ${i} has blended normals: n1[${n1.map(n=>n.toFixed(3)).join(',')}] n2[${n2.map(n=>n.toFixed(3)).join(',')}] n3[${n3.map(n=>n.toFixed(3)).join(',')}]`);
+            }
+          }
+        }
+        console.log(`      ✅ Flat triangles: ${flatTriangles}/${totalTriangles} (${(flatTriangles/totalTriangles*100).toFixed(1)}%)`);
+        console.log(`      ❌ Blended triangles: ${blendedTriangles}/${totalTriangles} (${(blendedTriangles/totalTriangles*100).toFixed(1)}%)`);
+
+        if (blendedTriangles > 0) {
+          console.log(`      🚨 PROBLEM: ${blendedTriangles} triangles have vertex-based normals (causing blended colors)`);
+        }
+      }
 
       const colors = new Float32Array(geometry.attributes.position.count * 3);
       const polygonFaces = (geometry as any).polygonFaces;
+
+      console.log(`   🎨 Polygon faces info:`);
+      console.log(`      Available: ${!!polygonFaces}`);
+      console.log(`      Count: ${polygonFaces?.length || 0}`);
+      console.log(`      Type: ${Array.isArray(polygonFaces) ? 'Array' : typeof polygonFaces}`);
 
       if (polygonFaces && Array.isArray(polygonFaces)) {
         for (let faceIndex = 0; faceIndex < polygonFaces.length; faceIndex++) {
