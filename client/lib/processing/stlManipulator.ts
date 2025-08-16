@@ -31,7 +31,7 @@ export class STLManipulator {
       const { PythonMeshProcessor } = await import("./pythonMeshProcessor");
 
       // Check if Python service is available
-      const isAvailable = await PythonMeshProcessor.isServiceHealthy();
+      const isAvailable = await PythonMeshProcessor.checkServiceHealth();
 
       if (isAvailable) {
         const pythonResult = await PythonMeshProcessor.decimateMesh(
