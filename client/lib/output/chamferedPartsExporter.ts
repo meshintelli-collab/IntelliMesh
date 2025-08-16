@@ -603,7 +603,7 @@ export class ChamferedPartsExporter {
 
     if (!sourceVertices || !Array.isArray(sourceVertices)) {
       console.error(
-        `❌ Face ${chamferedFace.partIndex} has no valid vertices for chamfering`,
+        `�� Face ${chamferedFace.partIndex} has no valid vertices for chamfering`,
       );
       return `solid chamfered_part_${chamferedFace.partIndex + 1}_error\nendsolid chamfered_part_${chamferedFace.partIndex + 1}_error\n`;
     }
@@ -882,36 +882,79 @@ export class ChamferedPartsExporter {
   }
 
   /**
-   * Generate STL content from parametric geometry
+   * Generate STL content from parametric polygon geometry
+   * Triangulates polygons only at this final step
    */
   private static generateSTLFromParametricGeometry(
     geometry: ParametricGeometry,
   ): string {
     let content = "";
+    let totalTriangles = 0;
 
     console.log(
-      `🔧 Generating STL from parametric geometry: ${geometry.triangles.length} triangles`,
+      `🔧 Generating STL from parametric geometry: ${geometry.polygons.length} polygons`,
     );
 
-    for (const triangle of geometry.triangles) {
-      const v1 = geometry.vertices.get(triangle.v1);
-      const v2 = geometry.vertices.get(triangle.v2);
-      const v3 = geometry.vertices.get(triangle.v3);
+    for (const polygon of geometry.polygons) {
+      // Get vertex positions for this polygon
+      const vertexPositions: THREE.Vector3[] = [];
+      for (const vertexId of polygon.vertexIds) {
+        const vertex = geometry.vertices.get(vertexId);
+        if (vertex) {
+          vertexPositions.push(vertex.position);
+        }
+      }
 
-      if (v1 && v2 && v3) {
-        content += this.addTriangleToSTL(
-          v1.position,
-          v2.position,
-          v3.position,
-          triangle.normal,
-        );
+      if (vertexPositions.length >= 3) {
+        // Triangulate polygon at final step
+        const triangles = this.triangulatePolygonFinal(vertexPositions, polygon.normal);
+
+        // Add triangles to STL
+        for (const triangle of triangles) {
+          content += this.addTriangleToSTL(
+            triangle[0],
+            triangle[1],
+            triangle[2],
+            polygon.normal,
+          );
+          totalTriangles++;
+        }
       }
     }
 
     console.log(
-      `✅ Generated STL content for ${geometry.triangles.length} triangles`,
+      `✅ Generated STL content: ${geometry.polygons.length} polygons → ${totalTriangles} triangles`,
     );
     return content;
+  }
+
+  /**
+   * Final triangulation step - only used when generating STL output
+   */
+  private static triangulatePolygonFinal(
+    vertices: THREE.Vector3[],
+    normal: THREE.Vector3,
+  ): THREE.Vector3[][] {
+    const triangles: THREE.Vector3[][] = [];
+
+    if (vertices.length < 3) return triangles;
+
+    if (vertices.length === 3) {
+      // Already a triangle
+      triangles.push([vertices[0], vertices[1], vertices[2]]);
+    } else if (vertices.length === 4) {
+      // Quad - split into two triangles (better than fan for quads)
+      triangles.push([vertices[0], vertices[1], vertices[2]]);
+      triangles.push([vertices[0], vertices[2], vertices[3]]);
+    } else {
+      // Complex polygon - use ear clipping or simple fan as fallback
+      // For now, use fan triangulation (could be improved with ear clipping later)
+      for (let i = 1; i < vertices.length - 1; i++) {
+        triangles.push([vertices[0], vertices[i], vertices[i + 1]]);
+      }
+    }
+
+    return triangles;
   }
 
   /**
