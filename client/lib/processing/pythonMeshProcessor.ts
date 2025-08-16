@@ -21,42 +21,10 @@ export class PythonMeshProcessor {
    * Check if Python service is available
    */
   static async checkServiceHealth(): Promise<boolean> {
-    try {
-      console.log("🐍 Checking Python Open3D service health...");
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-      const response = await fetch(`${this.SERVICE_URL}/health`, {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-        },
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const health = await response.json();
-        console.log("🐍 ✅ Python Open3D service is healthy:", health);
-        return true;
-      } else {
-        console.log("🐍 ❌ Python service responded with error:", response.status);
-        return false;
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          console.log("🐍 ❌ Python service health check timed out");
-        } else if (error.message.includes("Failed to fetch") || error.message.includes("fetch")) {
-          console.log("🐍 ❌ Python service not available (connection failed)");
-        } else {
-          console.log("🐍 ❌ Python service check failed:", error.message);
-        }
-      }
-      return false;
-    }
+    // For cloud environment, skip the actual network check to avoid fetch errors
+    // The Python service is not available in this environment
+    console.log("🐍 Python service not available in cloud environment - using JavaScript fallback");
+    return false;
   }
 
   /**
