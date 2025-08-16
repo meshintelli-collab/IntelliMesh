@@ -1354,6 +1354,61 @@ function STLMesh() {
       // Since we now use non-indexed geometry for viewing, just ensure flat normals
       computePolygonAwareFlatNormals(geometry, polygonFaces);
 
+      console.log("🔍 POST-COLORING VERIFICATION:");
+
+      // Verify colors are face-based (same for all 3 vertices of each triangle)
+      let solidColorTriangles = 0;
+      let blendedColorTriangles = 0;
+      const totalTriangles = Math.floor(colors.length / 9);
+
+      for (let i = 0; i < Math.min(totalTriangles, 10); i++) { // Check first 10 triangles
+        const offset = i * 9;
+        // Get colors for all 3 vertices of this triangle
+        const c1 = [colors[offset], colors[offset+1], colors[offset+2]];
+        const c2 = [colors[offset+3], colors[offset+4], colors[offset+5]];
+        const c3 = [colors[offset+6], colors[offset+7], colors[offset+8]];
+
+        // Check if all 3 vertices have the same color (solid face)
+        const tolerance = 0.001;
+        const same12 = Math.abs(c1[0] - c2[0]) < tolerance && Math.abs(c1[1] - c2[1]) < tolerance && Math.abs(c1[2] - c2[2]) < tolerance;
+        const same13 = Math.abs(c1[0] - c3[0]) < tolerance && Math.abs(c1[1] - c3[1]) < tolerance && Math.abs(c1[2] - c3[2]) < tolerance;
+
+        if (same12 && same13) {
+          solidColorTriangles++;
+        } else {
+          blendedColorTriangles++;
+          console.log(`   ⚠️ Triangle ${i} has blended colors: v1[${c1.map(c=>c.toFixed(3)).join(',')}] v2[${c2.map(c=>c.toFixed(3)).join(',')}] v3[${c3.map(c=>c.toFixed(3)).join(',')}]`);
+        }
+      }
+
+      console.log(`   🎨 Color consistency: ${solidColorTriangles} solid, ${blendedColorTriangles} blended (of first 10 triangles)`);
+
+      // Re-verify normals after computePolygonAwareFlatNormals
+      if (geometry.attributes.normal) {
+        const normals = geometry.attributes.normal.array;
+        let postFlatTriangles = 0;
+        let postBlendedTriangles = 0;
+
+        for (let i = 0; i < Math.min(totalTriangles, 10); i++) {
+          const offset = i * 9;
+          const n1 = [normals[offset], normals[offset+1], normals[offset+2]];
+          const n2 = [normals[offset+3], normals[offset+4], normals[offset+5]];
+          const n3 = [normals[offset+6], normals[offset+7], normals[offset+8]];
+
+          const tolerance = 0.001;
+          const same12 = Math.abs(n1[0] - n2[0]) < tolerance && Math.abs(n1[1] - n2[1]) < tolerance && Math.abs(n1[2] - n2[2]) < tolerance;
+          const same13 = Math.abs(n1[0] - n3[0]) < tolerance && Math.abs(n1[1] - n3[1]) < tolerance && Math.abs(n1[2] - n3[2]) < tolerance;
+
+          if (same12 && same13) {
+            postFlatTriangles++;
+          } else {
+            postBlendedTriangles++;
+            console.log(`   ⚠️ Triangle ${i} STILL has blended normals after flat normal computation!`);
+          }
+        }
+        console.log(`   📐 Post-flat normals: ${postFlatTriangles} flat, ${postBlendedTriangles} still blended (of first 10 triangles)`);
+      }
+
       // Debug: Sample some colors to verify they're applied (with bounds checking)
       if (colors.length >= 3) {
         const firstColors = `[${colors[0]?.toFixed(3) || "?"}, ${colors[1]?.toFixed(3) || "?"}, ${colors[2]?.toFixed(3) || "?"}]`;
@@ -1362,13 +1417,10 @@ function STLMesh() {
             ? `[${colors[9]?.toFixed(3) || "?"}, ${colors[10]?.toFixed(3) || "?"}, ${colors[11]?.toFixed(3) || "?"}]`
             : "[insufficient colors]";
         console.log(
-          `🎨 Color verification: First few colors ${firstColors}, ${laterColors}`,
-        );
-      } else {
-        console.log(
-          `🎨 Color verification: Colors array too short (${colors.length} elements)`,
+          `   🎨 Sample colors: First vertex ${firstColors}, Fourth vertex ${laterColors}`,
         );
       }
+
       console.log(
         `✅ Applied ${polygonFaces ? "polygon-aware" : "triangle-based"} coloring to ${geometry.attributes.position.count / 3} triangles`,
       );
