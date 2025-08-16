@@ -603,7 +603,7 @@ export class ChamferedPartsExporter {
 
     if (!sourceVertices || !Array.isArray(sourceVertices)) {
       console.error(
-        `�� Face ${chamferedFace.partIndex} has no valid vertices for chamfering`,
+        `❌ Face ${chamferedFace.partIndex} has no valid vertices for chamfering`,
       );
       return `solid chamfered_part_${chamferedFace.partIndex + 1}_error\nendsolid chamfered_part_${chamferedFace.partIndex + 1}_error\n`;
     }
@@ -752,78 +752,6 @@ export class ChamferedPartsExporter {
     return { vertices, polygons };
   }
 
-  /**
-   * Create triangulation for parametric polygons
-   */
-  private static triangulatePolygonParametric(
-    vertexCount: number,
-    normal: THREE.Vector3,
-    prefix: string,
-    reverse: boolean = false,
-  ): ParametricTriangle[] {
-    const triangles: ParametricTriangle[] = [];
-
-    if (vertexCount === 3) {
-      // Already a triangle
-      const indices = reverse ? [2, 1, 0] : [0, 1, 2];
-      triangles.push({
-        v1: `${prefix}_${indices[0]}`,
-        v2: `${prefix}_${indices[1]}`,
-        v3: `${prefix}_${indices[2]}`,
-        normal: normal.clone(),
-      });
-    } else if (vertexCount === 4) {
-      // Quad - split into two triangles
-      if (reverse) {
-        triangles.push({
-          v1: `${prefix}_2`,
-          v2: `${prefix}_1`,
-          v3: `${prefix}_0`,
-          normal: normal.clone(),
-        });
-        triangles.push({
-          v1: `${prefix}_3`,
-          v2: `${prefix}_2`,
-          v3: `${prefix}_0`,
-          normal: normal.clone(),
-        });
-      } else {
-        triangles.push({
-          v1: `${prefix}_0`,
-          v2: `${prefix}_1`,
-          v3: `${prefix}_2`,
-          normal: normal.clone(),
-        });
-        triangles.push({
-          v1: `${prefix}_0`,
-          v2: `${prefix}_2`,
-          v3: `${prefix}_3`,
-          normal: normal.clone(),
-        });
-      }
-    } else {
-      // Polygon - use fan triangulation
-      for (let i = 1; i < vertexCount - 1; i++) {
-        if (reverse) {
-          triangles.push({
-            v1: `${prefix}_0`,
-            v2: `${prefix}_${i + 1}`,
-            v3: `${prefix}_${i}`,
-            normal: normal.clone(),
-          });
-        } else {
-          triangles.push({
-            v1: `${prefix}_0`,
-            v2: `${prefix}_${i}`,
-            v3: `${prefix}_${i + 1}`,
-            normal: normal.clone(),
-          });
-        }
-      }
-    }
-
-    return triangles;
-  }
 
 
   /**
