@@ -1433,7 +1433,7 @@ function STLMesh() {
         }
       }
 
-      console.log(`   🎨 Color consistency: ${solidColorTriangles} solid, ${blendedColorTriangles} blended (of first 10 triangles)`);
+      console.log(`   ���� Color consistency: ${solidColorTriangles} solid, ${blendedColorTriangles} blended (of first 10 triangles)`);
 
       // Re-verify normals after computePolygonAwareFlatNormals
       if (geometry.attributes.normal) {
@@ -1482,6 +1482,15 @@ function STLMesh() {
       originalColors.current = null;
     }
   }, [geometry, viewerSettings.randomColors, viewerSettings.wireframe]);
+
+  // Clear highlighting when geometry changes (e.g., after decimation)
+  useEffect(() => {
+    if (geometry && highlightedTriangle !== null) {
+      // Clear highlight when geometry UUID changes (indicates new geometry)
+      console.log("🔧 Clearing highlight due to geometry change");
+      setHighlightedTriangle(null);
+    }
+  }, [geometry?.uuid, setHighlightedTriangle]);
 
   // Handle highlighting by brightening colors
   useEffect(() => {
