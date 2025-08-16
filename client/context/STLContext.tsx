@@ -378,17 +378,25 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       ).isProcedurallyGenerated;
     }
 
-    // ALWAYS apply coplanar merging to create proper merged versions
-    // This works for both procedural models and loaded files
-    try {
-      // Import EdgeAdjacentMerger dynamically if needed
-      const { EdgeAdjacentMerger } = await import(
-        "../lib/processing/edgeAdjacentMerger"
-      );
+    // Choose strategy: preserve original polygons for procedural models, or apply merging for loaded files
+    const hasOriginalPolygons = (loadedGeometry as any).polygonFaces &&
+                                (loadedGeometry as any).isProcedurallyGenerated;
 
-      // Apply coplanar face merging using EdgeAdjacentMerger (respects right-hand rule)
-      const mergedFaces =
-        EdgeAdjacentMerger.mergeCoplanarTriangles(triangulated);
+    try {
+      let mergedFaces: any[];
+
+      if (hasOriginalPolygons) {
+        // For procedural models: preserve original polygon structure
+        console.log(`🎯 PRESERVING original polygon structure for procedural model`);
+        mergedFaces = (loadedGeometry as any).polygonFaces;
+      } else {
+        // For loaded files: apply coplanar merging
+        console.log(`🔧 APPLYING coplanar merging for loaded file`);
+        const { EdgeAdjacentMerger } = await import(
+          "../lib/processing/edgeAdjacentMerger"
+        );
+        mergedFaces = EdgeAdjacentMerger.mergeCoplanarTriangles(triangulated);
+      }
 
       if (mergedFaces.length > 0) {
         // Apply the merged faces to the preview geometry
