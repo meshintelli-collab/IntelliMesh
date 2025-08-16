@@ -1526,12 +1526,26 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         (mergedMesh as any).polygonFaces = polygonFaces;
 
         const processingTime = Math.round(performance.now() - startTime);
+
+        // Calculate stats based on polygon faces, not underlying triangles
+        const polygonCount = polygonFaces.length;
+        const triangleCount = polygonFaces.filter(f => f.type === "triangle").length;
+        const quadCount = polygonFaces.filter(f => f.type === "quad").length;
+        const polygonCountHigher = polygonFaces.filter(f => !["triangle", "quad"].includes(f.type)).length;
+
         const newStats = {
           vertices: mergedMesh.attributes.position.count / 3,
-          faces: mergedMesh.index
-            ? mergedMesh.index.count / 3
-            : mergedMesh.attributes.position.count / 9,
+          faces: polygonCount, // Use polygon count, not triangle count!
+          polygons: polygonCount,
+          triangles: triangleCount,
+          quads: quadCount,
+          higherPolygons: polygonCountHigher,
         };
+
+        console.log(`📊 MERGED GEOMETRY STATS:`);
+        console.log(`   Original triangles: ${originalStats?.triangles || 0}`);
+        console.log(`   Final polygons: ${polygonCount}`);
+        console.log(`   Breakdown: ${triangleCount} triangles, ${quadCount} quads, ${polygonCountHigher} higher polygons`);
 
         // Apply polygon faces to the merged mesh geometry
         const { PolygonFaceReconstructor } = await import("../lib/processing/polygonFaceReconstructor");
