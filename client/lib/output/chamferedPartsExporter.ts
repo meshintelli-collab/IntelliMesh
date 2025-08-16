@@ -639,64 +639,52 @@ export class ChamferedPartsExporter {
 
   /**
    * Add properly angled chamfered side walls between front and back faces
-   * Each wall is angled at the calculated chamfer angle for perfect mating
+   * Uses the pre-calculated chamfered intersection vertices for perfect alignment
    */
   private static addAngledChamferedWalls(
-    frontVertices: THREE.Vector3[],
-    backVertices: THREE.Vector3[],
+    frontChamferedVertices: THREE.Vector3[],
+    backChamferedVertices: THREE.Vector3[],
     edges: EdgeInfo[],
     faceNormal: THREE.Vector3,
     thickness: number,
   ): string {
     let content = "";
 
-    console.log(`🔧 Creating angled chamfered walls for ${frontVertices.length} edges`);
+    console.log(`🔧 Creating angled chamfered walls for ${frontChamferedVertices.length} edges`);
 
-    for (let i = 0; i < frontVertices.length; i++) {
-      const next = (i + 1) % frontVertices.length;
+    for (let i = 0; i < frontChamferedVertices.length; i++) {
+      const next = (i + 1) % frontChamferedVertices.length;
 
       // Get edge info for chamfer angle
       const edgeInfo = edges[i] || { chamferAngle: 45, isConvex: true };
-      const chamferAngle = edgeInfo.chamferAngle; // This should be 45° for a cube
+      const chamferAngle = edgeInfo.chamferAngle;
 
-      // Front edge vertices
-      const f1 = frontVertices[i];
-      const f2 = frontVertices[next];
+      // Front edge vertices (already chamfered to intersection points)
+      const f1 = frontChamferedVertices[i];
+      const f2 = frontChamferedVertices[next];
 
-      // Back edge vertices
-      const b1 = backVertices[i];
-      const b2 = backVertices[next];
+      // Back edge vertices (already chamfered to intersection points)
+      const b1 = backChamferedVertices[i];
+      const b2 = backChamferedVertices[next];
 
-      // Calculate edge direction and outward perpendicular
-      const edgeDir = new THREE.Vector3().subVectors(f2, f1).normalize();
-      const outwardPerp = new THREE.Vector3().crossVectors(edgeDir, faceNormal).normalize();
-
-      // Calculate chamfer offset distance (how much to move the back vertices inward)
-      const chamferRadians = (chamferAngle * Math.PI) / 180;
-      const chamferOffset = thickness * Math.tan(chamferRadians);
-
-      // Create chamfered back vertices by moving them inward
-      const cb1 = b1.clone().add(outwardPerp.clone().multiplyScalar(-chamferOffset));
-      const cb2 = b2.clone().add(outwardPerp.clone().multiplyScalar(-chamferOffset));
-
-      // Calculate angled wall normal
+      // Calculate wall normal for the angled surface
       const wallNormal = new THREE.Vector3().crossVectors(
         new THREE.Vector3().subVectors(f2, f1),
-        new THREE.Vector3().subVectors(cb1, f1)
+        new THREE.Vector3().subVectors(b1, f1)
       ).normalize();
 
-      // Create angled wall (front edge to chamfered back edge)
-      content += this.addTriangleToSTL(f1, f2, cb2, wallNormal);
-      content += this.addTriangleToSTL(f1, cb2, cb1, wallNormal);
+      // Create angled wall connecting chamfered front and back edges
+      content += this.addTriangleToSTL(f1, f2, b2, wallNormal);
+      content += this.addTriangleToSTL(f1, b2, b1, wallNormal);
 
       if (i < 2) {
-        console.log(`   Edge ${i}: chamfer angle ${chamferAngle.toFixed(1)}°, offset ${chamferOffset.toFixed(3)}mm`);
+        console.log(`   Edge ${i}: chamfer angle ${chamferAngle.toFixed(1)}°`);
         console.log(`   Front edge: (${f1.x.toFixed(2)}, ${f1.y.toFixed(2)}) to (${f2.x.toFixed(2)}, ${f2.y.toFixed(2)})`);
-        console.log(`   Back edge: (${cb1.x.toFixed(2)}, ${cb1.y.toFixed(2)}) to (${cb2.x.toFixed(2)}, ${cb2.y.toFixed(2)})`);
+        console.log(`   Back edge: (${b1.x.toFixed(2)}, ${b1.y.toFixed(2)}) to (${b2.x.toFixed(2)}, ${b2.y.toFixed(2)})`);
       }
     }
 
-    console.log(`✅ Created angled chamfered walls for ${frontVertices.length} edges`);
+    console.log(`✅ Created angled chamfered walls for ${frontChamferedVertices.length} edges`);
     return content;
   }
 
