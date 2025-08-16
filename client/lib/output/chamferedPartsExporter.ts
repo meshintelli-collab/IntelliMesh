@@ -835,7 +835,27 @@ export class ChamferedPartsExporter {
     chamferDepth: number,
     scale: number,
   ) {
-    const vertices = polygonFace.vertices.map((v: THREE.Vector3) =>
+    // Handle missing vertices property
+    const sourceVertices = polygonFace.vertices || polygonFace.originalVertices;
+
+    if (!sourceVertices || !Array.isArray(sourceVertices)) {
+      console.error(`❌ Polygon face has no valid vertices for part info calculation`);
+      // Return minimal fallback data
+      return {
+        area: 0,
+        perimeter: 0,
+        volume: 0,
+        centroid: new THREE.Vector3(),
+        bounds: { min: new THREE.Vector3(), max: new THREE.Vector3() },
+        dimensions: { width: 0, height: 0, depth: thickness },
+        surfaceArea: 0,
+        printTime: 0,
+        material: 0,
+        complexity: 0,
+      };
+    }
+
+    const vertices = sourceVertices.map((v: THREE.Vector3) =>
       v.clone().multiplyScalar(scale),
     );
 
