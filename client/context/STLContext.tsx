@@ -719,7 +719,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       console.error("❌ Error in loadModelFromFile:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      console.error("�� Error details:", errorMessage);
+      console.error("❌ Error details:", errorMessage);
       setError(`Failed to load ${file.name}: ${errorMessage}`);
       addError(errorMessage);
     } finally {
@@ -1583,9 +1583,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
           setGeometry(displayGeometry);
         }
 
-        const reductionAchieved = originalStats
-          ? (originalStats.triangles - newStats.polygons) / originalStats.triangles
-          : 0;
+        const reductionAchieved = reductionAchieved; // Use Python's calculation
 
         return {
           success: true,
