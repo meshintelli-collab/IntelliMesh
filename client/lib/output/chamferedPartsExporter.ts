@@ -616,7 +616,7 @@ export class ChamferedPartsExporter {
 
     if (originalVertices.length < 3) {
       console.warn(
-        `⚠️ Face ${chamferedFace.partIndex} has insufficient vertices (${originalVertices.length})`,
+        `⚠��� Face ${chamferedFace.partIndex} has insufficient vertices (${originalVertices.length})`,
       );
       return `solid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\nendsolid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n`;
     }
@@ -695,12 +695,11 @@ export class ChamferedPartsExporter {
     }
 
     // Use original triangulation if available (preserves complex polygon shapes)
-    if (this.hasOriginalTriangulation(edges[0])) {
-      console.log(`   Using original triangulation for complex polygon`);
-      const originalTriangulation = this.getOriginalTriangulation(edges[0]);
+    if (faceInfo.triangulation && faceInfo.triangulation.length > 0) {
+      console.log(`   Using original triangulation for complex polygon (${faceInfo.triangulation.length} triangles)`);
 
       // Create front face triangles using original triangulation
-      for (const triangle of originalTriangulation) {
+      for (const triangle of faceInfo.triangulation) {
         triangles.push({
           v1: `front_${triangle[0]}`,
           v2: `front_${triangle[1]}`,
@@ -710,7 +709,7 @@ export class ChamferedPartsExporter {
       }
 
       // Create back face triangles (reversed winding)
-      for (const triangle of originalTriangulation) {
+      for (const triangle of faceInfo.triangulation) {
         triangles.push({
           v1: `back_${triangle[2]}`, // Reverse order for back face
           v2: `back_${triangle[1]}`,
@@ -718,8 +717,33 @@ export class ChamferedPartsExporter {
           normal: normal.clone().negate(),
         });
       }
+    } else if (faceInfo.triangleIndices && faceInfo.triangleIndices.length > 0) {
+      console.log(`   Using triangle indices for complex polygon (${faceInfo.triangleIndices.length / 3} triangles)`);
+
+      // Create triangles from triangle indices (groups of 3)
+      for (let i = 0; i < faceInfo.triangleIndices.length; i += 3) {
+        const i1 = faceInfo.triangleIndices[i];
+        const i2 = faceInfo.triangleIndices[i + 1];
+        const i3 = faceInfo.triangleIndices[i + 2];
+
+        // Front face triangle
+        triangles.push({
+          v1: `front_${i1}`,
+          v2: `front_${i2}`,
+          v3: `front_${i3}`,
+          normal: normal.clone(),
+        });
+
+        // Back face triangle (reversed)
+        triangles.push({
+          v1: `back_${i3}`,
+          v2: `back_${i2}`,
+          v3: `back_${i1}`,
+          normal: normal.clone().negate(),
+        });
+      }
     } else {
-      console.log(`   Using simple triangulation for basic polygon`);
+      console.log(`   Using simple triangulation for basic polygon (${originalVertices.length} vertices)`);
       // Fallback to simple triangulation for basic shapes
       const frontTriangleList = this.triangulatePolygonParametric(
         originalVertices.length,
