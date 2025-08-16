@@ -14,8 +14,9 @@ import {
 interface EdgeInfo {
   vertices: [THREE.Vector3, THREE.Vector3];
   adjacentFaces: number[];
-  edgeAngle: number; // angle between adjacent faces in degrees
+  edgeAngle: number; // angle between adjacent faces in degrees (0-360°)
   chamferAngle: number; // calculated chamfer angle
+  isConvex: boolean; // true for convex (external) edges, false for concave (internal)
 }
 
 /**
