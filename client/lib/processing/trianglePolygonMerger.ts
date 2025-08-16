@@ -120,15 +120,24 @@ export class TrianglePolygonMerger {
     });
 
     // Check each pair of triangles
+    let checkedPairs = 0;
+    const maxDebugPairs = 10; // Only log first 10 pairs for debugging
+
     for (let i = 0; i < triangles.length; i++) {
       for (let j = i + 1; j < triangles.length; j++) {
-        console.log(`   🔍 Checking triangles ${i} and ${j}:`);
+        const shouldDebug = checkedPairs < maxDebugPairs;
+        if (shouldDebug) {
+          console.log(`   🔍 Checking triangles ${i} and ${j}:`);
+        }
+
         if (this.canMergeTriangles(triangles[i], triangles[j])) {
           graph.get(i)!.add(j);
           graph.get(j)!.add(i);
           adjacentPairs++;
           console.log(`   ✅ Added adjacency: ${i} ↔ ${j}`);
         }
+
+        checkedPairs++;
       }
     }
 
