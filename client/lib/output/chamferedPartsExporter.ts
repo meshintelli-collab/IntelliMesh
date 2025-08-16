@@ -928,9 +928,8 @@ export class ChamferedPartsExporter {
       };
     }
 
-    const vertices = sourceVertices.map((v: THREE.Vector3) =>
-      v.clone().multiplyScalar(scale),
-    );
+    // Vertices are already scaled in polygon faces
+    const vertices = sourceVertices.map((v: THREE.Vector3) => v.clone());
 
     // Calculate base polygon properties
     const edges = [];
