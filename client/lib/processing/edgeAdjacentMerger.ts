@@ -714,6 +714,7 @@ export class EdgeAdjacentMerger {
           return {
             type: this.getPolygonType(orderedVertices.length),
             originalVertices: orderedVertices,
+            vertices: orderedVertices, // Set both for compatibility
             normal: normal.clone().normalize(),
             triangleIndices: allTriangleIndices,
             originalTriangulation: originalTriangulation,
