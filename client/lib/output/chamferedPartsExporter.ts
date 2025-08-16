@@ -370,6 +370,8 @@ export class ChamferedPartsExporter {
               if (faceIndex < 3) { // Log first few faces for debugging
                 console.log(`   Face ${faceIndex}, Edge ${i}: edge angle ${edgeAngle.toFixed(1)}° → chamfer ${chamferAngle.toFixed(1)}°`);
               }
+            } else {
+              console.warn(`⚠️ Face ${faceIndex}: adjacent face ${otherFaceIndex} missing normal, using default angles`);
             }
           }
         }
