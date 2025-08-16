@@ -132,9 +132,13 @@ export class ChamferedPartsExporter {
     let polygonFaces: PolygonFace[];
     let polygonType: string;
 
+    console.log(`🔍 CHAMFERED EXPORT MODE DEBUGGING:`);
+    console.log(`   useTriangulated parameter: ${useTriangulated}`);
+    console.log(`   Expected: false for Merged mode, true for Triangle mode`);
+
     if (useTriangulated) {
       // Backup mode: use triangulated geometry (simpler chamfering)
-      console.log(`🎯 FORCING triangulated mode for chamfering to avoid windmilling artifacts`);
+      console.log(`🎯 USING TRIANGULATED MODE for chamfering (as requested by UI)`);
       polygonFaces =
         PolygonExtruder.extractPolygonsFromTriangulatedGeometry(geometry);
       polygonType = "triangulated_exact";
