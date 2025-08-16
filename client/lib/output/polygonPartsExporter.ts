@@ -226,9 +226,8 @@ export class PolygonPartsExporter {
     scale: number,
     originalGeometry: THREE.BufferGeometry,
   ): string {
-    const vertices = faceInfo.originalVertices.map((v: THREE.Vector3) =>
-      v.clone().multiplyScalar(scale),
-    );
+    // Vertices are already scaled in polygon faces
+    const vertices = faceInfo.originalVertices.map((v: THREE.Vector3) => v.clone());
 
     if (vertices.length < 3) {
       return `solid part_${polygonIndex + 1}_${faceInfo.type}\nendsolid part_${polygonIndex + 1}_${faceInfo.type}\n`;
