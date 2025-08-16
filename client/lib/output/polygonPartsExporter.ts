@@ -311,40 +311,6 @@ export class PolygonPartsExporter {
     return stlContent;
   }
 
-  /**
-   * Extract original triangle vertex indices from the polygon face
-   * This preserves the exact shape as it was in the original mesh
-   */
-  private static extractOriginalTriangleIndices(
-    triangleIndices: number[],
-    vertices: THREE.Vector3[]
-  ): number[][] {
-    const triangles: number[][] = [];
-
-    console.log(`   Creating triangles from ${triangleIndices.length} indices for ${vertices.length} vertices`);
-
-    // Simple approach: every 3 consecutive indices form a triangle
-    for (let i = 0; i < triangleIndices.length; i += 3) {
-      if (i + 2 < triangleIndices.length) {
-        triangles.push([
-          triangleIndices[i] % vertices.length,
-          triangleIndices[i + 1] % vertices.length,
-          triangleIndices[i + 2] % vertices.length
-        ]);
-      }
-    }
-
-    // Fallback: if no triangle data, create simple fan triangulation
-    if (triangles.length === 0) {
-      console.log(`   No triangle indices found, using fan triangulation fallback`);
-      for (let i = 1; i < vertices.length - 1; i++) {
-        triangles.push([0, i, i + 1]);
-      }
-    }
-
-    console.log(`   Extracted ${triangles.length} triangles for original shape`);
-    return triangles;
-  }
 
   /**
    * Add perimeter walls connecting front and back faces
