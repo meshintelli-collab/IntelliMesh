@@ -553,13 +553,12 @@ export class ChamferedPartsExporter {
     }
     console.log(`✅ Added ${backTriangles.length} back face triangles`);
 
-    // Add side walls connecting front and back faces (with chamfered edges)
+    // Add chamfered side walls connecting original and chamfered vertices
     stlContent += this.addChamferedPerimeterWalls(
-      originalVertices,          // Front face vertices
-      backVertices,              // Back face vertices
-      chamferedFaces,            // Chamfered edge information
-      offset,                    // Thickness offset
-      chamferSize,               // Chamfer size for edge cuts
+      originalVertices,         // Original vertices (outer edge)
+      chamferedVertices,        // Chamfered vertices (inner edge)
+      backChamferedVertices,    // Back chamfered vertices
+      offset,                   // Thickness offset
     );
 
     stlContent += `endsolid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n`;
