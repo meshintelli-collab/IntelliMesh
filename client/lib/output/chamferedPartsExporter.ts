@@ -132,11 +132,12 @@ export class ChamferedPartsExporter {
 
     if (useTriangulated) {
       // Backup mode: use triangulated geometry (simpler chamfering)
+      console.log(`🎯 FORCING triangulated mode for chamfering to avoid windmilling artifacts`);
       polygonFaces =
         PolygonExtruder.extractPolygonsFromTriangulatedGeometry(geometry);
-      polygonType = "triangulated_backup";
+      polygonType = "triangulated_exact";
       console.log(
-        `🔄 Using backup triangulated mode for chamfering: ${polygonFaces.length} triangles`,
+        `✅ Using EXACT triangulated mode for chamfering: ${polygonFaces.length} triangles (NO reconstruction)`,
       );
     } else {
       // Normal mode: use merged polygon faces
@@ -153,7 +154,7 @@ export class ChamferedPartsExporter {
         polygonFaces = mergedFaces;
         polygonType = (geometry as any).polygonType || "merged";
         console.log(
-          `✅ Using merged polygon mode for chamfering: ${polygonFaces.length} polygons`,
+          `⚠️ Using merged polygon mode for chamfering: ${polygonFaces.length} polygons (may cause windmilling)`,
         );
       }
     }
