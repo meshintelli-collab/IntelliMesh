@@ -692,22 +692,49 @@ export class ChamferedPartsExporter {
       });
     }
 
-    // Create front face triangles
-    const frontTriangleList = this.triangulatePolygonParametric(
-      originalVertices.length,
-      normal,
-      "front",
-    );
-    triangles.push(...frontTriangleList);
+    // Use original triangulation if available (preserves complex polygon shapes)
+    if (this.hasOriginalTriangulation(edges[0])) {
+      console.log(`   Using original triangulation for complex polygon`);
+      const originalTriangulation = this.getOriginalTriangulation(edges[0]);
 
-    // Create back face triangles (reversed winding)
-    const backTriangleList = this.triangulatePolygonParametric(
-      originalVertices.length,
-      normal.clone().negate(),
-      "back",
-      true,
-    );
-    triangles.push(...backTriangleList);
+      // Create front face triangles using original triangulation
+      for (const triangle of originalTriangulation) {
+        triangles.push({
+          v1: `front_${triangle[0]}`,
+          v2: `front_${triangle[1]}`,
+          v3: `front_${triangle[2]}`,
+          normal: normal.clone(),
+        });
+      }
+
+      // Create back face triangles (reversed winding)
+      for (const triangle of originalTriangulation) {
+        triangles.push({
+          v1: `back_${triangle[2]}`, // Reverse order for back face
+          v2: `back_${triangle[1]}`,
+          v3: `back_${triangle[0]}`,
+          normal: normal.clone().negate(),
+        });
+      }
+    } else {
+      console.log(`   Using simple triangulation for basic polygon`);
+      // Fallback to simple triangulation for basic shapes
+      const frontTriangleList = this.triangulatePolygonParametric(
+        originalVertices.length,
+        normal,
+        "front",
+      );
+      triangles.push(...frontTriangleList);
+
+      // Create back face triangles (reversed winding)
+      const backTriangleList = this.triangulatePolygonParametric(
+        originalVertices.length,
+        normal.clone().negate(),
+        "back",
+        true,
+      );
+      triangles.push(...backTriangleList);
+    }
 
     // Create side walls (will be modified by chamfering)
     for (let i = 0; i < originalVertices.length; i++) {
