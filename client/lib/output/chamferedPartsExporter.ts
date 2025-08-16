@@ -29,6 +29,33 @@ interface ChamferedFaceInfo {
 }
 
 /**
+ * Parametric vertex that can be transformed
+ */
+interface ParametricVertex {
+  id: string;
+  position: THREE.Vector3;
+  originalPosition: THREE.Vector3;
+}
+
+/**
+ * Parametric triangle with vertex references
+ */
+interface ParametricTriangle {
+  v1: string; // vertex ID
+  v2: string; // vertex ID
+  v3: string; // vertex ID
+  normal: THREE.Vector3;
+}
+
+/**
+ * Parametric geometry container
+ */
+interface ParametricGeometry {
+  vertices: Map<string, ParametricVertex>;
+  triangles: ParametricTriangle[];
+}
+
+/**
  * Utility function to scale polygon faces before part creation
  * This ensures scale is applied to geometry, not thickness
  */
