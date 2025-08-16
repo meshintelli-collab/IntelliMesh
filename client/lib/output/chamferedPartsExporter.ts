@@ -515,11 +515,11 @@ export class ChamferedPartsExporter {
 
     let stlContent = `solid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n`;
 
-    // Generate chamfered vertices by inetting the original vertices
+    // Generate chamfered vertices to create correct chamfer angles
     const chamferedVertices = this.generateChamferedVertices(
       originalVertices,
       chamferedFace.edges,
-      chamferDepth * scale,
+      thickness, // Use thickness to calculate correct chamfer angle
     );
 
     // Determine which face should be full size based on edge convexity
