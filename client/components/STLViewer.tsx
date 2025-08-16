@@ -1351,60 +1351,8 @@ function STLMesh() {
       geometry.attributes.color.needsUpdate = true;
       // Vertex colors applied successfully
 
-      // CRITICAL FIX: Convert indexed geometry to non-indexed to prevent vertex blending
-      if (geometry.index) {
-        console.log("🔧 Converting indexed geometry to non-indexed to prevent vertex sharing/blending");
-
-        // Clear any existing highlights since triangle indices will change
-        setHighlightedTriangle(null);
-
-        // Convert to non-indexed geometry - each triangle gets its own vertices
-        const newGeometry = geometry.toNonIndexed();
-
-        // Copy the converted attributes back to the original geometry
-        geometry.copy(newGeometry);
-
-        // Dispose the temporary geometry
-        newGeometry.dispose();
-
-        console.log(`✅ Converted to non-indexed: ${geometry.attributes.position.count} vertices, ${geometry.attributes.position.count / 3} triangles`);
-        console.log("🔧 Cleared highlighting due to geometry index changes");
-      }
-
-      // FORCE truly flat normals - delete existing and recompute from scratch
-      if (geometry.attributes.normal) {
-        geometry.deleteAttribute('normal');
-      }
-
-      // Manually create flat normals for each triangle
-      const positions = geometry.attributes.position.array;
-      const normalArray = new Float32Array(positions.length); // Same size as positions
-
-      // Calculate flat normal for each triangle and apply to all 3 vertices
-      for (let i = 0; i < positions.length; i += 9) { // Every triangle (3 vertices × 3 components)
-        // Get triangle vertices
-        const v1 = new THREE.Vector3(positions[i], positions[i+1], positions[i+2]);
-        const v2 = new THREE.Vector3(positions[i+3], positions[i+4], positions[i+5]);
-        const v3 = new THREE.Vector3(positions[i+6], positions[i+7], positions[i+8]);
-
-        // Calculate face normal using cross product
-        const edge1 = new THREE.Vector3().subVectors(v2, v1);
-        const edge2 = new THREE.Vector3().subVectors(v3, v1);
-        const normal = new THREE.Vector3().crossVectors(edge1, edge2).normalize();
-
-        // Apply the SAME normal to all 3 vertices of this triangle
-        for (let j = 0; j < 9; j += 3) {
-          normalArray[i + j] = normal.x;
-          normalArray[i + j + 1] = normal.y;
-          normalArray[i + j + 2] = normal.z;
-        }
-      }
-
-      // Set the flat normals
-      geometry.setAttribute('normal', new THREE.BufferAttribute(normalArray, 3));
-      geometry.attributes.normal.needsUpdate = true;
-
-      console.log("🔧 FORCED flat normals - manually calculated for each triangle");
+      // Since we now use non-indexed geometry for viewing, just ensure flat normals
+      computePolygonAwareFlatNormals(geometry, polygonFaces);
 
       console.log("🔍 POST-COLORING VERIFICATION:");
 
@@ -1433,7 +1381,7 @@ function STLMesh() {
         }
       }
 
-      console.log(`   ���� Color consistency: ${solidColorTriangles} solid, ${blendedColorTriangles} blended (of first 10 triangles)`);
+      console.log(`   🎨 Color consistency: ${solidColorTriangles} solid, ${blendedColorTriangles} blended (of first 10 triangles)`);
 
       // Re-verify normals after computePolygonAwareFlatNormals
       if (geometry.attributes.normal) {
