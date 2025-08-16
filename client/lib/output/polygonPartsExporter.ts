@@ -11,20 +11,27 @@ import {
  * Utility function to scale polygon faces before part creation
  * This ensures scale is applied to geometry, not thickness
  */
-function scalePolygonFaces(polygonFaces: PolygonFace[], scale: number): PolygonFace[] {
+function scalePolygonFaces(
+  polygonFaces: PolygonFace[],
+  scale: number,
+): PolygonFace[] {
   if (scale === 1) return polygonFaces; // No scaling needed
 
-  return polygonFaces.map(face => {
+  return polygonFaces.map((face) => {
     const scaledFace = { ...face };
 
     // Scale vertices if they exist
     if (face.vertices) {
-      scaledFace.vertices = face.vertices.map(v => v.clone().multiplyScalar(scale));
+      scaledFace.vertices = face.vertices.map((v) =>
+        v.clone().multiplyScalar(scale),
+      );
     }
 
     // Scale originalVertices if they exist
     if (face.originalVertices) {
-      scaledFace.originalVertices = face.originalVertices.map(v => v.clone().multiplyScalar(scale));
+      scaledFace.originalVertices = face.originalVertices.map((v) =>
+        v.clone().multiplyScalar(scale),
+      );
     }
 
     // Scale normal (no change needed, just normalize)
@@ -108,7 +115,9 @@ export class PolygonPartsExporter {
     }
 
     // Apply scale to geometry BEFORE processing (not to thickness)
-    console.log(`🔧 Applying scale factor ${scale} to geometry before part creation...`);
+    console.log(
+      `🔧 Applying scale factor ${scale} to geometry before part creation...`,
+    );
     polygonFaces = scalePolygonFaces(polygonFaces, scale);
 
     // Store original geometry data for triangle extraction
@@ -227,7 +236,9 @@ export class PolygonPartsExporter {
     originalGeometry: THREE.BufferGeometry,
   ): string {
     // Vertices are already scaled in polygon faces
-    const vertices = faceInfo.originalVertices.map((v: THREE.Vector3) => v.clone());
+    const vertices = faceInfo.originalVertices.map((v: THREE.Vector3) =>
+      v.clone(),
+    );
 
     if (vertices.length < 3) {
       return `solid part_${polygonIndex + 1}_${faceInfo.type}\nendsolid part_${polygonIndex + 1}_${faceInfo.type}\n`;
@@ -413,7 +424,9 @@ export class PolygonPartsExporter {
     scale: number,
   ): string {
     // Vertices are already scaled in polygon faces
-    const vertices = faceInfo.originalVertices.map((v: THREE.Vector3) => v.clone());
+    const vertices = faceInfo.originalVertices.map((v: THREE.Vector3) =>
+      v.clone(),
+    );
     const normal = faceInfo.normal.clone();
 
     // Ensure valid normal

@@ -59,20 +59,27 @@ interface ParametricGeometry {
  * Utility function to scale polygon faces before part creation
  * This ensures scale is applied to geometry, not thickness
  */
-function scalePolygonFaces(polygonFaces: PolygonFace[], scale: number): PolygonFace[] {
+function scalePolygonFaces(
+  polygonFaces: PolygonFace[],
+  scale: number,
+): PolygonFace[] {
   if (scale === 1) return polygonFaces; // No scaling needed
 
-  return polygonFaces.map(face => {
+  return polygonFaces.map((face) => {
     const scaledFace = { ...face };
 
     // Scale vertices if they exist
     if (face.vertices) {
-      scaledFace.vertices = face.vertices.map(v => v.clone().multiplyScalar(scale));
+      scaledFace.vertices = face.vertices.map((v) =>
+        v.clone().multiplyScalar(scale),
+      );
     }
 
     // Scale originalVertices if they exist
     if (face.originalVertices) {
-      scaledFace.originalVertices = face.originalVertices.map(v => v.clone().multiplyScalar(scale));
+      scaledFace.originalVertices = face.originalVertices.map((v) =>
+        v.clone().multiplyScalar(scale),
+      );
     }
 
     // Scale normal (no change needed, just normalize)
@@ -157,7 +164,9 @@ export class ChamferedPartsExporter {
     }
 
     // Apply scale to geometry BEFORE processing (not to thickness)
-    console.log(`🔧 Applying scale factor ${scale} to geometry before chamfering...`);
+    console.log(
+      `🔧 Applying scale factor ${scale} to geometry before chamfering...`,
+    );
     polygonFaces = scalePolygonFaces(polygonFaces, scale);
 
     // Track part information for Excel database
@@ -169,7 +178,9 @@ export class ChamferedPartsExporter {
     console.log(`✅ Calculated edge angles for ${chamferedFaces.length} faces`);
 
     if (chamferedFaces.length !== polygonFaces.length) {
-      console.warn(`⚠️ Mismatch: ${polygonFaces.length} polygon faces but ${chamferedFaces.length} chamfered faces`);
+      console.warn(
+        `⚠️ Mismatch: ${polygonFaces.length} polygon faces but ${chamferedFaces.length} chamfered faces`,
+      );
     }
 
     // Create individual chamfered files for each polygon face
@@ -180,7 +191,9 @@ export class ChamferedPartsExporter {
 
       // Ensure chamferedFace exists, otherwise create a fallback
       if (!chamferedFace) {
-        console.warn(`⚠️ No chamfered face data for face ${i}, creating fallback`);
+        console.warn(
+          `⚠️ No chamfered face data for face ${i}, creating fallback`,
+        );
         // Create fallback chamfered face with default angles
         const fallbackChamferedFace: ChamferedFaceInfo = {
           faceInfo: polygonFace,
@@ -285,13 +298,16 @@ export class ChamferedPartsExporter {
       let avgChamferAngle = 45.0;
 
       if (chamferedFace.edges && chamferedFace.edges.length > 0) {
-        const edgeAngles = chamferedFace.edges.map(e => e.edgeAngle);
-        const chamferAngles = chamferedFace.edges.map(e => e.chamferAngle);
+        const edgeAngles = chamferedFace.edges.map((e) => e.edgeAngle);
+        const chamferAngles = chamferedFace.edges.map((e) => e.chamferAngle);
         minEdgeAngle = Math.min(...edgeAngles);
         maxEdgeAngle = Math.max(...edgeAngles);
-        avgChamferAngle = chamferAngles.reduce((a, b) => a + b, 0) / chamferAngles.length;
+        avgChamferAngle =
+          chamferAngles.reduce((a, b) => a + b, 0) / chamferAngles.length;
       } else {
-        console.warn(`⚠️ Face ${i} has no edge data, using default angle values`);
+        console.warn(
+          `⚠️ Face ${i} has no edge data, using default angle values`,
+        );
       }
 
       partDatabase.push({
@@ -299,8 +315,16 @@ export class ChamferedPartsExporter {
         "File Name": partFilename,
         "Polygon Index": i + 1,
         "Face Type": polygonFace.type || "polygon",
-        "Vertex Count": (polygonFace.vertices || polygonFace.originalVertices || []).length,
-        "Edge Count": (polygonFace.vertices || polygonFace.originalVertices || []).length,
+        "Vertex Count": (
+          polygonFace.vertices ||
+          polygonFace.originalVertices ||
+          []
+        ).length,
+        "Edge Count": (
+          polygonFace.vertices ||
+          polygonFace.originalVertices ||
+          []
+        ).length,
         "Thickness (mm)": partThickness,
         "Chamfer Depth (mm)": chamferDepth,
         "Scale Factor": scale,
@@ -442,7 +466,9 @@ export class ChamferedPartsExporter {
 
       // Handle invalid faces by creating default chamfer data
       if (!face.originalVertices || face.originalVertices.length < 3) {
-        console.warn(`⚠️ Face ${faceIndex} has invalid vertices, using default chamfer`);
+        console.warn(
+          `⚠️ Face ${faceIndex} has invalid vertices, using default chamfer`,
+        );
         chamferedFaces.push({
           faceInfo: face,
           edges: this.createDefaultEdges(face),
@@ -452,7 +478,9 @@ export class ChamferedPartsExporter {
       }
 
       const vertices = face.originalVertices;
-      const faceNormal = face.normal ? face.normal.clone().normalize() : new THREE.Vector3(0, 0, 1);
+      const faceNormal = face.normal
+        ? face.normal.clone().normalize()
+        : new THREE.Vector3(0, 0, 1);
       const edges: EdgeInfo[] = [];
 
       for (let i = 0; i < vertices.length; i++) {
@@ -485,7 +513,9 @@ export class ChamferedPartsExporter {
 
               // Debug: For cube, this should be 90°
               if (faceIndex < 2) {
-                console.log(`🔍 Dot product: ${dot.toFixed(3)}, Exterior angle: ${exteriorAngle.toFixed(1)}°`);
+                console.log(
+                  `🔍 Dot product: ${dot.toFixed(3)}, Exterior angle: ${exteriorAngle.toFixed(1)}°`,
+                );
               }
 
               // For a cube with 90° exterior angles, chamfer should be 45°
@@ -499,7 +529,9 @@ export class ChamferedPartsExporter {
               }
 
               if (faceIndex < 2) {
-                console.log(`🔍 Exterior angle: ${edgeAngle.toFixed(1)}°, Chamfer angle: ${chamferAngle.toFixed(1)}°`);
+                console.log(
+                  `🔍 Exterior angle: ${edgeAngle.toFixed(1)}°, Chamfer angle: ${chamferAngle.toFixed(1)}°`,
+                );
               }
 
               // Ensure reasonable chamfer angles (15° to 75°)
@@ -508,11 +540,16 @@ export class ChamferedPartsExporter {
               // For simplified approach, assume most edges are convex for 3D models
               isConvex = true;
 
-              if (faceIndex < 3) { // Log first few faces for debugging
-                console.log(`   Face ${faceIndex}, Edge ${i}: edge angle ${edgeAngle.toFixed(1)}° → chamfer ${chamferAngle.toFixed(1)}°`);
+              if (faceIndex < 3) {
+                // Log first few faces for debugging
+                console.log(
+                  `   Face ${faceIndex}, Edge ${i}: edge angle ${edgeAngle.toFixed(1)}° → chamfer ${chamferAngle.toFixed(1)}°`,
+                );
               }
             } else {
-              console.warn(`⚠️ Face ${faceIndex}: adjacent face ${otherFaceIndex} missing normal, using default angles`);
+              console.warn(
+                `⚠️ Face ${faceIndex}: adjacent face ${otherFaceIndex} missing normal, using default angles`,
+              );
             }
           }
         }
@@ -547,12 +584,16 @@ export class ChamferedPartsExporter {
     originalGeometry: THREE.BufferGeometry,
   ): string {
     if (!chamferedFace) {
-      console.error("��� chamferedFace is undefined in createChamferedPolygonSTL");
+      console.error(
+        "��� chamferedFace is undefined in createChamferedPolygonSTL",
+      );
       return `solid error_part\nendsolid error_part\n`;
     }
 
     if (!chamferedFace.faceInfo) {
-      console.error("❌ chamferedFace.faceInfo is undefined in createChamferedPolygonSTL");
+      console.error(
+        "❌ chamferedFace.faceInfo is undefined in createChamferedPolygonSTL",
+      );
       return `solid error_part\nendsolid error_part\n`;
     }
 
@@ -562,19 +603,27 @@ export class ChamferedPartsExporter {
     const sourceVertices = faceInfo.originalVertices || faceInfo.vertices;
 
     if (!sourceVertices || !Array.isArray(sourceVertices)) {
-      console.error(`❌ Face ${chamferedFace.partIndex} has no valid vertices for chamfering`);
+      console.error(
+        `❌ Face ${chamferedFace.partIndex} has no valid vertices for chamfering`,
+      );
       return `solid chamfered_part_${chamferedFace.partIndex + 1}_error\nendsolid chamfered_part_${chamferedFace.partIndex + 1}_error\n`;
     }
 
     // Vertices are already scaled in the polygon faces, no need to scale again
-    const originalVertices = sourceVertices.map((v: THREE.Vector3) => v.clone());
+    const originalVertices = sourceVertices.map((v: THREE.Vector3) =>
+      v.clone(),
+    );
 
     if (originalVertices.length < 3) {
-      console.warn(`⚠️ Face ${chamferedFace.partIndex} has insufficient vertices (${originalVertices.length})`);
+      console.warn(
+        `⚠️ Face ${chamferedFace.partIndex} has insufficient vertices (${originalVertices.length})`,
+      );
       return `solid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\nendsolid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n`;
     }
 
-    const normal = faceInfo.normal ? faceInfo.normal.clone().normalize() : new THREE.Vector3(0, 0, 1);
+    const normal = faceInfo.normal
+      ? faceInfo.normal.clone().normalize()
+      : new THREE.Vector3(0, 0, 1);
     // Use original thickness, not scaled (geometry is already scaled)
     const partThickness = thickness;
 
@@ -585,11 +634,16 @@ export class ChamferedPartsExporter {
       originalVertices,
       normal,
       partThickness,
-      chamferedFace.edges
+      chamferedFace.edges,
     );
 
     // Apply chamfer transformations to the parametric vertices
-    this.applyChamferTransformations(parametricGeometry, chamferedFace.edges, normal, partThickness);
+    this.applyChamferTransformations(
+      parametricGeometry,
+      chamferedFace.edges,
+      normal,
+      partThickness,
+    );
 
     // Generate final STL from the transformed parametric geometry
     let stlContent = `solid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n`;
@@ -606,12 +660,14 @@ export class ChamferedPartsExporter {
     originalVertices: THREE.Vector3[],
     normal: THREE.Vector3,
     thickness: number,
-    edges: EdgeInfo[]
+    edges: EdgeInfo[],
   ): ParametricGeometry {
     const vertices = new Map<string, ParametricVertex>();
     const triangles: ParametricTriangle[] = [];
 
-    console.log(`🔧 Building parametric geometry with ${originalVertices.length} vertices`);
+    console.log(
+      `🔧 Building parametric geometry with ${originalVertices.length} vertices`,
+    );
 
     // Create parametric vertices
     // Front vertices
@@ -620,7 +676,7 @@ export class ChamferedPartsExporter {
       vertices.set(vertexId, {
         id: vertexId,
         position: originalVertices[i].clone(),
-        originalPosition: originalVertices[i].clone()
+        originalPosition: originalVertices[i].clone(),
       });
     }
 
@@ -632,16 +688,25 @@ export class ChamferedPartsExporter {
       vertices.set(vertexId, {
         id: vertexId,
         position: backPosition,
-        originalPosition: backPosition.clone()
+        originalPosition: backPosition.clone(),
       });
     }
 
     // Create front face triangles
-    const frontTriangleList = this.triangulatePolygonParametric(originalVertices.length, normal, 'front');
+    const frontTriangleList = this.triangulatePolygonParametric(
+      originalVertices.length,
+      normal,
+      "front",
+    );
     triangles.push(...frontTriangleList);
 
     // Create back face triangles (reversed winding)
-    const backTriangleList = this.triangulatePolygonParametric(originalVertices.length, normal.clone().negate(), 'back', true);
+    const backTriangleList = this.triangulatePolygonParametric(
+      originalVertices.length,
+      normal.clone().negate(),
+      "back",
+      true,
+    );
     triangles.push(...backTriangleList);
 
     // Create side walls (will be modified by chamfering)
@@ -654,23 +719,34 @@ export class ChamferedPartsExporter {
       const b2 = `back_${next}`;
 
       // Calculate wall normal
-      const wallNormal = new THREE.Vector3().crossVectors(
-        new THREE.Vector3().subVectors(originalVertices[next], originalVertices[i]),
-        normal
-      ).normalize();
+      const wallNormal = new THREE.Vector3()
+        .crossVectors(
+          new THREE.Vector3().subVectors(
+            originalVertices[next],
+            originalVertices[i],
+          ),
+          normal,
+        )
+        .normalize();
 
       // Two triangles for the wall
       triangles.push({
-        v1: f1, v2: f2, v3: b2,
-        normal: wallNormal
+        v1: f1,
+        v2: f2,
+        v3: b2,
+        normal: wallNormal,
       });
       triangles.push({
-        v1: f1, v2: b2, v3: b1,
-        normal: wallNormal
+        v1: f1,
+        v2: b2,
+        v3: b1,
+        normal: wallNormal,
       });
     }
 
-    console.log(`✅ Built parametric geometry: ${vertices.size} vertices, ${triangles.length} triangles`);
+    console.log(
+      `✅ Built parametric geometry: ${vertices.size} vertices, ${triangles.length} triangles`,
+    );
     return { vertices, triangles };
   }
 
@@ -681,7 +757,7 @@ export class ChamferedPartsExporter {
     vertexCount: number,
     normal: THREE.Vector3,
     prefix: string,
-    reverse: boolean = false
+    reverse: boolean = false,
   ): ParametricTriangle[] {
     const triangles: ParametricTriangle[] = [];
 
@@ -692,27 +768,35 @@ export class ChamferedPartsExporter {
         v1: `${prefix}_${indices[0]}`,
         v2: `${prefix}_${indices[1]}`,
         v3: `${prefix}_${indices[2]}`,
-        normal: normal.clone()
+        normal: normal.clone(),
       });
     } else if (vertexCount === 4) {
       // Quad - split into two triangles
       if (reverse) {
         triangles.push({
-          v1: `${prefix}_2`, v2: `${prefix}_1`, v3: `${prefix}_0`,
-          normal: normal.clone()
+          v1: `${prefix}_2`,
+          v2: `${prefix}_1`,
+          v3: `${prefix}_0`,
+          normal: normal.clone(),
         });
         triangles.push({
-          v1: `${prefix}_3`, v2: `${prefix}_2`, v3: `${prefix}_0`,
-          normal: normal.clone()
+          v1: `${prefix}_3`,
+          v2: `${prefix}_2`,
+          v3: `${prefix}_0`,
+          normal: normal.clone(),
         });
       } else {
         triangles.push({
-          v1: `${prefix}_0`, v2: `${prefix}_1`, v3: `${prefix}_2`,
-          normal: normal.clone()
+          v1: `${prefix}_0`,
+          v2: `${prefix}_1`,
+          v3: `${prefix}_2`,
+          normal: normal.clone(),
         });
         triangles.push({
-          v1: `${prefix}_0`, v2: `${prefix}_2`, v3: `${prefix}_3`,
-          normal: normal.clone()
+          v1: `${prefix}_0`,
+          v2: `${prefix}_2`,
+          v3: `${prefix}_3`,
+          normal: normal.clone(),
         });
       }
     } else {
@@ -723,14 +807,14 @@ export class ChamferedPartsExporter {
             v1: `${prefix}_0`,
             v2: `${prefix}_${i + 1}`,
             v3: `${prefix}_${i}`,
-            normal: normal.clone()
+            normal: normal.clone(),
           });
         } else {
           triangles.push({
             v1: `${prefix}_0`,
             v2: `${prefix}_${i}`,
             v3: `${prefix}_${i + 1}`,
-            normal: normal.clone()
+            normal: normal.clone(),
           });
         }
       }
@@ -746,7 +830,7 @@ export class ChamferedPartsExporter {
     geometry: ParametricGeometry,
     edges: EdgeInfo[],
     normal: THREE.Vector3,
-    thickness: number
+    thickness: number,
   ): void {
     console.log(`🔧 Applying chamfer transformations to parametric geometry`);
 
@@ -767,8 +851,12 @@ export class ChamferedPartsExporter {
         const frontV1 = geometry.vertices.get(`front_${i}`)!;
         const frontV2 = geometry.vertices.get(`front_${next}`)!;
 
-        const edgeDir = new THREE.Vector3().subVectors(frontV2.position, frontV1.position).normalize();
-        const edgePerp = new THREE.Vector3().crossVectors(edgeDir, normal).normalize();
+        const edgeDir = new THREE.Vector3()
+          .subVectors(frontV2.position, frontV1.position)
+          .normalize();
+        const edgePerp = new THREE.Vector3()
+          .crossVectors(edgeDir, normal)
+          .normalize();
 
         // Calculate chamfer offset
         const chamferRadians = (edge.chamferAngle * Math.PI) / 180;
@@ -780,7 +868,9 @@ export class ChamferedPartsExporter {
         backV2.position.add(inwardOffset);
 
         if (i < 2) {
-          console.log(`   Edge ${i}: chamfer ${edge.chamferAngle.toFixed(1)}°, offset ${chamferOffset.toFixed(3)}mm`);
+          console.log(
+            `   Edge ${i}: chamfer ${edge.chamferAngle.toFixed(1)}°, offset ${chamferOffset.toFixed(3)}mm`,
+          );
         }
       }
     }
@@ -791,10 +881,14 @@ export class ChamferedPartsExporter {
   /**
    * Generate STL content from parametric geometry
    */
-  private static generateSTLFromParametricGeometry(geometry: ParametricGeometry): string {
+  private static generateSTLFromParametricGeometry(
+    geometry: ParametricGeometry,
+  ): string {
     let content = "";
 
-    console.log(`🔧 Generating STL from parametric geometry: ${geometry.triangles.length} triangles`);
+    console.log(
+      `🔧 Generating STL from parametric geometry: ${geometry.triangles.length} triangles`,
+    );
 
     for (const triangle of geometry.triangles) {
       const v1 = geometry.vertices.get(triangle.v1);
@@ -806,12 +900,14 @@ export class ChamferedPartsExporter {
           v1.position,
           v2.position,
           v3.position,
-          triangle.normal
+          triangle.normal,
         );
       }
     }
 
-    console.log(`✅ Generated STL content for ${geometry.triangles.length} triangles`);
+    console.log(
+      `✅ Generated STL content for ${geometry.triangles.length} triangles`,
+    );
     return content;
   }
 
@@ -825,7 +921,7 @@ export class ChamferedPartsExporter {
     edges: EdgeInfo[],
     faceNormal: THREE.Vector3,
     thickness: number,
-    vertexMap: Map<string, THREE.Vector3>
+    vertexMap: Map<string, THREE.Vector3>,
   ): string {
     let content = "";
 
@@ -857,15 +953,21 @@ export class ChamferedPartsExporter {
 
       // Calculate edge direction and perpendicular
       const edgeDir = new THREE.Vector3().subVectors(f2, f1).normalize();
-      const edgePerp = new THREE.Vector3().crossVectors(edgeDir, faceNormal).normalize();
+      const edgePerp = new THREE.Vector3()
+        .crossVectors(edgeDir, faceNormal)
+        .normalize();
 
       // Calculate chamfer offset for this edge
       const chamferRadians = (chamferAngle * Math.PI) / 180;
       const chamferOffset = thickness * Math.tan(chamferRadians);
 
       // Create chamfered back edge by moving it inward
-      const cb1 = b1.clone().add(edgePerp.clone().multiplyScalar(-chamferOffset));
-      const cb2 = b2.clone().add(edgePerp.clone().multiplyScalar(-chamferOffset));
+      const cb1 = b1
+        .clone()
+        .add(edgePerp.clone().multiplyScalar(-chamferOffset));
+      const cb2 = b2
+        .clone()
+        .add(edgePerp.clone().multiplyScalar(-chamferOffset));
 
       // Track vertex movements - ensure we track all edge vertices
       const b1Key = getVertexKey(b1);
@@ -878,47 +980,65 @@ export class ChamferedPartsExporter {
       if (!existingCb1) {
         vertexMap.set(b1Key, cb1.clone());
         if (i < 3) {
-          console.log(`   NEW vertex movement: (${b1.x.toFixed(3)}, ${b1.y.toFixed(3)}, ${b1.z.toFixed(3)}) → (${cb1.x.toFixed(3)}, ${cb1.y.toFixed(3)}, ${cb1.z.toFixed(3)})`);
+          console.log(
+            `   NEW vertex movement: (${b1.x.toFixed(3)}, ${b1.y.toFixed(3)}, ${b1.z.toFixed(3)}) → (${cb1.x.toFixed(3)}, ${cb1.y.toFixed(3)}, ${cb1.z.toFixed(3)})`,
+          );
         }
       } else {
         // Average the movements if vertex is affected by multiple edges
-        const avgVertex = new THREE.Vector3().addVectors(existingCb1, cb1).multiplyScalar(0.5);
+        const avgVertex = new THREE.Vector3()
+          .addVectors(existingCb1, cb1)
+          .multiplyScalar(0.5);
         vertexMap.set(b1Key, avgVertex);
         if (i < 3) {
-          console.log(`   AVERAGED vertex movement: (${b1.x.toFixed(3)}, ${b1.y.toFixed(3)}, ${b1.z.toFixed(3)}) → (${avgVertex.x.toFixed(3)}, ${avgVertex.y.toFixed(3)}, ${avgVertex.z.toFixed(3)})`);
+          console.log(
+            `   AVERAGED vertex movement: (${b1.x.toFixed(3)}, ${b1.y.toFixed(3)}, ${b1.z.toFixed(3)}) → (${avgVertex.x.toFixed(3)}, ${avgVertex.y.toFixed(3)}, ${avgVertex.z.toFixed(3)})`,
+          );
         }
       }
 
       if (!existingCb2) {
         vertexMap.set(b2Key, cb2.clone());
         if (i < 3) {
-          console.log(`   NEW vertex movement: (${b2.x.toFixed(3)}, ${b2.y.toFixed(3)}, ${b2.z.toFixed(3)}) → (${cb2.x.toFixed(3)}, ${cb2.y.toFixed(3)}, ${cb2.z.toFixed(3)})`);
+          console.log(
+            `   NEW vertex movement: (${b2.x.toFixed(3)}, ${b2.y.toFixed(3)}, ${b2.z.toFixed(3)}) → (${cb2.x.toFixed(3)}, ${cb2.y.toFixed(3)}, ${cb2.z.toFixed(3)})`,
+          );
         }
       } else {
         // Average the movements if vertex is affected by multiple edges
-        const avgVertex = new THREE.Vector3().addVectors(existingCb2, cb2).multiplyScalar(0.5);
+        const avgVertex = new THREE.Vector3()
+          .addVectors(existingCb2, cb2)
+          .multiplyScalar(0.5);
         vertexMap.set(b2Key, avgVertex);
         if (i < 3) {
-          console.log(`   AVERAGED vertex movement: (${b2.x.toFixed(3)}, ${b2.y.toFixed(3)}, ${b2.z.toFixed(3)}) → (${avgVertex.x.toFixed(3)}, ${avgVertex.y.toFixed(3)}, ${avgVertex.z.toFixed(3)})`);
+          console.log(
+            `   AVERAGED vertex movement: (${b2.x.toFixed(3)}, ${b2.y.toFixed(3)}, ${b2.z.toFixed(3)}) → (${avgVertex.x.toFixed(3)}, ${avgVertex.y.toFixed(3)}, ${avgVertex.z.toFixed(3)})`,
+          );
         }
       }
 
       // Calculate normal for chamfered wall
-      const wallNormal = new THREE.Vector3().crossVectors(
-        new THREE.Vector3().subVectors(f2, f1),
-        new THREE.Vector3().subVectors(cb1, f1)
-      ).normalize();
+      const wallNormal = new THREE.Vector3()
+        .crossVectors(
+          new THREE.Vector3().subVectors(f2, f1),
+          new THREE.Vector3().subVectors(cb1, f1),
+        )
+        .normalize();
 
       // Create chamfered wall: front edge to chamfered back edge
       content += this.addTriangleToSTL(f1, f2, cb2, wallNormal);
       content += this.addTriangleToSTL(f1, cb2, cb1, wallNormal);
 
       if (i < 2) {
-        console.log(`   Edge ${i}: angle ${chamferAngle.toFixed(1)}°, offset ${chamferOffset.toFixed(3)}mm`);
+        console.log(
+          `   Edge ${i}: angle ${chamferAngle.toFixed(1)}°, offset ${chamferOffset.toFixed(3)}mm`,
+        );
       }
     }
 
-    console.log(`✅ Created chamfered walls with ${vertexMap.size} vertex movements tracked`);
+    console.log(
+      `✅ Created chamfered walls with ${vertexMap.size} vertex movements tracked`,
+    );
     return content;
   }
 
@@ -926,23 +1046,34 @@ export class ChamferedPartsExporter {
    * Apply tracked vertex movements to all existing geometry
    * Uses tolerance-based matching to find all vertex references
    */
-  private static applyVertexMovements(stlContent: string, vertexMap: Map<string, THREE.Vector3>): string {
+  private static applyVertexMovements(
+    stlContent: string,
+    vertexMap: Map<string, THREE.Vector3>,
+  ): string {
     if (vertexMap.size === 0) {
       return stlContent;
     }
 
-    console.log(`🔧 Applying ${vertexMap.size} vertex movements with tolerance-based matching`);
+    console.log(
+      `🔧 Applying ${vertexMap.size} vertex movements with tolerance-based matching`,
+    );
 
     // Convert vertexMap to array for tolerance-based searching
-    const vertexMovements: Array<{original: THREE.Vector3, moved: THREE.Vector3}> = [];
+    const vertexMovements: Array<{
+      original: THREE.Vector3;
+      moved: THREE.Vector3;
+    }> = [];
     for (const [originalKey, movedVertex] of vertexMap.entries()) {
-      const coords = originalKey.split(',').map(Number);
+      const coords = originalKey.split(",").map(Number);
       const originalVertex = new THREE.Vector3(coords[0], coords[1], coords[2]);
       vertexMovements.push({ original: originalVertex, moved: movedVertex });
     }
 
     // Helper to find moved vertex within tolerance
-    const findMovedVertex = (vertex: THREE.Vector3, tolerance: number = 0.001): THREE.Vector3 | null => {
+    const findMovedVertex = (
+      vertex: THREE.Vector3,
+      tolerance: number = 0.001,
+    ): THREE.Vector3 | null => {
       for (const movement of vertexMovements) {
         const distance = vertex.distanceTo(movement.original);
         if (distance < tolerance) {
@@ -953,7 +1084,7 @@ export class ChamferedPartsExporter {
     };
 
     // Parse and update STL content
-    const lines = stlContent.split('\n');
+    const lines = stlContent.split("\n");
     const updatedLines: string[] = [];
     let movementCount = 0;
     let checkedCount = 0;
@@ -961,7 +1092,7 @@ export class ChamferedPartsExporter {
     for (const line of lines) {
       const trimmedLine = line.trim();
 
-      if (trimmedLine.startsWith('vertex ')) {
+      if (trimmedLine.startsWith("vertex ")) {
         // Extract vertex coordinates
         const coords = trimmedLine.split(/\s+/).slice(1).map(Number);
         if (coords.length === 3) {
@@ -975,8 +1106,11 @@ export class ChamferedPartsExporter {
             updatedLines.push(newLine);
             movementCount++;
 
-            if (movementCount <= 5) { // Log first few movements for debugging
-              console.log(`   Moved vertex: (${vertex.x.toFixed(3)}, ${vertex.y.toFixed(3)}, ${vertex.z.toFixed(3)}) → (${movedVertex.x.toFixed(3)}, ${movedVertex.y.toFixed(3)}, ${movedVertex.z.toFixed(3)})`);
+            if (movementCount <= 5) {
+              // Log first few movements for debugging
+              console.log(
+                `   Moved vertex: (${vertex.x.toFixed(3)}, ${vertex.y.toFixed(3)}, ${vertex.z.toFixed(3)}) → (${movedVertex.x.toFixed(3)}, ${movedVertex.y.toFixed(3)}, ${movedVertex.z.toFixed(3)})`,
+              );
             }
           } else {
             updatedLines.push(line);
@@ -989,11 +1123,11 @@ export class ChamferedPartsExporter {
       }
     }
 
-    console.log(`✅ Checked ${checkedCount} vertices, applied ${movementCount} movements to maintain connectivity`);
-    return updatedLines.join('\n');
+    console.log(
+      `✅ Checked ${checkedCount} vertices, applied ${movementCount} movements to maintain connectivity`,
+    );
+    return updatedLines.join("\n");
   }
-
-
 
   /**
    * Crop vertices that extend beyond the specified height range
@@ -1004,7 +1138,7 @@ export class ChamferedPartsExporter {
     minZ: number,
     maxZ: number,
   ): THREE.Vector3[] {
-    return vertices.map(vertex => {
+    return vertices.map((vertex) => {
       const croppedVertex = vertex.clone();
       // Clamp Z coordinate to stay within bounds
       croppedVertex.z = Math.max(minZ, Math.min(maxZ, vertex.z));
@@ -1075,12 +1209,16 @@ export class ChamferedPartsExporter {
     const sourceVertices = faceInfo.originalVertices || faceInfo.vertices;
 
     if (!sourceVertices || !Array.isArray(sourceVertices)) {
-      console.error(`❌ Face ${chamferedFace.partIndex} has no valid vertices for OBJ chamfering`);
+      console.error(
+        `❌ Face ${chamferedFace.partIndex} has no valid vertices for OBJ chamfering`,
+      );
       return `# Error: No valid vertices for chamfering\n`;
     }
 
     // Vertices are already scaled in polygon faces
-    const originalVertices = sourceVertices.map((v: THREE.Vector3) => v.clone());
+    const originalVertices = sourceVertices.map((v: THREE.Vector3) =>
+      v.clone(),
+    );
 
     // Use original thickness (geometry is already scaled)
     const partThickness = thickness;
@@ -1100,7 +1238,9 @@ export class ChamferedPartsExporter {
     });
 
     // Add back face vertices (chamfered + offset)
-    const normal = faceInfo.normal ? faceInfo.normal.clone().normalize() : new THREE.Vector3(0, 0, 1);
+    const normal = faceInfo.normal
+      ? faceInfo.normal.clone().normalize()
+      : new THREE.Vector3(0, 0, 1);
     const offset = normal.clone().multiplyScalar(partThickness);
     chamferedVertices.forEach((v, i) => {
       const backV = v.clone().add(offset);
@@ -1152,7 +1292,9 @@ export class ChamferedPartsExporter {
     const sourceVertices = polygonFace.vertices || polygonFace.originalVertices;
 
     if (!sourceVertices || !Array.isArray(sourceVertices)) {
-      console.error(`❌ Polygon face has no valid vertices for part info calculation`);
+      console.error(
+        `❌ Polygon face has no valid vertices for part info calculation`,
+      );
       // Return minimal fallback data
       return {
         area: 0,
