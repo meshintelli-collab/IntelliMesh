@@ -156,6 +156,7 @@ export default function STLWorkflowPanel({
     hasMergedMesh,
     mergeCoplanarFaces,
     clearMergedMesh,
+    reducePoints, // Direct access to the context's reducePoints function
   } = useSTL();
 
   // Clear face highlight when interacting with menu
