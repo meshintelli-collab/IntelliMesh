@@ -448,6 +448,7 @@ export class ChamferedPartsExporter {
           adjacentFaces: adjacentFaces.slice(),
           edgeAngle,
           chamferAngle,
+          isConvex,
         });
       }
 
