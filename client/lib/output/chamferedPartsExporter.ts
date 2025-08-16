@@ -625,9 +625,13 @@ export class ChamferedPartsExporter {
 
     console.log(`🔧 Creating chamfered walls with vertex tracking`);
 
-    // Helper to create vertex key for tracking
+    // Helper to create vertex key for tracking (more robust)
     const getVertexKey = (v: THREE.Vector3): string => {
-      return `${v.x.toFixed(6)},${v.y.toFixed(6)},${v.z.toFixed(6)}`;
+      // Round to avoid floating point precision issues
+      const x = Math.round(v.x * 1000000) / 1000000;
+      const y = Math.round(v.y * 1000000) / 1000000;
+      const z = Math.round(v.z * 1000000) / 1000000;
+      return `${x.toFixed(6)},${y.toFixed(6)},${z.toFixed(6)}`;
     };
 
     for (let i = 0; i < frontVertices.length; i++) {
