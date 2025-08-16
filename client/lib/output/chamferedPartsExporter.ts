@@ -106,7 +106,7 @@ export class ChamferedPartsExporter {
     // Calculate edge angles for all faces first
     console.log("🔧 Calculating edge angles from 3D model for chamfering...");
     const chamferedFaces = this.calculateEdgeAngles(polygonFaces, geometry);
-    console.log(`�� Calculated edge angles for ${chamferedFaces.length} faces`);
+    console.log(`✅ Calculated edge angles for ${chamferedFaces.length} faces`);
 
     if (chamferedFaces.length !== polygonFaces.length) {
       console.warn(`⚠️ Mismatch: ${polygonFaces.length} polygon faces but ${chamferedFaces.length} chamfered faces`);
@@ -439,7 +439,7 @@ export class ChamferedPartsExporter {
               }
 
               if (faceIndex < 2) {
-                console.log(`🔍 Exterior angle: ${edgeAngle.toFixed(1)}°, Chamfer angle: ${chamferAngle.toFixed(1)}��`);
+                console.log(`🔍 Exterior angle: ${edgeAngle.toFixed(1)}°, Chamfer angle: ${chamferAngle.toFixed(1)}°`);
               }
 
               // Ensure reasonable chamfer angles (15° to 75°)
@@ -569,8 +569,8 @@ export class ChamferedPartsExporter {
   }
 
   /**
-   * Calculate chamfered vertices where angled walls intersect
-   * Keep front face unchanged, only move back face inward for chamfer
+   * Calculate chamfered vertices for proper edge-based chamfering
+   * Each edge gets its own chamfer based on the angle between its adjacent faces
    */
   private static calculateChamferedIntersectionVertices(
     originalVertices: THREE.Vector3[],
@@ -578,72 +578,84 @@ export class ChamferedPartsExporter {
     faceNormal: THREE.Vector3,
     thickness: number,
   ): { frontChamferedVertices: THREE.Vector3[], backChamferedVertices: THREE.Vector3[] } {
-    const frontChamferedVertices: THREE.Vector3[] = [];
+    // Keep front face unchanged
+    const frontChamferedVertices = originalVertices.map(v => v.clone());
+
+    // Calculate back vertices by applying edge-specific chamfers
     const backChamferedVertices: THREE.Vector3[] = [];
 
-    console.log(`🔧 Calculating chamfered intersection vertices`);
+    console.log(`🔧 Calculating edge-based chamfered vertices`);
 
     for (let i = 0; i < originalVertices.length; i++) {
       const vertex = originalVertices[i];
+      const nextIdx = (i + 1) % originalVertices.length;
 
-      // Keep front face at original vertices (no chamfering on front)
-      frontChamferedVertices.push(vertex.clone());
-
-      // Calculate chamfer offset for this vertex's edges
-      const prevIdx = (i - 1 + originalVertices.length) % originalVertices.length;
-      const currIdx = i;
-
-      // Get edge info for adjacent edges
-      const prevEdgeInfo = edges[prevIdx] || { chamferAngle: 45, isConvex: true };
-      const currEdgeInfo = edges[currIdx] || { chamferAngle: 45, isConvex: true };
-
-      // Use average chamfer angle for this vertex
-      const avgChamferAngle = (prevEdgeInfo.chamferAngle + currEdgeInfo.chamferAngle) / 2;
-
-      // For cube edges, ensure we get exactly 45°
-      const finalChamferAngle = Math.abs(avgChamferAngle - 45) < 2 ? 45 : avgChamferAngle;
-
-      const chamferRadians = (finalChamferAngle * Math.PI) / 180;
-      const chamferOffset = thickness * Math.tan(chamferRadians);
-
-      // Calculate inward direction for this vertex
-      const prevVertex = originalVertices[prevIdx];
-      const nextVertex = originalVertices[(i + 1) % originalVertices.length];
-
-      // Calculate edge directions
-      const toPrev = new THREE.Vector3().subVectors(prevVertex, vertex).normalize();
-      const toNext = new THREE.Vector3().subVectors(nextVertex, vertex).normalize();
-
-      // Calculate inward bisector
-      const bisector = new THREE.Vector3().addVectors(toPrev, toNext);
-
-      // Handle special case where bisector is near zero (180° angle)
-      if (bisector.length() < 0.001) {
-        // Use perpendicular to one edge
-        bisector.crossVectors(toPrev, faceNormal);
-      }
-
-      bisector.normalize();
-
-      // Calculate back vertex: move back by thickness, then inward by chamfer offset
+      // Start with back vertex at original position + thickness
       const backOffset = faceNormal.clone().multiplyScalar(thickness);
-      const backVertex = vertex.clone().add(backOffset);
+      let backVertex = vertex.clone().add(backOffset);
 
-      // Move inward by chamfer offset
-      const inwardOffset = bisector.clone().multiplyScalar(chamferOffset);
-      backVertex.add(inwardOffset);
+      // Get the two edges that meet at this vertex
+      const prevEdgeIdx = (i - 1 + originalVertices.length) % originalVertices.length;
+      const currEdgeIdx = i;
+
+      const prevEdge = edges[prevEdgeIdx];
+      const currEdge = edges[currEdgeIdx];
+
+      if (prevEdge && currEdge) {
+        // Calculate edge directions
+        const prevVertex = originalVertices[prevEdgeIdx];
+        const nextVertex = originalVertices[nextIdx];
+
+        const edgeDir1 = new THREE.Vector3().subVectors(vertex, prevVertex).normalize();
+        const edgeDir2 = new THREE.Vector3().subVectors(nextVertex, vertex).normalize();
+
+        // Calculate perpendicular directions (outward from face)
+        const perp1 = new THREE.Vector3().crossVectors(edgeDir1, faceNormal).normalize();
+        const perp2 = new THREE.Vector3().crossVectors(edgeDir2, faceNormal).normalize();
+
+        // Calculate chamfer offsets for each edge
+        const chamfer1Radians = (prevEdge.chamferAngle * Math.PI) / 180;
+        const chamfer2Radians = (currEdge.chamferAngle * Math.PI) / 180;
+
+        const offset1 = thickness * Math.tan(chamfer1Radians);
+        const offset2 = thickness * Math.tan(chamfer2Radians);
+
+        // Move back vertex inward based on both adjacent edges
+        const inwardOffset1 = perp1.clone().multiplyScalar(-offset1);
+        const inwardOffset2 = perp2.clone().multiplyScalar(-offset2);
+
+        // Average the offsets for vertex movement
+        const avgOffset = new THREE.Vector3().addVectors(inwardOffset1, inwardOffset2).multiplyScalar(0.5);
+        backVertex.add(avgOffset);
+
+        if (i < 2) {
+          console.log(`   Vertex ${i}:`);
+          console.log(`     Prev edge chamfer: ${prevEdge.chamferAngle.toFixed(1)}° → offset ${offset1.toFixed(3)}mm`);
+          console.log(`     Curr edge chamfer: ${currEdge.chamferAngle.toFixed(1)}° → offset ${offset2.toFixed(3)}mm`);
+          console.log(`     Back vertex: (${backVertex.x.toFixed(2)}, ${backVertex.y.toFixed(2)}, ${backVertex.z.toFixed(2)})`);
+        }
+      } else {
+        // Fallback for missing edge info
+        console.warn(`⚠️ Missing edge info for vertex ${i}, using default chamfer`);
+        const defaultOffset = thickness * Math.tan((45 * Math.PI) / 180);
+        const prevVertex = originalVertices[(i - 1 + originalVertices.length) % originalVertices.length];
+        const nextVertex = originalVertices[nextIdx];
+
+        const bisector = new THREE.Vector3()
+          .addVectors(
+            new THREE.Vector3().subVectors(prevVertex, vertex).normalize(),
+            new THREE.Vector3().subVectors(nextVertex, vertex).normalize()
+          )
+          .normalize();
+
+        backVertex.add(bisector.multiplyScalar(defaultOffset));
+      }
 
       backChamferedVertices.push(backVertex);
-
-      if (i < 2) {
-        console.log(`   Vertex ${i}: avg angle ${avgChamferAngle.toFixed(1)}° → final angle ${finalChamferAngle.toFixed(1)}°, offset ${chamferOffset.toFixed(3)}mm`);
-        console.log(`   Front: (${vertex.x.toFixed(2)}, ${vertex.y.toFixed(2)}, ${vertex.z.toFixed(2)})`);
-        console.log(`   Back: (${backVertex.x.toFixed(2)}, ${backVertex.y.toFixed(2)}, ${backVertex.z.toFixed(2)})`);
-      }
     }
 
     console.log(`✅ Front face: ${frontChamferedVertices.length} original vertices (unchanged)`);
-    console.log(`✅ Back face: ${backChamferedVertices.length} chamfered vertices (moved inward)`);
+    console.log(`✅ Back face: ${backChamferedVertices.length} edge-chamfered vertices`);
     return { frontChamferedVertices, backChamferedVertices };
   }
 
