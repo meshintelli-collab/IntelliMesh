@@ -1516,6 +1516,11 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
 
         // Add polygon face metadata to geometry
         (mergedMesh as any).polygonFaces = polygonFaces;
+        (mergedMesh as any).polygonType = "smart_merged";
+
+        // Apply the merged faces to the geometry for proper display
+        const { PolygonFaceReconstructor } = await import("../lib/processing/polygonFaceReconstructor");
+        PolygonFaceReconstructor.applyReconstructedFaces(mergedMesh, polygonFaces);
 
         const processingTime = Math.round(performance.now() - startTime);
 
