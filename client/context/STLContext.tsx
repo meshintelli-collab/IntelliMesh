@@ -966,11 +966,19 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         if (result.geometry) {
           console.log("✅ Updating meshes after decimation...");
 
-          // Update working mesh - ensure it stays pure triangulated
+          // Update working mesh - ensure it stays pure triangulated with flat normals
           const cleanTriangleMesh = result.geometry;
           delete (cleanTriangleMesh as any).polygonFaces;
           delete (cleanTriangleMesh as any).polygonType;
           delete (cleanTriangleMesh as any).isProcedurallyGenerated;
+
+          // CRITICAL: Remove any existing normals and force flat normals for solid face coloring
+          if (cleanTriangleMesh.attributes.normal) {
+            cleanTriangleMesh.deleteAttribute('normal');
+          }
+          // Force recalculation of flat normals using right-hand rule
+          cleanTriangleMesh.computeVertexNormals();
+          console.log("✅ Applied flat normals to decimated triangle mesh for solid face coloring");
 
           setWorkingMeshTri(cleanTriangleMesh);
 
