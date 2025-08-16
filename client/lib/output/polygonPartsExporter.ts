@@ -165,7 +165,7 @@ export class PolygonPartsExporter {
 
       // Convert PolygonFace to Face interface
       const face: Face = {
-        vertices: polygonFace.vertices || [],
+        vertices: polygonFace.vertices || polygonFace.originalVertices || [],
         normal: polygonFace.normal || new THREE.Vector3(0, 0, 1),
         type: polygonFace.type || "polygon"
       };
