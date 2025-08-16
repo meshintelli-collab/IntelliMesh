@@ -1557,16 +1557,27 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
 
           let healthResponse;
           try {
+            // Check if signal is already aborted before making request
+            if (healthController.signal.aborted) {
+              throw new Error('Request was cancelled before starting');
+            }
+
             healthResponse = await fetch('http://localhost:8001/health', {
               method: 'GET',
               signal: healthController.signal
             });
+          } catch (fetchError) {
+            clearTimeout(healthTimeout);
+            if (fetchError instanceof Error && (fetchError.name === 'AbortError' || fetchError.message.includes('aborted'))) {
+              throw new Error('Health check timed out - Python service may not be running');
+            }
+            throw fetchError;
           } finally {
             clearTimeout(healthTimeout);
           }
 
-          if (!healthResponse.ok) {
-            throw new Error(`Python service returned ${healthResponse.status}: ${healthResponse.statusText}`);
+          if (!healthResponse || !healthResponse.ok) {
+            throw new Error(`Python service returned ${healthResponse?.status || 'unknown'}: ${healthResponse?.statusText || 'unknown error'}`);
           }
 
           console.log(`✅ Python service is available, proceeding with coplanar merge`);
