@@ -695,15 +695,29 @@ export class VertexRemovalStitcher {
     console.log("🔧 Converting decimated geometry to non-indexed for solid face coloring");
     const nonIndexed = cloned.toNonIndexed();
 
-    // Copy metadata from original
+    // Copy UUID and preserve all polygon metadata from original geometry
     nonIndexed.uuid = cloned.uuid;
+
+    // CRITICAL: Preserve polygon face information for proper coloring
+    if ((originalGeometry as any).polygonFaces) {
+      (nonIndexed as any).polygonFaces = (originalGeometry as any).polygonFaces;
+      console.log(`🔧 Preserved polygon faces metadata: ${(originalGeometry as any).polygonFaces.length} faces`);
+    }
+
+    if ((originalGeometry as any).polygonType) {
+      (nonIndexed as any).polygonType = (originalGeometry as any).polygonType;
+    }
+
+    if ((originalGeometry as any).isPolygonPreserved) {
+      (nonIndexed as any).isPolygonPreserved = (originalGeometry as any).isPolygonPreserved;
+    }
 
     // Recompute flat normals on the non-indexed geometry for solid coloring
     computeFlatNormals(nonIndexed);
 
     console.log(`✅ Decimation complete: ${newPositions.length / 3} vertices, ${nonIndexed.attributes.position.count / 3} triangles (non-indexed)`);
 
-    // Decimation process completed successfully - returning non-indexed geometry
+    // Decimation process completed successfully - returning non-indexed geometry with preserved metadata
 
     return nonIndexed;
   }
