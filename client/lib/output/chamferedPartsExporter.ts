@@ -130,10 +130,7 @@ export class ChamferedPartsExporter {
     let polygonFaces: PolygonFace[];
     let polygonType: string;
 
-    // TEMPORARY: Force triangulated mode to test windmilling fix
-    const forceTriangulated = true; // Set to false to use normal mode
-
-    if (useTriangulated || forceTriangulated) {
+    if (useTriangulated) {
       // Backup mode: use triangulated geometry (simpler chamfering)
       console.log(`🎯 FORCING triangulated mode for chamfering to avoid windmilling artifacts`);
       polygonFaces =
@@ -148,7 +145,7 @@ export class ChamferedPartsExporter {
         PolygonExtruder.extractPolygonsFromMergedGeometry(geometry);
       if (mergedFaces.length === 0) {
         console.log(
-          "⚠️ No merged faces found for chamfering, falling back to triangulated mode",
+          "⚠��� No merged faces found for chamfering, falling back to triangulated mode",
         );
         polygonFaces =
           PolygonExtruder.extractPolygonsFromTriangulatedGeometry(geometry);
