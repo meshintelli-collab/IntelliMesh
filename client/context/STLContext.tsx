@@ -1545,17 +1545,24 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         let reductionFromPython = 0;
 
         try {
-          // Check if Python service is available
+          // Check if Python service is available with manual timeout
           console.log(`🐍 TRYING PYTHON COPLANAR MERGER: Starting with ${originalStats?.triangles || 0} triangles`);
+
+          // Create manual timeout for health check
+          const healthController = new AbortController();
+          const healthTimeout = setTimeout(() => healthController.abort(), 2000);
 
           const healthResponse = await fetch('http://localhost:8001/health', {
             method: 'GET',
-            signal: AbortSignal.timeout(2000) // 2 second timeout
+            signal: healthController.signal
           });
+          clearTimeout(healthTimeout);
 
           if (!healthResponse.ok) {
             throw new Error('Python service not available');
           }
+
+          console.log(`✅ Python service is available, proceeding with coplanar merge`);
 
           // Convert THREE.js geometry to STL for Python service
           const stlContent = geometryToSTL(workingMeshTri);
@@ -1567,12 +1574,16 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
           formData.append('normal_threshold', '0.05'); // 0.05 radians ≈ 3 degrees - very strict
           formData.append('distance_threshold', '0.001'); // Very strict distance tolerance
 
-          // Call Python service
+          // Call Python service with manual timeout
+          const mergeController = new AbortController();
+          const mergeTimeout = setTimeout(() => mergeController.abort(), 15000); // 15 second timeout for processing
+
           const response = await fetch('http://localhost:8001/merge_coplanar_faces', {
             method: 'POST',
             body: formData,
-            signal: AbortSignal.timeout(10000) // 10 second timeout
+            signal: mergeController.signal
           });
+          clearTimeout(mergeTimeout);
 
           if (!response.ok) {
             const errorText = await response.text();
