@@ -108,6 +108,24 @@ export class EdgeAdjacentMerger {
       `   📊 Found ${components.length} components from ${faces.length} triangles`,
     );
 
+    // Debug component sizes to understand the structure
+    const componentSizes = components.map(c => c.length).sort((a, b) => b - a);
+    console.log(`   📊 Component sizes: [${componentSizes.slice(0, 10).join(', ')}${componentSizes.length > 10 ? '...' : ''}]`);
+
+    let singleTriangles = 0;
+    let pairs = 0;
+    let mediumComponents = 0;
+    let largeComponents = 0;
+
+    for (const component of components) {
+      if (component.length === 1) singleTriangles++;
+      else if (component.length === 2) pairs++;
+      else if (component.length <= 6) mediumComponents++;
+      else largeComponents++;
+    }
+
+    console.log(`   📊 Component breakdown: ${singleTriangles} singles, ${pairs} pairs, ${mediumComponents} medium (3-6), ${largeComponents} large (7+)`);
+
     // SMART CONSERVATIVE MERGING: Balance between preserving shape and creating useful polygons
     const mergedFaces: PolygonFace[] = [];
 
