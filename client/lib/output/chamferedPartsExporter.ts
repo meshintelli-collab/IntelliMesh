@@ -718,7 +718,7 @@ export class ChamferedPartsExporter {
       type: 'back'
     });
 
-    // Create side walls (will be modified by chamfering)
+    // Create side wall polygons (will be modified by chamfering)
     for (let i = 0; i < originalVertices.length; i++) {
       const next = (i + 1) % originalVertices.length;
 
@@ -738,18 +738,11 @@ export class ChamferedPartsExporter {
         )
         .normalize();
 
-      // Two triangles for the wall
-      triangles.push({
-        v1: f1,
-        v2: f2,
-        v3: b2,
+      // Create quad wall polygon (front edge to back edge)
+      polygons.push({
+        vertexIds: [f1, f2, b2, b1], // Quad vertices in order
         normal: wallNormal,
-      });
-      triangles.push({
-        v1: f1,
-        v2: b2,
-        v3: b1,
-        normal: wallNormal,
+        type: 'wall'
       });
     }
 
