@@ -413,23 +413,30 @@ export class ChamferedPartsExporter {
             if (otherFace && otherFace.normal) {
               const otherNormal = otherFace.normal.clone().normalize();
 
-              // Calculate the actual edge angle (not using abs() to preserve convex/concave info)
+              // Calculate the angle between face normals
               const dot = faceNormal.dot(otherNormal);
               const clampedDot = Math.max(-1, Math.min(1, dot));
 
-              // Calculate the angle between face normals (0° to 180°)
-              const faceAngle = (Math.acos(Math.abs(clampedDot)) * 180) / Math.PI;
+              // For exterior angles (what we need for chamfering):
+              // - When faces are perpendicular (cube): dot = 0, angle = 90°
+              // - The exterior angle is what we need for chamfer calculation
+              const angleRadians = Math.acos(Math.abs(clampedDot));
+              const exteriorAngle = (angleRadians * 180) / Math.PI;
 
               // Debug: For cube, this should be 90°
               if (faceIndex < 2) {
-                console.log(`🔍 Face angle between normals: ${faceAngle.toFixed(1)}°`);
+                console.log(`🔍 Dot product: ${dot.toFixed(3)}, Exterior angle: ${exteriorAngle.toFixed(1)}°`);
               }
 
-              // For chamfering, we need the EXTERIOR angle, not the angle between normals
-              // For a cube: exterior angle = 90° (the corner we're chamfering)
-              // Chamfer angle = exterior_angle / 2 = 45°
-              edgeAngle = faceAngle; // This is the exterior angle for convex edges
-              chamferAngle = edgeAngle / 2;  // FIXED: chamfer is half the exterior angle
+              // For a cube with 90° exterior angles, chamfer should be 45°
+              // Chamfer angle = exterior_angle / 2
+              edgeAngle = exteriorAngle;
+              chamferAngle = exteriorAngle / 2;
+
+              // Ensure we get exactly 45° for 90° edges (cube corners)
+              if (Math.abs(exteriorAngle - 90) < 1) {
+                chamferAngle = 45; // Force exact 45° for cube edges
+              }
 
               if (faceIndex < 2) {
                 console.log(`🔍 Exterior angle: ${edgeAngle.toFixed(1)}°, Chamfer angle: ${chamferAngle.toFixed(1)}°`);
