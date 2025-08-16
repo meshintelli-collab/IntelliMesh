@@ -719,7 +719,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       console.error("❌ Error in loadModelFromFile:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      console.error("❌ Error details:", errorMessage);
+      console.error("�� Error details:", errorMessage);
       setError(`Failed to load ${file.name}: ${errorMessage}`);
       addError(errorMessage);
     } finally {
@@ -1507,50 +1507,69 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       try {
         setIsProcessingTool(true);
 
-        // Import the coplanar merger if not already available
-        const { EdgeAdjacentMerger } = await import(
-          "../lib/processing/edgeAdjacentMerger"
-        );
-
         const startTime = performance.now();
         const originalStats = getGeometryStats();
 
-        // Create merged mesh from current triangle mesh
-        const mergedMesh = workingMeshTri.clone();
+        console.log(`🐍 CALLING PYTHON COPLANAR MERGER: Starting with ${originalStats?.triangles || 0} triangles`);
 
-        // Apply coplanar face merging
-        const polygonFaces =
-          EdgeAdjacentMerger.mergeCoplanarTriangles(mergedMesh);
+        // Convert THREE.js geometry to STL for Python service
+        const stlContent = this.geometryToSTL(workingMeshTri);
 
-        // Add polygon face metadata to geometry
+        // Create form data for Python service
+        const formData = new FormData();
+        const stlBlob = new Blob([stlContent], { type: 'application/octet-stream' });
+        formData.append('file', stlBlob, 'mesh.stl');
+        formData.append('normal_threshold', '0.05'); // 0.05 radians ≈ 3 degrees - very strict
+        formData.append('distance_threshold', '0.001'); // Very strict distance tolerance
+
+        // Call Python service
+        const response = await fetch('http://localhost:8001/merge_coplanar_faces', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Python merger failed: ${response.status} ${errorText}`);
+        }
+
+        // Get statistics from response headers
+        const originalTriangles = parseInt(response.headers.get('X-Original-Triangles') || '0');
+        const finalTriangles = parseInt(response.headers.get('X-Final-Triangles') || '0');
+        const finalFaces = parseInt(response.headers.get('X-Final-Faces') || '0');
+        const mergedGroups = parseInt(response.headers.get('X-Merged-Groups') || '0');
+        const reductionAchieved = parseFloat(response.headers.get('X-Reduction-Achieved') || '0');
+
+        console.log(`📊 PYTHON MERGER STATS:`);
+        console.log(`   Original triangles: ${originalTriangles}`);
+        console.log(`   Final triangles: ${finalTriangles}`);
+        console.log(`   Final faces: ${finalFaces}`);
+        console.log(`   Merged groups: ${mergedGroups}`);
+        console.log(`   Reduction: ${(reductionAchieved * 100).toFixed(1)}%`);
+
+        // Load the merged mesh back into THREE.js
+        const mergedSTLContent = await response.arrayBuffer();
+        const { loadSTLFromArrayBuffer } = await import("../lib/input/simplifiedSTLLoader");
+        const mergedMesh = loadSTLFromArrayBuffer(mergedSTLContent);
+
+        // Create polygon faces metadata based on the Python merger results
+        // Since Python gives us clusters, we'll reconstruct the polygon structure
+        const { EdgeAdjacentMerger } = await import("../lib/processing/edgeAdjacentMerger");
+        const polygonFaces = EdgeAdjacentMerger.mergeCoplanarTriangles(mergedMesh);
+
+        // Add metadata to merged mesh
         (mergedMesh as any).polygonFaces = polygonFaces;
+        (mergedMesh as any).polygonType = "python_open3d_merged";
 
         const processingTime = Math.round(performance.now() - startTime);
 
-        // Calculate stats based on polygon faces, not underlying triangles
-        const polygonCount = polygonFaces.length;
-        const triangleCount = polygonFaces.filter(f => f.type === "triangle").length;
-        const quadCount = polygonFaces.filter(f => f.type === "quad").length;
-        const polygonCountHigher = polygonFaces.filter(f => !["triangle", "quad"].includes(f.type)).length;
-
         const newStats = {
           vertices: mergedMesh.attributes.position.count / 3,
-          faces: polygonCount, // Use polygon count, not triangle count!
-          polygons: polygonCount,
-          triangles: triangleCount,
-          quads: quadCount,
-          higherPolygons: polygonCountHigher,
+          faces: finalFaces, // Use Python's face count
+          polygons: finalFaces,
+          triangles: finalTriangles,
+          mergedGroups: mergedGroups,
         };
-
-        console.log(`📊 MERGED GEOMETRY STATS:`);
-        console.log(`   Original triangles: ${originalStats?.triangles || 0}`);
-        console.log(`   Final polygons: ${polygonCount}`);
-        console.log(`   Breakdown: ${triangleCount} triangles, ${quadCount} quads, ${polygonCountHigher} higher polygons`);
-
-        // Apply polygon faces to the merged mesh geometry
-        const { PolygonFaceReconstructor } = await import("../lib/processing/polygonFaceReconstructor");
-        PolygonFaceReconstructor.applyReconstructedFaces(mergedMesh, polygonFaces);
-        (mergedMesh as any).polygonType = "user_generated_merged";
 
         // Store the merged mesh and update preview
         setMergedGeometry(mergedMesh);
