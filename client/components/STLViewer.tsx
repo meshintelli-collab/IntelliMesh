@@ -1972,7 +1972,18 @@ function Scene() {
         dampingFactor={0.05}
       />
 
-      <Environment preset="city" />
+      {/* Simple ambient lighting to replace HDR environment */}
+      <ambientLight intensity={0.4} />
+      <directionalLight
+        position={[10, 10, 5]}
+        intensity={1}
+        castShadow={false}
+      />
+      <directionalLight
+        position={[-10, -10, -5]}
+        intensity={0.3}
+        castShadow={false}
+      />
     </>
   );
 }
