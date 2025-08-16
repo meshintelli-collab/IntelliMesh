@@ -1066,7 +1066,7 @@ export default function STLWorkflowPanel({
                 <div className="p-4 bg-white/10 rounded-lg border border-white/20">
                   <div className="text-white text-sm font-medium mb-3 flex items-center gap-2">
                     <span className="text-green-400">3.2</span>
-                    Open3D Decimation
+                    Decimation
                   </div>
 
                   <div className="mb-3">
