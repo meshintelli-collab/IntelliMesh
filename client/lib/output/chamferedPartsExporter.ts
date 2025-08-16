@@ -594,7 +594,7 @@ export class ChamferedPartsExporter {
       backChamferedVertices,
       chamferedFace.edges,
       normal,
-      scaledThickness,
+      partThickness,
     );
 
     stlContent += `endsolid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n`;
