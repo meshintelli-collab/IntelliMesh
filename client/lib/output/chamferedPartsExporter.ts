@@ -685,26 +685,24 @@ export class ChamferedPartsExporter {
 
     // Extract triangulation data with corrected vertex indices
     let triangulation: number[][] = [];
-    if (faceInfo.triangleIndices && faceInfo.triangleIndices.length > 0) {
-      console.log(`   Processing ${faceInfo.triangleIndices.length} triangle indices`);
+    if (faceInfo.originalTriangulation && faceInfo.originalTriangulation.length > 0) {
+      console.log(`   Using original triangulation data (${faceInfo.originalTriangulation.length} triangles)`);
 
-      // Convert triangle indices to vertex indices within our vertex array
-      for (let i = 0; i < faceInfo.triangleIndices.length; i += 3) {
-        if (i + 2 < faceInfo.triangleIndices.length) {
-          let v1 = faceInfo.triangleIndices[i] % vertices.length;
-          let v2 = faceInfo.triangleIndices[i + 1] % vertices.length;
-          let v3 = faceInfo.triangleIndices[i + 2] % vertices.length;
+      // Use the original triangulation directly - these are already correct vertex indices
+      for (const triangle of faceInfo.originalTriangulation) {
+        let v1 = triangle[0];
+        let v2 = triangle[1];
+        let v3 = triangle[2];
 
-          // If we reversed vertices, adjust triangle indices accordingly
-          if (windingInfo.isClockwise) {
-            [v1, v2, v3] = [v3, v2, v1]; // Reverse triangle winding
-          }
-
-          triangulation.push([v1, v2, v3]);
+        // If we reversed vertices, adjust triangle indices accordingly
+        if (windingInfo.isClockwise) {
+          [v1, v2, v3] = [v3, v2, v1]; // Reverse triangle winding
         }
+
+        triangulation.push([v1, v2, v3]);
       }
     } else {
-      console.log(`   No triangle indices found, will use vertex order`);
+      console.log(`   No original triangulation found, will use vertex order`);
     }
 
     console.log(`✅ Extracted proper face data: ${vertices.length} vertices, ${triangulation.length} triangles`);
