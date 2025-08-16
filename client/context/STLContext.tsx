@@ -1494,6 +1494,34 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     setViewerSettings((prev) => ({ ...prev, meshType: "triangle" }));
   }, []);
 
+  // Helper function to convert THREE.js geometry to STL format
+  const geometryToSTL = (geometry: THREE.BufferGeometry): string => {
+    const positions = geometry.attributes.position;
+    let stlContent = "solid merged_mesh\n";
+
+    for (let i = 0; i < positions.count; i += 3) {
+      const v1 = new THREE.Vector3(positions.getX(i), positions.getY(i), positions.getZ(i));
+      const v2 = new THREE.Vector3(positions.getX(i + 1), positions.getY(i + 1), positions.getZ(i + 1));
+      const v3 = new THREE.Vector3(positions.getX(i + 2), positions.getY(i + 2), positions.getZ(i + 2));
+
+      // Calculate normal
+      const edge1 = new THREE.Vector3().subVectors(v2, v1);
+      const edge2 = new THREE.Vector3().subVectors(v3, v1);
+      const normal = new THREE.Vector3().crossVectors(edge1, edge2).normalize();
+
+      stlContent += `  facet normal ${normal.x.toFixed(6)} ${normal.y.toFixed(6)} ${normal.z.toFixed(6)}\n`;
+      stlContent += `    outer loop\n`;
+      stlContent += `      vertex ${v1.x.toFixed(6)} ${v1.y.toFixed(6)} ${v1.z.toFixed(6)}\n`;
+      stlContent += `      vertex ${v2.x.toFixed(6)} ${v2.y.toFixed(6)} ${v2.z.toFixed(6)}\n`;
+      stlContent += `      vertex ${v3.x.toFixed(6)} ${v3.y.toFixed(6)} ${v3.z.toFixed(6)}\n`;
+      stlContent += `    endloop\n`;
+      stlContent += `  endfacet\n`;
+    }
+
+    stlContent += "endsolid merged_mesh\n";
+    return stlContent;
+  };
+
   const mergeCoplanarFaces =
     useCallback(async (): Promise<ToolOperationResult> => {
       if (!workingMeshTri) {
