@@ -587,19 +587,31 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
   ) => {
     let preview = workingGeometry.clone();
 
-    // Try to reconstruct polygon faces for better preview
+    // Try to use preserved polygon faces first, then reconstruct if needed
     try {
-      const polygonFaces =
-        PolygonFaceReconstructor.reconstructPolygonFaces(workingGeometry);
-      if (polygonFaces.length > 0) {
-        PolygonFaceReconstructor.applyReconstructedFaces(preview, polygonFaces);
-        (preview as any).polygonType = `${operationType}_merged`;
+      const existingPolygonFaces = (workingGeometry as any).polygonFaces;
+
+      if (existingPolygonFaces && Array.isArray(existingPolygonFaces) && existingPolygonFaces.length > 0) {
+        // Use preserved polygon faces from decimation
+        console.log(`🔧 Using preserved polygon faces: ${existingPolygonFaces.length} faces`);
+        (preview as any).polygonFaces = existingPolygonFaces;
+        (preview as any).polygonType = `${operationType}_preserved`;
+        (preview as any).isPolygonPreserved = true;
       } else {
-        // Fallback: use triangulated geometry as-is
-        (preview as any).polygonType = `${operationType}_triangulated`;
+        // Reconstruct polygon faces from triangulated geometry
+        console.log(`🔧 Reconstructing polygon faces for ${operationType} preview`);
+        const polygonFaces = PolygonFaceReconstructor.reconstructPolygonFaces(workingGeometry);
+        if (polygonFaces.length > 0) {
+          PolygonFaceReconstructor.applyReconstructedFaces(preview, polygonFaces);
+          (preview as any).polygonType = `${operationType}_merged`;
+        } else {
+          // Fallback: use triangulated geometry as-is
+          (preview as any).polygonType = `${operationType}_triangulated`;
+        }
       }
     } catch (error) {
       // Fallback: use triangulated geometry as-is
+      console.log(`⚠️ Preview creation error for ${operationType}:`, error);
       (preview as any).polygonType = `${operationType}_triangulated`;
     }
 
