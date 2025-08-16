@@ -1008,6 +1008,16 @@ function STLMesh() {
       mat.needsUpdate = true;
     }
 
+    console.log("🎭 MATERIAL DEBUG:", {
+      wireframe: viewerSettings.wireframe,
+      vertexColors: viewerSettings.randomColors,
+      flatShading: mat.flatShading,
+      materialType: "MeshStandardMaterial",
+      baseColor: baseColor.toString(16),
+      hasGeometry: !!geometry,
+      materialUuid: mat.uuid
+    });
+
     return mat;
   }, [viewerSettings.wireframe, viewerSettings.randomColors, geometry?.uuid]);
 
