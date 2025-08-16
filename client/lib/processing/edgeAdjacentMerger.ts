@@ -3,6 +3,7 @@ import * as THREE from "three";
 export interface PolygonFace {
   type: string;
   originalVertices: THREE.Vector3[];
+  vertices?: THREE.Vector3[]; // Optional for compatibility
   normal: THREE.Vector3;
   triangleIndices?: number[];
   originalTriangulation?: number[][]; // Preserves exact original triangle vertex indices
