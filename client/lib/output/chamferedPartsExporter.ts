@@ -693,73 +693,30 @@ export class ChamferedPartsExporter {
       });
     }
 
-    // Use original triangulation if available (preserves complex polygon shapes)
-    if (faceInfo.triangulation && faceInfo.triangulation.length > 0) {
-      console.log(`   Using original triangulation for complex polygon (${faceInfo.triangulation.length} triangles)`);
+    // Create front and back polygons (no triangulation yet!)
+    console.log(`   Creating front and back polygons (preserving original shape)`);
 
-      // Create front face triangles using original triangulation
-      for (const triangle of faceInfo.triangulation) {
-        triangles.push({
-          v1: `front_${triangle[0]}`,
-          v2: `front_${triangle[1]}`,
-          v3: `front_${triangle[2]}`,
-          normal: normal.clone(),
-        });
-      }
-
-      // Create back face triangles (reversed winding)
-      for (const triangle of faceInfo.triangulation) {
-        triangles.push({
-          v1: `back_${triangle[2]}`, // Reverse order for back face
-          v2: `back_${triangle[1]}`,
-          v3: `back_${triangle[0]}`,
-          normal: normal.clone().negate(),
-        });
-      }
-    } else if (faceInfo.triangleIndices && faceInfo.triangleIndices.length > 0) {
-      console.log(`   Using triangle indices for complex polygon (${faceInfo.triangleIndices.length / 3} triangles)`);
-
-      // Create triangles from triangle indices (groups of 3)
-      for (let i = 0; i < faceInfo.triangleIndices.length; i += 3) {
-        const i1 = faceInfo.triangleIndices[i];
-        const i2 = faceInfo.triangleIndices[i + 1];
-        const i3 = faceInfo.triangleIndices[i + 2];
-
-        // Front face triangle
-        triangles.push({
-          v1: `front_${i1}`,
-          v2: `front_${i2}`,
-          v3: `front_${i3}`,
-          normal: normal.clone(),
-        });
-
-        // Back face triangle (reversed)
-        triangles.push({
-          v1: `back_${i3}`,
-          v2: `back_${i2}`,
-          v3: `back_${i1}`,
-          normal: normal.clone().negate(),
-        });
-      }
-    } else {
-      console.log(`   Using simple triangulation for basic polygon (${originalVertices.length} vertices)`);
-      // Fallback to simple triangulation for basic shapes
-      const frontTriangleList = this.triangulatePolygonParametric(
-        originalVertices.length,
-        normal,
-        "front",
-      );
-      triangles.push(...frontTriangleList);
-
-      // Create back face triangles (reversed winding)
-      const backTriangleList = this.triangulatePolygonParametric(
-        originalVertices.length,
-        normal.clone().negate(),
-        "back",
-        true,
-      );
-      triangles.push(...backTriangleList);
+    // Front face polygon
+    const frontVertexIds: string[] = [];
+    for (let i = 0; i < originalVertices.length; i++) {
+      frontVertexIds.push(`front_${i}`);
     }
+    polygons.push({
+      vertexIds: frontVertexIds,
+      normal: normal.clone(),
+      type: 'front'
+    });
+
+    // Back face polygon (reversed vertex order for correct winding)
+    const backVertexIds: string[] = [];
+    for (let i = originalVertices.length - 1; i >= 0; i--) {
+      backVertexIds.push(`back_${i}`);
+    }
+    polygons.push({
+      vertexIds: backVertexIds,
+      normal: normal.clone().negate(),
+      type: 'back'
+    });
 
     // Create side walls (will be modified by chamfering)
     for (let i = 0; i < originalVertices.length; i++) {
@@ -940,7 +897,7 @@ export class ChamferedPartsExporter {
     let content = "";
 
     console.log(
-      `���� Generating STL from parametric geometry: ${geometry.triangles.length} triangles`,
+      `🔧 Generating STL from parametric geometry: ${geometry.triangles.length} triangles`,
     );
 
     for (const triangle of geometry.triangles) {
@@ -1162,7 +1119,7 @@ export class ChamferedPartsExporter {
             if (movementCount <= 5) {
               // Log first few movements for debugging
               console.log(
-                `   Moved vertex: (${vertex.x.toFixed(3)}, ${vertex.y.toFixed(3)}, ${vertex.z.toFixed(3)}) ��� (${movedVertex.x.toFixed(3)}, ${movedVertex.y.toFixed(3)}, ${movedVertex.z.toFixed(3)})`,
+                `   Moved vertex: (${vertex.x.toFixed(3)}, ${vertex.y.toFixed(3)}, ${vertex.z.toFixed(3)}) → (${movedVertex.x.toFixed(3)}, ${movedVertex.y.toFixed(3)}, ${movedVertex.z.toFixed(3)})`,
               );
             }
           } else {
