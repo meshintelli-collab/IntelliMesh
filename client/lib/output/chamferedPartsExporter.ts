@@ -585,7 +585,7 @@ export class ChamferedPartsExporter {
     console.log(`✅ Added ${backTriangles.length} back face triangles (original + offset)`);
 
     // Add simple edge-by-edge chamfered walls
-    stlContent += this.addSimpleEdgeChamferedWalls(
+    const wallsContent = this.addSimpleEdgeChamferedWalls(
       originalVertices,
       backVertices,
       chamferedFace.edges,
@@ -593,8 +593,14 @@ export class ChamferedPartsExporter {
       partThickness,
     );
 
-    stlContent += `endsolid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n`;
-    return stlContent;
+    // Post-process: merge overlapping faces and create manifold geometry
+    const processedContent = this.postProcessChamferedGeometry(
+      stlContent + wallsContent,
+      chamferedFace.partIndex,
+      faceInfo.type
+    );
+
+    return processedContent;
   }
 
 
