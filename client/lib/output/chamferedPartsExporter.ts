@@ -402,19 +402,38 @@ export class ChamferedPartsExporter {
             if (otherFace && otherFace.normal) {
               const otherNormal = otherFace.normal.clone().normalize();
 
-              // Calculate angle between face normals
+              // Calculate the actual edge angle (not using abs() to preserve convex/concave info)
               const dot = faceNormal.dot(otherNormal);
               const clampedDot = Math.max(-1, Math.min(1, dot));
-              edgeAngle = (Math.acos(Math.abs(clampedDot)) * 180) / Math.PI;
+
+              // Calculate the actual angle between faces (0° to 180°)
+              const faceAngle = (Math.acos(Math.abs(clampedDot)) * 180) / Math.PI;
+
+              // Determine if this is convex or concave by checking the edge direction
+              const edgeVector = new THREE.Vector3().subVectors(v2, v1).normalize();
+              const crossProduct = new THREE.Vector3().crossVectors(faceNormal, otherNormal);
+              const isConvex = crossProduct.dot(edgeVector) > 0;
+
+              // For convex edges (external corners): edge angle < 180°
+              // For concave edges (internal corners): edge angle > 180°
+              edgeAngle = isConvex ? faceAngle : (360 - faceAngle);
 
               // Apply chamfer formula: chamfer angle = 90° - (edge angle)/2
-              chamferAngle = 90 - edgeAngle / 2;
+              // But adjust for convex vs concave
+              if (isConvex) {
+                // Convex: chamfer the outside face
+                chamferAngle = 90 - edgeAngle / 2;
+              } else {
+                // Concave: chamfer the inside face
+                chamferAngle = 90 - (360 - edgeAngle) / 2;
+              }
 
               // Ensure reasonable chamfer angles (15° to 75°)
-              chamferAngle = Math.max(15, Math.min(75, chamferAngle));
+              chamferAngle = Math.max(15, Math.min(75, Math.abs(chamferAngle)));
 
               if (faceIndex < 3) { // Log first few faces for debugging
-                console.log(`   Face ${faceIndex}, Edge ${i}: edge angle ${edgeAngle.toFixed(1)}° → chamfer ${chamferAngle.toFixed(1)}°`);
+                const convexity = isConvex ? "convex" : "concave";
+                console.log(`   Face ${faceIndex}, Edge ${i}: ${convexity} edge ${edgeAngle.toFixed(1)}° → chamfer ${chamferAngle.toFixed(1)}°`);
               }
             } else {
               console.warn(`⚠️ Face ${faceIndex}: adjacent face ${otherFaceIndex} missing normal, using default angles`);
