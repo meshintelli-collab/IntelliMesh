@@ -581,8 +581,12 @@ export class ChamferedPartsExporter {
     console.log(`✅ Added ${backTriangles.length} back face triangles`);
 
     // Crop intersecting surfaces by limiting part height
-    const croppedFrontVertices = this.cropVerticesAtHeight(frontFaceVertices, 0, scaledThickness);
-    const croppedBackVertices = this.cropVerticesAtHeight(backFaceVertices, 0, scaledThickness);
+    // Find the min/max Z of the original part to define crop bounds
+    const originalMinZ = Math.min(...originalVertices.map(v => v.z));
+    const originalMaxZ = originalMinZ + scaledThickness;
+
+    const croppedFrontVertices = this.cropVerticesAtHeight(frontFaceVertices, originalMinZ, originalMaxZ);
+    const croppedBackVertices = this.cropVerticesAtHeight(backFaceVertices, originalMinZ, originalMaxZ);
 
     console.log(`🔧 Cropped vertices: front ${frontFaceVertices.length}→${croppedFrontVertices.length}, back ${backFaceVertices.length}→${croppedBackVertices.length}`);
 
