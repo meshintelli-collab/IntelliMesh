@@ -130,7 +130,10 @@ export class ChamferedPartsExporter {
     let polygonFaces: PolygonFace[];
     let polygonType: string;
 
-    if (useTriangulated) {
+    // TEMPORARY: Force triangulated mode to test windmilling fix
+    const forceTriangulated = true; // Set to false to use normal mode
+
+    if (useTriangulated || forceTriangulated) {
       // Backup mode: use triangulated geometry (simpler chamfering)
       console.log(`🎯 FORCING triangulated mode for chamfering to avoid windmilling artifacts`);
       polygonFaces =
