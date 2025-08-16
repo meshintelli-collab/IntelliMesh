@@ -106,7 +106,7 @@ export class ChamferedPartsExporter {
     // Calculate edge angles for all faces first
     console.log("🔧 Calculating edge angles from 3D model for chamfering...");
     const chamferedFaces = this.calculateEdgeAngles(polygonFaces, geometry);
-    console.log(`✅ Calculated edge angles for ${chamferedFaces.length} faces`);
+    console.log(`�� Calculated edge angles for ${chamferedFaces.length} faces`);
 
     if (chamferedFaces.length !== polygonFaces.length) {
       console.warn(`⚠️ Mismatch: ${polygonFaces.length} polygon faces but ${chamferedFaces.length} chamfered faces`);
@@ -439,7 +439,7 @@ export class ChamferedPartsExporter {
               }
 
               if (faceIndex < 2) {
-                console.log(`🔍 Exterior angle: ${edgeAngle.toFixed(1)}°, Chamfer angle: ${chamferAngle.toFixed(1)}°`);
+                console.log(`🔍 Exterior angle: ${edgeAngle.toFixed(1)}°, Chamfer angle: ${chamferAngle.toFixed(1)}��`);
               }
 
               // Ensure reasonable chamfer angles (15° to 75°)
@@ -636,7 +636,7 @@ export class ChamferedPartsExporter {
       backChamferedVertices.push(backVertex);
 
       if (i < 2) {
-        console.log(`   Vertex ${i}: chamfer angle ${avgChamferAngle.toFixed(1)}°, offset ${chamferOffset.toFixed(3)}mm`);
+        console.log(`   Vertex ${i}: avg angle ${avgChamferAngle.toFixed(1)}° → final angle ${finalChamferAngle.toFixed(1)}°, offset ${chamferOffset.toFixed(3)}mm`);
         console.log(`   Front: (${vertex.x.toFixed(2)}, ${vertex.y.toFixed(2)}, ${vertex.z.toFixed(2)})`);
         console.log(`   Back: (${backVertex.x.toFixed(2)}, ${backVertex.y.toFixed(2)}, ${backVertex.z.toFixed(2)})`);
       }
