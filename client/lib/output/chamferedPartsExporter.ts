@@ -29,6 +29,35 @@ interface ChamferedFaceInfo {
 }
 
 /**
+ * Utility function to scale polygon faces before part creation
+ * This ensures scale is applied to geometry, not thickness
+ */
+function scalePolygonFaces(polygonFaces: PolygonFace[], scale: number): PolygonFace[] {
+  if (scale === 1) return polygonFaces; // No scaling needed
+
+  return polygonFaces.map(face => {
+    const scaledFace = { ...face };
+
+    // Scale vertices if they exist
+    if (face.vertices) {
+      scaledFace.vertices = face.vertices.map(v => v.clone().multiplyScalar(scale));
+    }
+
+    // Scale originalVertices if they exist
+    if (face.originalVertices) {
+      scaledFace.originalVertices = face.originalVertices.map(v => v.clone().multiplyScalar(scale));
+    }
+
+    // Scale normal (no change needed, just normalize)
+    if (face.normal) {
+      scaledFace.normal = face.normal.clone().normalize();
+    }
+
+    return scaledFace;
+  });
+}
+
+/**
  * ChamferedPartsExporter creates 3D printable parts with chamfered edges
  * for physical assembly using the formula: chamfer angle = 90° - (edge angle)/2
  */
