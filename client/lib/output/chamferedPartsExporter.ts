@@ -822,10 +822,11 @@ export class ChamferedPartsExporter {
       v.clone().multiplyScalar(scale),
     );
 
+    const scaledThickness = thickness * scale; // Account for scaling
     const chamferedVertices = this.generateChamferedVertices(
       originalVertices,
       chamferedFace.edges,
-      thickness, // Use thickness for correct chamfer angle
+      scaledThickness, // Use scaled thickness for correct chamfer angle
     );
 
     // Create basic OBJ structure with chamfered vertices
