@@ -87,7 +87,7 @@ export class EdgeAdjacentMerger {
    * Group coplanar triangles that share complete edges
    */
   static groupEdgeAdjacentTriangles(faces: PolygonFace[]): PolygonFace[] {
-    console.log(`🔧 CONSERVATIVE MERGING: Starting with ${faces.length} triangles`);
+    console.log(`🔧 SMART MERGING: Starting with ${faces.length} triangles`);
 
     // Debug first few faces to understand the geometry
     for (let i = 0; i < Math.min(3, faces.length); i++) {
