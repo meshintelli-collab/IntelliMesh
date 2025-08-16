@@ -484,11 +484,21 @@ export class ChamferedPartsExporter {
     }
 
     const faceInfo = chamferedFace.faceInfo;
-    const originalVertices = faceInfo.originalVertices.map((v: THREE.Vector3) =>
+
+    // Handle missing originalVertices by falling back to vertices
+    const sourceVertices = faceInfo.originalVertices || faceInfo.vertices;
+
+    if (!sourceVertices || !Array.isArray(sourceVertices)) {
+      console.error(`❌ Face ${chamferedFace.partIndex} has no valid vertices for chamfering`);
+      return `solid chamfered_part_${chamferedFace.partIndex + 1}_error\nendsolid chamfered_part_${chamferedFace.partIndex + 1}_error\n`;
+    }
+
+    const originalVertices = sourceVertices.map((v: THREE.Vector3) =>
       v.clone().multiplyScalar(scale),
     );
 
     if (originalVertices.length < 3) {
+      console.warn(`⚠️ Face ${chamferedFace.partIndex} has insufficient vertices (${originalVertices.length})`);
       return `solid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\nendsolid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n`;
     }
 
