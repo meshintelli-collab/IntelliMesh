@@ -1507,34 +1507,34 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       try {
         setIsProcessingTool(true);
 
-        // Import the new triangle polygon merger
-        const { TrianglePolygonMerger } = await import(
-          "../lib/processing/trianglePolygonMerger"
+        // Import the simple coplanar merger
+        const { SimpleCoplanarMerger } = await import(
+          "../lib/processing/simpleCoplanarMerger"
         );
 
         const startTime = performance.now();
         const originalStats = getGeometryStats();
 
-        console.log(`🔧 MERGING TRIANGLES: Starting with ${originalStats?.triangles || 0} triangles`);
+        console.log(`🔧 SIMPLE COPLANAR MERGING: Starting with ${originalStats?.triangles || 0} triangles`);
 
-        // Apply triangle to polygon merging - this creates actual new geometry!
-        const mergeResult = TrianglePolygonMerger.mergeTrianglesToPolygons(workingMeshTri);
+        // Apply simple pair-wise merging - only merges pairs of coplanar triangles!
+        const mergeResult = SimpleCoplanarMerger.mergePairsOnly(workingMeshTri);
 
-        // Create merged polygon faces metadata from the merge result
-        const polygonFaces = mergeResult.polygons.map((polygon, index) => ({
-          type: polygon.type,
-          originalVertices: polygon.vertices,
-          vertices: polygon.vertices, // Set both for compatibility
-          normal: polygon.normal,
-          triangleIndices: polygon.originalTriangleIndices,
+        // Create polygon faces metadata from the merge result
+        const polygonFaces = mergeResult.faces.map((face, index) => ({
+          type: face.type,
+          originalVertices: face.vertices,
+          vertices: face.vertices, // Set both for compatibility
+          normal: face.normal,
+          triangleIndices: face.originalTriangleIndices,
         }));
 
-        // Use the new merged geometry (not just metadata!)
+        // Use the new merged geometry
         const mergedMesh = mergeResult.mergedGeometry;
 
         // Add polygon metadata
         (mergedMesh as any).polygonFaces = polygonFaces;
-        (mergedMesh as any).polygonType = "triangle_polygon_merged";
+        (mergedMesh as any).polygonType = "simple_coplanar_merged";
 
         const processingTime = Math.round(performance.now() - startTime);
 
@@ -1544,15 +1544,14 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
 
         const newStats = {
           vertices: newVertexCount / 3,
-          faces: mergeResult.stats.mergedPolygons, // Use polygon count as face count
+          faces: mergeResult.stats.finalFaces, // Use final face count
           triangles: newTriangleCount,
-          polygons: mergeResult.stats.mergedPolygons,
+          polygons: mergeResult.stats.finalFaces,
           quads: mergeResult.stats.quads,
-          pentagons: mergeResult.stats.pentagons,
-          hexagons: mergeResult.stats.hexagons,
+          mergedPairs: mergeResult.stats.mergedPairs,
         };
 
-        console.log(`✅ MERGE RESULT:`, mergeResult.stats);
+        console.log(`✅ SIMPLE MERGE RESULT:`, mergeResult.stats);
 
         // Store the merged mesh and update preview
         setMergedGeometry(mergedMesh);
