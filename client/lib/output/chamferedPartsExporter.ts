@@ -324,6 +324,7 @@ export class ChamferedPartsExporter {
         adjacentFaces: [], // No adjacent face info for fallback
         edgeAngle: 90, // Default right angle
         chamferAngle: 45, // Default 45-degree chamfer
+        isConvex: true, // Default to convex for fallback
       });
     }
 
