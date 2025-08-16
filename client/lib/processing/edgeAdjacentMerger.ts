@@ -480,35 +480,49 @@ export class EdgeAdjacentMerger {
   ): THREE.Vector3[] {
     if (vertices.length <= 3) return vertices;
 
-    // Calculate centroid
-    const centroid = new THREE.Vector3();
-    for (const vertex of vertices) {
-      centroid.add(vertex);
-    }
-    centroid.divideScalar(vertices.length);
+    console.log(`   🔧 Ordering ${vertices.length} vertices to preserve original shape (NO windmilling)`);
 
-    // Sort vertices by angle around the centroid
-    return vertices.sort((a, b) => {
-      const vecA = a.clone().sub(centroid);
-      const vecB = b.clone().sub(centroid);
+    // For preserving original polygon shape, we need to trace the edges instead of sorting by angle
+    // This prevents the windmill effect that angular sorting creates
+    const orderedVertices = this.tracePolygonPerimeter(vertices);
 
-      // Project vectors onto plane perpendicular to normal
-      const tangent = new THREE.Vector3(1, 0, 0);
-      if (Math.abs(normal.dot(tangent)) > 0.9) {
-        tangent.set(0, 1, 0);
+    console.log(`   ✅ Traced polygon perimeter: ${orderedVertices.length} vertices in correct order`);
+    return orderedVertices;
+  }
+
+  /**
+   * Trace the polygon perimeter by following edges to preserve original shape
+   * This prevents windmilling that occurs with angular sorting
+   */
+  private static tracePolygonPerimeter(vertices: THREE.Vector3[]): THREE.Vector3[] {
+    if (vertices.length <= 3) return vertices;
+
+    const orderedVertices: THREE.Vector3[] = [];
+    const remainingVertices = [...vertices];
+
+    // Start with the first vertex
+    let currentVertex = remainingVertices.shift()!;
+    orderedVertices.push(currentVertex);
+
+    // For each remaining vertex, find the closest one to continue the perimeter
+    while (remainingVertices.length > 0) {
+      let closestIndex = 0;
+      let closestDistance = currentVertex.distanceTo(remainingVertices[0]);
+
+      // Find the closest remaining vertex
+      for (let i = 1; i < remainingVertices.length; i++) {
+        const distance = currentVertex.distanceTo(remainingVertices[i]);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIndex = i;
+        }
       }
-      tangent.cross(normal).normalize();
 
-      const angleA = Math.atan2(
-        vecA.dot(normal.clone().cross(tangent)),
-        vecA.dot(tangent),
-      );
-      const angleB = Math.atan2(
-        vecB.dot(normal.clone().cross(tangent)),
-        vecB.dot(tangent),
-      );
+      // Add the closest vertex and remove it from remaining
+      currentVertex = remainingVertices.splice(closestIndex, 1)[0];
+      orderedVertices.push(currentVertex);
+    }
 
-      return angleA - angleB;
-    });
+    return orderedVertices;
   }
 }
