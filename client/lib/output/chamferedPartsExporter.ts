@@ -610,19 +610,25 @@ export class ChamferedPartsExporter {
 
 
   /**
-   * Add simple edge-by-edge chamfered walls
-   * Each edge creates its own chamfered surface at the correct angle
+   * Add simple edge-by-edge chamfered walls with vertex movement tracking
+   * Tracks which vertices moved so we can update all faces that use them
    */
-  private static addSimpleEdgeChamferedWalls(
+  private static addSimpleEdgeChamferedWallsWithTracking(
     frontVertices: THREE.Vector3[],
     backVertices: THREE.Vector3[],
     edges: EdgeInfo[],
     faceNormal: THREE.Vector3,
     thickness: number,
+    vertexMap: Map<string, THREE.Vector3>
   ): string {
     let content = "";
 
-    console.log(`🔧 Creating simple edge-by-edge chamfered walls`);
+    console.log(`🔧 Creating chamfered walls with vertex tracking`);
+
+    // Helper to create vertex key for tracking
+    const getVertexKey = (v: THREE.Vector3): string => {
+      return `${v.x.toFixed(6)},${v.y.toFixed(6)},${v.z.toFixed(6)}`;
+    };
 
     for (let i = 0; i < frontVertices.length; i++) {
       const next = (i + 1) % frontVertices.length;
@@ -635,7 +641,7 @@ export class ChamferedPartsExporter {
       const f1 = frontVertices[i];
       const f2 = frontVertices[next];
 
-      // Back edge (unchanged)
+      // Back edge (original positions)
       const b1 = backVertices[i];
       const b2 = backVertices[next];
 
@@ -651,6 +657,24 @@ export class ChamferedPartsExporter {
       const cb1 = b1.clone().add(edgePerp.clone().multiplyScalar(-chamferOffset));
       const cb2 = b2.clone().add(edgePerp.clone().multiplyScalar(-chamferOffset));
 
+      // Track vertex movements
+      const b1Key = getVertexKey(b1);
+      const b2Key = getVertexKey(b2);
+
+      if (!vertexMap.has(b1Key)) {
+        vertexMap.set(b1Key, cb1.clone());
+        if (i < 2) {
+          console.log(`   Tracked vertex movement: (${b1.x.toFixed(2)}, ${b1.y.toFixed(2)}, ${b1.z.toFixed(2)}) → (${cb1.x.toFixed(2)}, ${cb1.y.toFixed(2)}, ${cb1.z.toFixed(2)})`);
+        }
+      }
+
+      if (!vertexMap.has(b2Key)) {
+        vertexMap.set(b2Key, cb2.clone());
+        if (i < 2) {
+          console.log(`   Tracked vertex movement: (${b2.x.toFixed(2)}, ${b2.y.toFixed(2)}, ${b2.z.toFixed(2)}) → (${cb2.x.toFixed(2)}, ${cb2.y.toFixed(2)}, ${cb2.z.toFixed(2)})`);
+        }
+      }
+
       // Calculate normal for chamfered wall
       const wallNormal = new THREE.Vector3().crossVectors(
         new THREE.Vector3().subVectors(f2, f1),
@@ -663,12 +687,10 @@ export class ChamferedPartsExporter {
 
       if (i < 2) {
         console.log(`   Edge ${i}: angle ${chamferAngle.toFixed(1)}°, offset ${chamferOffset.toFixed(3)}mm`);
-        console.log(`   Front: (${f1.x.toFixed(2)}, ${f1.y.toFixed(2)}) to (${f2.x.toFixed(2)}, ${f2.y.toFixed(2)})`);
-        console.log(`   Chamfered back: (${cb1.x.toFixed(2)}, ${cb1.y.toFixed(2)}) to (${cb2.x.toFixed(2)}, ${cb2.y.toFixed(2)})`);
       }
     }
 
-    console.log(`✅ Created simple chamfered walls for ${frontVertices.length} edges`);
+    console.log(`✅ Created chamfered walls with ${vertexMap.size} vertex movements tracked`);
     return content;
   }
 
