@@ -514,19 +514,15 @@ export class ChamferedPartsExporter {
 
     let stlContent = `solid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n`;
 
-    // Generate chamfered vertices to create correct chamfer angles
-    const chamferedVertices = this.generateChamferedVertices(
+    // Generate edge chamfers - cuts along each edge at 45°
+    const chamferSize = Math.min(scaledThickness * 0.3, 2.0); // Reasonable chamfer size
+    const { chamferedFaces, chamferFaces } = this.generateEdgeChamfers(
       originalVertices,
       chamferedFace.edges,
-      scaledThickness, // Use scaled thickness for correct chamfer angle
+      chamferSize,
     );
 
-    // Debug: Log vertex positions for fit verification
-    console.log(`🔍 Part ${chamferedFace.partIndex} thickness: ${thickness}`);
-    console.log(`🔍 Original vertex 0: [${originalVertices[0].x.toFixed(3)}, ${originalVertices[0].y.toFixed(3)}, ${originalVertices[0].z.toFixed(3)}]`);
-    console.log(`🔍 Chamfered vertex 0: [${chamferedVertices[0].x.toFixed(3)}, ${chamferedVertices[0].y.toFixed(3)}, ${chamferedVertices[0].z.toFixed(3)}]`);
-    const displacement = new THREE.Vector3().subVectors(chamferedVertices[0], originalVertices[0]);
-    console.log(`🔍 Chamfer displacement: [${displacement.x.toFixed(3)}, ${displacement.y.toFixed(3)}, ${displacement.z.toFixed(3)}], magnitude: ${displacement.length().toFixed(3)}`);
+    console.log(`🔍 Part ${chamferedFace.partIndex}: ${chamferedFaces.length} chamfered edges, ${chamferFaces.length} chamfer faces`);
 
     // Determine which face should be full size based on edge convexity
     const hasConvexEdges = chamferedFace.edges.some(edge => edge.isConvex);
