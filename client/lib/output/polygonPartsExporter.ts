@@ -6,6 +6,7 @@ import {
   PolygonFace,
   ExtrusionOptions,
 } from "../processing/polygonExtruder";
+import { FaceExtruder, Face } from "../processing/faceExtruder";
 
 /**
  * Utility function to scale polygon faces before part creation
