@@ -578,10 +578,6 @@ export class ChamferedPartsExporter {
     // Use original thickness, not scaled (geometry is already scaled)
     const partThickness = thickness;
 
-    let stlContent = `solid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n`;
-
-    console.log(`🔧 Creating properly angled chamfered walls for part ${chamferedFace.partIndex}`);
-
     console.log(`🔧 Using parametric geometry approach for chamfering`);
 
     // Build parametric geometry with vertex IDs that can be transformed
