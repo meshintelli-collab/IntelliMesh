@@ -510,8 +510,9 @@ export class ChamferedPartsExporter {
       return `solid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\nendsolid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n`;
     }
 
-    const normal = faceInfo.normal.clone().normalize();
-    const offset = normal.clone().multiplyScalar(thickness);
+    const normal = faceInfo.normal ? faceInfo.normal.clone().normalize() : new THREE.Vector3(0, 0, 1);
+    const scaledThickness = thickness * scale; // Account for scaling in thickness
+    const offset = normal.clone().multiplyScalar(scaledThickness);
 
     let stlContent = `solid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n`;
 
@@ -519,7 +520,7 @@ export class ChamferedPartsExporter {
     const chamferedVertices = this.generateChamferedVertices(
       originalVertices,
       chamferedFace.edges,
-      thickness, // Use thickness to calculate correct chamfer angle
+      scaledThickness, // Use scaled thickness for correct chamfer angle
     );
 
     // Debug: Log vertex positions for fit verification
