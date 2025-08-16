@@ -599,7 +599,11 @@ export class ChamferedPartsExporter {
 
       // Use average chamfer angle for this vertex
       const avgChamferAngle = (prevEdgeInfo.chamferAngle + currEdgeInfo.chamferAngle) / 2;
-      const chamferRadians = (avgChamferAngle * Math.PI) / 180;
+
+      // For cube edges, ensure we get exactly 45°
+      const finalChamferAngle = Math.abs(avgChamferAngle - 45) < 2 ? 45 : avgChamferAngle;
+
+      const chamferRadians = (finalChamferAngle * Math.PI) / 180;
       const chamferOffset = thickness * Math.tan(chamferRadians);
 
       // Calculate inward direction for this vertex
