@@ -1518,12 +1518,16 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         (mergedMesh as any).polygonFaces = polygonFaces;
 
         const processingTime = Math.round(performance.now() - startTime);
+
+        // Calculate stats based on polygon faces, not underlying triangles
         const newStats = {
           vertices: mergedMesh.attributes.position.count / 3,
-          faces: mergedMesh.index
-            ? mergedMesh.index.count / 3
-            : mergedMesh.attributes.position.count / 9,
+          faces: polygonFaces.length, // Use polygon count, not triangle count
+          polygons: polygonFaces.length,
+          triangles: Math.floor(mergedMesh.attributes.position.count / 9), // Original triangle count
         };
+
+        console.log(`📊 Merge results: ${polygonFaces.length} polygons from ${newStats.triangles} triangles`);
 
         // Store the merged mesh and update preview
         setMergedGeometry(mergedMesh);
