@@ -306,11 +306,13 @@ export class ChamferedPartsExporter {
   private static createDefaultEdges(polygonFace: any): EdgeInfo[] {
     const edges: EdgeInfo[] = [];
 
-    if (!polygonFace.originalVertices || polygonFace.originalVertices.length < 3) {
+    // Try originalVertices first, then fall back to vertices
+    const vertices = polygonFace.originalVertices || polygonFace.vertices;
+
+    if (!vertices || vertices.length < 3) {
+      console.warn("⚠️ No valid vertices found for creating default edges");
       return edges;
     }
-
-    const vertices = polygonFace.originalVertices;
 
     for (let i = 0; i < vertices.length; i++) {
       const v1 = vertices[i];
