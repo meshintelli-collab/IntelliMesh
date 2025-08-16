@@ -412,9 +412,8 @@ export class PolygonPartsExporter {
     thickness: number,
     scale: number,
   ): string {
-    const vertices = faceInfo.originalVertices.map((v: THREE.Vector3) =>
-      v.clone().multiplyScalar(scale),
-    );
+    // Vertices are already scaled in polygon faces
+    const vertices = faceInfo.originalVertices.map((v: THREE.Vector3) => v.clone());
     const normal = faceInfo.normal.clone();
 
     // Ensure valid normal
