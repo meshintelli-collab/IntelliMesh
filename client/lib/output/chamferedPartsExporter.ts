@@ -450,6 +450,16 @@ export class ChamferedPartsExporter {
     scale: number,
     originalGeometry: THREE.BufferGeometry,
   ): string {
+    if (!chamferedFace) {
+      console.error("��� chamferedFace is undefined in createChamferedPolygonSTL");
+      return `solid error_part\nendsolid error_part\n`;
+    }
+
+    if (!chamferedFace.faceInfo) {
+      console.error("❌ chamferedFace.faceInfo is undefined in createChamferedPolygonSTL");
+      return `solid error_part\nendsolid error_part\n`;
+    }
+
     const faceInfo = chamferedFace.faceInfo;
     const originalVertices = faceInfo.originalVertices.map((v: THREE.Vector3) =>
       v.clone().multiplyScalar(scale),
