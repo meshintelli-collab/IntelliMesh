@@ -8,6 +8,7 @@ export interface PolygonFace {
   normal?: THREE.Vector3;
   type?: string;
   index?: number;
+  originalTriangulation?: number[][]; // Preserves exact original triangle vertex indices
 }
 
 /**
