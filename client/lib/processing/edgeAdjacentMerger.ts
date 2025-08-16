@@ -409,6 +409,7 @@ export class EdgeAdjacentMerger {
     return {
       type: faceType,
       originalVertices: orderedVertices,
+      vertices: orderedVertices, // Set both for compatibility
       normal: normal.clone().normalize(),
       triangleIndices: allTriangleIndices,
       originalTriangulation: originalTriangulation, // Preserve original shape
