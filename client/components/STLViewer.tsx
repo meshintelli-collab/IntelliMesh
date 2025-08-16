@@ -1351,6 +1351,22 @@ function STLMesh() {
       geometry.attributes.color.needsUpdate = true;
       // Vertex colors applied successfully
 
+      // CRITICAL FIX: Convert indexed geometry to non-indexed to prevent vertex blending
+      if (geometry.index) {
+        console.log("🔧 Converting indexed geometry to non-indexed to prevent vertex sharing/blending");
+
+        // Convert to non-indexed geometry - each triangle gets its own vertices
+        const newGeometry = geometry.toNonIndexed();
+
+        // Copy the converted attributes back to the original geometry
+        geometry.copy(newGeometry);
+
+        // Dispose the temporary geometry
+        newGeometry.dispose();
+
+        console.log(`✅ Converted to non-indexed: ${geometry.attributes.position.count} vertices, ${geometry.attributes.position.count / 3} triangles`);
+      }
+
       // FORCE truly flat normals - delete existing and recompute from scratch
       if (geometry.attributes.normal) {
         geometry.deleteAttribute('normal');
