@@ -1643,10 +1643,12 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
           // Handle different types of errors
           let errorMessage = "Unknown error";
           if (pythonError instanceof Error) {
-            if (pythonError.name === 'AbortError') {
-              errorMessage = "Request timed out";
-            } else if (pythonError.message.includes('fetch')) {
+            if (pythonError.name === 'AbortError' || pythonError.message.includes('aborted')) {
+              errorMessage = "Request timed out - service may be slow or unavailable";
+            } else if (pythonError.message.includes('fetch') || pythonError.message.includes('Failed to fetch')) {
               errorMessage = "Network error - service not accessible";
+            } else if (pythonError.message.includes('TypeError')) {
+              errorMessage = "Network connection failed";
             } else {
               errorMessage = pythonError.message;
             }
