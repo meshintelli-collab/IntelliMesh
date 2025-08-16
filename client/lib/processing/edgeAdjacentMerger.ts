@@ -206,6 +206,17 @@ export class EdgeAdjacentMerger {
       if (neighbors.size > 0) connectedFaces++;
     }
 
+    console.log(`   📊 Edge adjacency: ${sharedEdgeCount} shared edges, ${connectedFaces}/${faces.length} faces connected`);
+
+    // Show some specific connections for debugging
+    let connectionExamples = 0;
+    for (const [faceId, neighbors] of graph) {
+      if (neighbors.size > 0 && connectionExamples < 3) {
+        console.log(`   📊 Face ${faceId} connects to: [${Array.from(neighbors).join(', ')}]`);
+        connectionExamples++;
+      }
+    }
+
     return graph;
   }
 
