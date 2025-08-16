@@ -1609,8 +1609,16 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
 
           let response;
           try {
-            // Check if signal is already aborted before making request
-            if (mergeController.signal.aborted) {
+            // Safely check if signal is already aborted before making request
+            let isAlreadyAborted = false;
+            try {
+              isAlreadyAborted = mergeController.signal.aborted;
+            } catch (signalError) {
+              // If checking the signal throws an error, treat it as aborted
+              isAlreadyAborted = true;
+            }
+
+            if (isAlreadyAborted) {
               throw new Error('Request was cancelled before starting');
             }
 
