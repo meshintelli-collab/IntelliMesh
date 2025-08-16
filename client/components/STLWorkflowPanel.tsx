@@ -1100,7 +1100,7 @@ export default function STLWorkflowPanel({
                     className="w-full bg-green-500 hover:bg-green-600 text-white text-xs py-2 h-9"
                     disabled={isProcessing}
                   >
-                    🟢 Apply Open3D Decimation
+                    🟢 Apply Decimation
                   </Button>
                 </div>
 
@@ -1211,7 +1211,7 @@ export default function STLWorkflowPanel({
                           <span>
                             {simplificationStats.originalStats?.faces?.toLocaleString() ||
                               0}{" "}
-                            →{" "}
+                            ���{" "}
                             {simplificationStats.newStats?.faces?.toLocaleString() ||
                               0}
                           </span>
@@ -2486,7 +2486,7 @@ export default function STLWorkflowPanel({
                                 sizeEstimate && (
                                   <>
                                     <div className="flex justify-between">
-                                      <span>���� File size:</span>
+                                      <span>������ File size:</span>
                                       <span className="font-mono">
                                         {sizeEstimate.obj?.formatted ||
                                           "~" +
