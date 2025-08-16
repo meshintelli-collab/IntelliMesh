@@ -555,63 +555,25 @@ export class ChamferedPartsExporter {
 
     console.log(`🔧 Creating properly angled chamfered walls for part ${chamferedFace.partIndex}`);
 
-    console.log(`🔧 Using ultra-simple edge-by-edge chamfering`);
+    console.log(`🔧 Using parametric geometry approach for chamfering`);
 
-    // Create front face: original vertices (unchanged)
-    const frontTriangles = this.triangulatePolygon(originalVertices, normal);
-    for (const triangle of frontTriangles) {
-      stlContent += this.addTriangleToSTL(
-        triangle[0],
-        triangle[1],
-        triangle[2],
-        normal,
-      );
-    }
-    console.log(`✅ Added ${frontTriangles.length} front face triangles (original)`);
-
-    // Create back face: original vertices + thickness offset (unchanged)
-    const offset = normal.clone().multiplyScalar(partThickness);
-    const backVertices = originalVertices.map((v: THREE.Vector3) => v.clone().add(offset));
-    const backTriangles = this.triangulatePolygon(backVertices, normal.clone().negate());
-    for (const triangle of backTriangles) {
-      const reversedTriangle = [triangle[2], triangle[1], triangle[0]]; // Reverse winding
-      stlContent += this.addTriangleToSTL(
-        reversedTriangle[0],
-        reversedTriangle[1],
-        reversedTriangle[2],
-        normal.clone().negate(),
-      );
-    }
-    console.log(`✅ Added ${backTriangles.length} back face triangles (original + offset)`);
-
-    // Track vertex movements during chamfering
-    const vertexMap = new Map<string, THREE.Vector3>();
-
-    // Add simple edge-by-edge chamfered walls and track vertex movements
-    const wallsContent = this.addSimpleEdgeChamferedWallsWithTracking(
+    // Build parametric geometry with vertex IDs that can be transformed
+    const parametricGeometry = this.buildParametricGeometry(
       originalVertices,
-      backVertices,
-      chamferedFace.edges,
       normal,
       partThickness,
-      vertexMap
+      chamferedFace.edges
     );
 
-    // Apply vertex movements to all existing geometry
-    const updatedFrontContent = this.applyVertexMovements(stlContent, vertexMap);
+    // Apply chamfer transformations to the parametric vertices
+    this.applyChamferTransformations(parametricGeometry, chamferedFace.edges, normal, partThickness);
 
-    console.log(`🔧 Applied ${vertexMap.size} vertex movements to ensure connectivity`);
+    // Generate final STL from the transformed parametric geometry
+    let stlContent = `solid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n`;
+    stlContent += this.generateSTLFromParametricGeometry(parametricGeometry);
+    stlContent += `endsolid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n`;
 
-    // Remove any existing solid/endsolid lines from the content to avoid duplicates
-    const cleanedContent = updatedFrontContent
-      .replace(/^solid\s+.*$/gm, '')
-      .replace(/^endsolid\s+.*$/gm, '')
-      .trim();
-
-    return `solid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n` +
-           cleanedContent + '\n' +
-           wallsContent +
-           `endsolid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n`;
+    return stlContent;
   }
 
 
@@ -678,7 +640,7 @@ export class ChamferedPartsExporter {
       if (!existingCb1) {
         vertexMap.set(b1Key, cb1.clone());
         if (i < 3) {
-          console.log(`   NEW vertex movement: (${b1.x.toFixed(3)}, ${b1.y.toFixed(3)}, ${b1.z.toFixed(3)}) �� (${cb1.x.toFixed(3)}, ${cb1.y.toFixed(3)}, ${cb1.z.toFixed(3)})`);
+          console.log(`   NEW vertex movement: (${b1.x.toFixed(3)}, ${b1.y.toFixed(3)}, ${b1.z.toFixed(3)}) → (${cb1.x.toFixed(3)}, ${cb1.y.toFixed(3)}, ${cb1.z.toFixed(3)})`);
         }
       } else {
         // Average the movements if vertex is affected by multiple edges
