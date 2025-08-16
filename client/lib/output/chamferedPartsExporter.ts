@@ -415,7 +415,7 @@ export class ChamferedPartsExporter {
 
       // Handle invalid faces by creating default chamfer data
       if (!face.originalVertices || face.originalVertices.length < 3) {
-        console.warn(`��️ Face ${faceIndex} has invalid vertices, using default chamfer`);
+        console.warn(`⚠️ Face ${faceIndex} has invalid vertices, using default chamfer`);
         chamferedFaces.push({
           faceInfo: face,
           edges: this.createDefaultEdges(face),
@@ -584,23 +584,28 @@ export class ChamferedPartsExporter {
     }
     console.log(`✅ Added ${backTriangles.length} back face triangles (original + offset)`);
 
-    // Add simple edge-by-edge chamfered walls
-    const wallsContent = this.addSimpleEdgeChamferedWalls(
+    // Track vertex movements during chamfering
+    const vertexMap = new Map<string, THREE.Vector3>();
+
+    // Add simple edge-by-edge chamfered walls and track vertex movements
+    const wallsContent = this.addSimpleEdgeChamferedWallsWithTracking(
       originalVertices,
       backVertices,
       chamferedFace.edges,
       normal,
       partThickness,
+      vertexMap
     );
 
-    // Post-process: merge overlapping faces and create manifold geometry
-    const processedContent = this.postProcessChamferedGeometry(
-      stlContent + wallsContent,
-      chamferedFace.partIndex,
-      faceInfo.type
-    );
+    // Apply vertex movements to all existing geometry
+    const updatedFrontContent = this.applyVertexMovements(stlContent, vertexMap);
 
-    return processedContent;
+    console.log(`🔧 Applied ${vertexMap.size} vertex movements to ensure connectivity`);
+
+    return `solid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n` +
+           updatedFrontContent +
+           wallsContent +
+           `endsolid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n`;
   }
 
 
