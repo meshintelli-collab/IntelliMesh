@@ -760,7 +760,14 @@ export class ChamferedPartsExporter {
     const faceInfo = chamferedFace.faceInfo;
 
     // Generate chamfered vertices based on calculated edge angles
-    const originalVertices = faceInfo.originalVertices.map((v: THREE.Vector3) =>
+    const sourceVertices = faceInfo.originalVertices || faceInfo.vertices;
+
+    if (!sourceVertices || !Array.isArray(sourceVertices)) {
+      console.error(`❌ Face ${chamferedFace.partIndex} has no valid vertices for OBJ chamfering`);
+      return `# Error: No valid vertices for chamfering\n`;
+    }
+
+    const originalVertices = sourceVertices.map((v: THREE.Vector3) =>
       v.clone().multiplyScalar(scale),
     );
 
