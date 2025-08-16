@@ -542,7 +542,7 @@ export class PolygonPartsExporter {
     scale: number,
   ) {
     // Vertices are already scaled in polygon faces
-    const vertices = polygonFace.vertices.map((v: THREE.Vector3) => v.clone());
+    const vertices = (polygonFace.vertices || polygonFace.originalVertices || []).map((v: THREE.Vector3) => v.clone());
 
     // Calculate polygon properties
     const edges = [];
