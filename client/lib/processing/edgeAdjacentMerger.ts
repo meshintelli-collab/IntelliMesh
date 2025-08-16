@@ -126,7 +126,7 @@ export class EdgeAdjacentMerger {
         }
       } else {
         // Complex component (3+ triangles) - DON'T MERGE to avoid windmilling
-        console.log(`   🚫 PRESERVING ${component.length} triangles separately (avoid windmilling)`);
+        console.log(`   ���� PRESERVING ${component.length} triangles separately (avoid windmilling)`);
         for (const triangleIndex of component) {
           mergedFaces.push(faces[triangleIndex]);
         }
@@ -584,5 +584,65 @@ export class EdgeAdjacentMerger {
 
     console.log(`   ✅ Preserved ${originalTriangulation.length} triangles in original pattern`);
     return originalTriangulation;
+  }
+
+  /**
+   * Try to merge two triangles into a quad (conservative approach)
+   * Only merge if they form a clean rectangular quad
+   */
+  private static tryMergeToQuad(componentIndices: number[], faces: PolygonFace[]): PolygonFace | null {
+    if (componentIndices.length !== 2) return null;
+
+    const face1 = faces[componentIndices[0]];
+    const face2 = faces[componentIndices[1]];
+
+    // Get all vertices from both triangles
+    const allVertices = [...face1.originalVertices, ...face2.originalVertices];
+
+    // Remove duplicates to find unique vertices
+    const uniqueVertices = this.removeDuplicateVertices(allVertices);
+
+    // Should have exactly 4 unique vertices for a quad
+    if (uniqueVertices.length !== 4) {
+      return null; // Not a clean quad
+    }
+
+    // Check if the vertices form a reasonable quad (not too distorted)
+    if (!this.isReasonableQuad(uniqueVertices)) {
+      return null; // Too distorted, keep as triangles
+    }
+
+    // Create quad with simple vertex ordering (no complex reordering)
+    const normal = this.ensureVector3(face1.normal);
+
+    console.log(`   ✅ Merged 2 triangles into clean quad`);
+
+    return {
+      type: "quad",
+      originalVertices: uniqueVertices, // Keep simple order
+      normal: normal.clone().normalize(),
+      triangleIndices: [componentIndices[0], componentIndices[1]],
+      originalTriangulation: [[0, 1, 2], [0, 2, 3]], // Standard quad triangulation
+    };
+  }
+
+  /**
+   * Check if 4 vertices form a reasonable quad (not too distorted)
+   */
+  private static isReasonableQuad(vertices: THREE.Vector3[]): boolean {
+    if (vertices.length !== 4) return false;
+
+    // Simple check: all edges should be roughly similar length
+    const distances: number[] = [];
+    for (let i = 0; i < vertices.length; i++) {
+      const next = (i + 1) % vertices.length;
+      distances.push(vertices[i].distanceTo(vertices[next]));
+    }
+
+    const avgDistance = distances.reduce((a, b) => a + b, 0) / distances.length;
+    const maxVariation = Math.max(...distances) / Math.min(...distances);
+
+    // If any edge is more than 3x longer than others, probably not a good quad
+    return maxVariation < 3;
   }
 }
