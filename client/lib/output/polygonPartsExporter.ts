@@ -82,12 +82,13 @@ export class PolygonPartsExporter {
     let polygonType: string;
 
     if (useTriangulated) {
-      // Backup mode: use triangulated geometry
+      // Triangulated mode: use exact original triangulation (NO windmilling)
+      console.log(`🎯 FORCING triangulated mode to avoid windmilling artifacts`);
       polygonFaces =
         PolygonExtruder.extractPolygonsFromTriangulatedGeometry(geometry);
-      polygonType = "triangulated_backup";
+      polygonType = "triangulated_exact";
       console.log(
-        `🔄 Using backup triangulated mode: ${polygonFaces.length} triangles`,
+        `✅ Using EXACT triangulated mode: ${polygonFaces.length} triangles (NO reconstruction)`,
       );
     } else {
       // Normal mode: use merged polygon faces
@@ -105,7 +106,7 @@ export class PolygonPartsExporter {
         polygonFaces = mergedFaces;
         polygonType = (geometry as any).polygonType || "merged";
         console.log(
-          `✅ Using merged polygon mode: ${polygonFaces.length} polygons`,
+          `⚠️ Using merged polygon mode: ${polygonFaces.length} polygons (may cause windmilling)`,
         );
       }
     }
