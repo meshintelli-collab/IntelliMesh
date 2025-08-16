@@ -250,14 +250,11 @@ export class PolygonPartsExporter {
     let stlContent = `solid part_${polygonIndex + 1}_${faceInfo.type}\n`;
 
     // Use ORIGINAL triangulation from the mesh - NO re-triangulation!
-    if (faceInfo.triangleIndices && faceInfo.triangleIndices.length > 0) {
-      console.log(`   Using original triangulation to preserve exact shape (${faceInfo.triangleIndices.length} triangles)`);
-
-      // Extract original triangle vertex indices
-      const originalTriangleIndices = this.extractOriginalTriangleIndices(faceInfo.triangleIndices, vertices);
+    if (faceInfo.originalTriangulation && faceInfo.originalTriangulation.length > 0) {
+      console.log(`   Using original triangulation to preserve exact shape (${faceInfo.originalTriangulation.length} triangles)`);
 
       // Front face: use exact original triangulation
-      for (const triangle of originalTriangleIndices) {
+      for (const triangle of faceInfo.originalTriangulation) {
         const v1 = vertices[triangle[0]];
         const v2 = vertices[triangle[1]];
         const v3 = vertices[triangle[2]];
@@ -268,7 +265,7 @@ export class PolygonPartsExporter {
       }
 
       // Back face: same triangles offset by thickness, reversed winding
-      for (const triangle of originalTriangleIndices) {
+      for (const triangle of faceInfo.originalTriangulation) {
         const v1 = vertices[triangle[0]];
         const v2 = vertices[triangle[1]];
         const v3 = vertices[triangle[2]];
@@ -279,6 +276,25 @@ export class PolygonPartsExporter {
           const backV3 = v3.clone().add(offset);
 
           // Reverse winding for back face
+          stlContent += this.addTriangleToSTL(backV3, backV2, backV1, normal.clone().negate());
+        }
+      }
+    } else {
+      // Fallback to simple fan triangulation if no original triangulation available
+      console.log(`   No original triangulation found, using simple fan triangulation fallback`);
+      for (let i = 1; i < vertices.length - 1; i++) {
+        const v1 = vertices[0];
+        const v2 = vertices[i];
+        const v3 = vertices[i + 1];
+
+        if (v1 && v2 && v3) {
+          // Front face
+          stlContent += this.addTriangleToSTL(v1, v2, v3, normal);
+
+          // Back face with reversed winding
+          const backV1 = v1.clone().add(offset);
+          const backV2 = v2.clone().add(offset);
+          const backV3 = v3.clone().add(offset);
           stlContent += this.addTriangleToSTL(backV3, backV2, backV1, normal.clone().negate());
         }
       }
