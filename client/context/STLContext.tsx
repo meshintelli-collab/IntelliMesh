@@ -1676,7 +1676,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
           setGeometry(displayGeometry);
         }
 
-        const reductionAchieved = reductionFromPython; // Use Python's calculation
+        const reductionAchieved = reductionFromPython;
 
         return {
           success: true,
