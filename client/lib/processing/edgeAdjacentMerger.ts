@@ -214,6 +214,11 @@ export class EdgeAdjacentMerger {
     face1: PolygonFace,
     face2: PolygonFace,
   ): boolean {
+    // First check coplanarity to avoid unnecessary edge checks
+    if (!this.facesAreCoplanar(face1, face2)) {
+      return false;
+    }
+
     const edges1 = this.getFaceEdges(face1);
     const edges2 = this.getFaceEdges(face2);
 
