@@ -387,7 +387,9 @@ export class ChamferedPartsExporter {
   }
 
   /**
-   * Generate chamfered vertices by insetting original vertices based on chamfer angles
+   * Generate chamfered vertices by moving points inward based on calculated edge angles
+   * Uses the formula: chamfer angle = 90° - (edge angle)/2
+   * Chamfers the inside face (face away from extrusion normal)
    */
   private static generateChamferedVertices(
     originalVertices: THREE.Vector3[],
@@ -396,41 +398,43 @@ export class ChamferedPartsExporter {
   ): THREE.Vector3[] {
     const chamferedVertices: THREE.Vector3[] = [];
 
+    console.log(`🔧 Generating chamfered vertices for ${originalVertices.length} vertices`);
+
     for (let i = 0; i < originalVertices.length; i++) {
       const vertex = originalVertices[i];
       const prevEdge = edges[(i - 1 + edges.length) % edges.length];
       const nextEdge = edges[i];
 
-      // Calculate inset direction based on adjacent edges
-      const prevDir = new THREE.Vector3()
-        .subVectors(
-          vertex,
-          originalVertices[
-            (i - 1 + originalVertices.length) % originalVertices.length
-          ],
-        )
-        .normalize();
-      const nextDir = new THREE.Vector3()
-        .subVectors(originalVertices[(i + 1) % originalVertices.length], vertex)
-        .normalize();
+      // Calculate edge directions
+      const prevVertex = originalVertices[(i - 1 + originalVertices.length) % originalVertices.length];
+      const nextVertex = originalVertices[(i + 1) % originalVertices.length];
 
-      // Calculate angle bisector for inset direction
-      const bisector = new THREE.Vector3()
-        .addVectors(prevDir, nextDir)
-        .normalize();
+      const prevDir = new THREE.Vector3().subVectors(vertex, prevVertex).normalize();
+      const nextDir = new THREE.Vector3().subVectors(nextVertex, vertex).normalize();
 
-      // Use average chamfer angle of adjacent edges
-      const avgChamferAngle =
-        (prevEdge.chamferAngle + nextEdge.chamferAngle) / 2;
-      const insetDistance =
-        chamferDepth / Math.sin((avgChamferAngle * Math.PI) / 180);
+      // Calculate inward normal (toward polygon interior)
+      const edgeNormal1 = new THREE.Vector3().crossVectors(prevDir, new THREE.Vector3(0, 0, 1)).normalize();
+      const edgeNormal2 = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 0, 1), nextDir).normalize();
 
-      // Inset the vertex
-      const chamferedVertex = vertex
-        .clone()
-        .sub(
-          bisector.multiplyScalar(Math.min(insetDistance, chamferDepth * 2)),
-        );
+      // Average the inward normals to get chamfer direction
+      const inwardNormal = new THREE.Vector3().addVectors(edgeNormal1, edgeNormal2).normalize();
+
+      // Use calculated chamfer angles from edge analysis
+      const avgChamferAngle = (prevEdge.chamferAngle + nextEdge.chamferAngle) / 2;
+
+      // Calculate how much to move points inward based on chamfer angle
+      // For chamfer angle = 90° - edge_angle/2, we want to move inward by:
+      const chamferAngleRad = (avgChamferAngle * Math.PI) / 180;
+      const insetDistance = chamferDepth / Math.tan(chamferAngleRad);
+
+      // Limit inset to reasonable bounds
+      const maxInset = chamferDepth * 3;
+      const actualInset = Math.min(insetDistance, maxInset);
+
+      // Move vertex inward (toward polygon center) for chamfering
+      const chamferedVertex = vertex.clone().add(inwardNormal.multiplyScalar(actualInset));
+
+      console.log(`   Vertex ${i}: edge angles ${prevEdge.edgeAngle.toFixed(1)}°/${nextEdge.edgeAngle.toFixed(1)}°, chamfer ${avgChamferAngle.toFixed(1)}°, inset ${actualInset.toFixed(3)}mm`);
 
       chamferedVertices.push(chamferedVertex);
     }
