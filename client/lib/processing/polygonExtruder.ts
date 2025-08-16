@@ -158,8 +158,31 @@ export class PolygonExtruder {
 
     let stlContent = `solid chamfered_polygon_${polygon.index || 0}\n`;
 
-    // Front face - triangulate the chamfered polygon
-    const frontTriangles = this.triangulatePolygon(frontVertices, normal);
+    // Use original triangulation if available for chamfered polygons too
+    const polygonAny = polygon as any;
+    let frontTriangles: THREE.Vector3[][];
+
+    if (polygonAny.originalTriangulation && polygonAny.originalTriangulation.length > 0) {
+      console.log(`   Using original triangulation for chamfered polygon (${polygonAny.originalTriangulation.length} triangles)`);
+
+      // Use original triangulation with chamfered vertices
+      frontTriangles = [];
+      for (const triangle of polygonAny.originalTriangulation) {
+        const v1 = frontVertices[triangle[0]];
+        const v2 = frontVertices[triangle[1]];
+        const v3 = frontVertices[triangle[2]];
+
+        if (v1 && v2 && v3) {
+          frontTriangles.push([v1, v2, v3]);
+        }
+      }
+    } else {
+      console.log(`   No original triangulation found for chamfered polygon, using fallback triangulation`);
+      // Fallback to re-triangulation
+      frontTriangles = this.triangulatePolygon(frontVertices, normal);
+    }
+
+    // Front face
     for (const triangle of frontTriangles) {
       stlContent += this.addTriangleToSTL(
         triangle[0],
