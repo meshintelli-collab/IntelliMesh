@@ -107,11 +107,46 @@ export class ChamferedPartsExporter {
     const chamferedFaces = this.calculateEdgeAngles(polygonFaces, geometry);
     console.log(`✅ Calculated edge angles for ${chamferedFaces.length} faces`);
 
+    if (chamferedFaces.length !== polygonFaces.length) {
+      console.warn(`⚠️ Mismatch: ${polygonFaces.length} polygon faces but ${chamferedFaces.length} chamfered faces`);
+    }
+
     // Create individual chamfered files for each polygon face
     for (let i = 0; i < polygonFaces.length; i++) {
       const polygonFace = polygonFaces[i];
       const chamferedFace = chamferedFaces[i];
       const fileExtension = format === "obj" ? "obj" : "stl";
+
+      // Ensure chamferedFace exists, otherwise create a fallback
+      if (!chamferedFace) {
+        console.warn(`⚠️ No chamfered face data for face ${i}, creating fallback`);
+        // Create fallback chamfered face with default angles
+        const fallbackChamferedFace: ChamferedFaceInfo = {
+          faceInfo: polygonFace,
+          edges: this.createDefaultEdges(polygonFace),
+          partIndex: i,
+        };
+
+        const partContent =
+          format === "obj"
+            ? this.createChamferedPolygonOBJ(
+                fallbackChamferedFace,
+                partThickness,
+                chamferDepth,
+                scale,
+              )
+            : this.createChamferedPolygonSTL(
+                fallbackChamferedFace,
+                partThickness,
+                chamferDepth,
+                scale,
+                geometry,
+              );
+
+        const partFilename = `part_${String(i + 1).padStart(4, "0")}_${polygonFace.type || "polygon"}_chamfered.${fileExtension}`;
+        zip.file(partFilename, partContent);
+        continue;
+      }
 
       const partContent =
         format === "obj"
