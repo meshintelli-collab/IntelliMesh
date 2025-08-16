@@ -296,49 +296,37 @@ export class PolygonPartsExporter {
   }
 
   /**
-   * Extract the original triangles from geometry using triangleIndices
-   * This gives us the EXACT triangulation without re-triangulating
+   * Extract original triangle vertex indices from the polygon face
+   * This preserves the exact shape as it was in the original mesh
    */
-  private static extractOriginalTriangles(
+  private static extractOriginalTriangleIndices(
     triangleIndices: number[],
-    geometry: THREE.BufferGeometry,
-    scale: number,
-  ): THREE.Vector3[][] {
-    const triangles: THREE.Vector3[][] = [];
-    const positions = geometry.attributes.position;
+    vertices: THREE.Vector3[]
+  ): number[][] {
+    const triangles: number[][] = [];
 
-    if (!positions) {
-      console.error("No position attribute in geometry");
-      return triangles;
-    }
+    console.log(`   Creating triangles from ${triangleIndices.length} indices for ${vertices.length} vertices`);
 
-    // Each triangle is 3 vertices, each vertex is 3 coordinates
-    for (const triangleIndex of triangleIndices) {
-      const vertexStart = triangleIndex * 9; // 9 values per triangle (3 vertices * 3 coords)
-
-      if (vertexStart + 8 < positions.count * 3) {
-        const v1 = new THREE.Vector3(
-          positions.getX(vertexStart / 3),
-          positions.getY(vertexStart / 3),
-          positions.getZ(vertexStart / 3),
-        ).multiplyScalar(scale); // Scale original geometry vertices
-
-        const v2 = new THREE.Vector3(
-          positions.getX((vertexStart + 3) / 3),
-          positions.getY((vertexStart + 3) / 3),
-          positions.getZ((vertexStart + 3) / 3),
-        ).multiplyScalar(scale); // Scale original geometry vertices
-
-        const v3 = new THREE.Vector3(
-          positions.getX((vertexStart + 6) / 3),
-          positions.getY((vertexStart + 6) / 3),
-          positions.getZ((vertexStart + 6) / 3),
-        ).multiplyScalar(scale); // Scale original geometry vertices
-
-        triangles.push([v1, v2, v3]);
+    // Simple approach: every 3 consecutive indices form a triangle
+    for (let i = 0; i < triangleIndices.length; i += 3) {
+      if (i + 2 < triangleIndices.length) {
+        triangles.push([
+          triangleIndices[i] % vertices.length,
+          triangleIndices[i + 1] % vertices.length,
+          triangleIndices[i + 2] % vertices.length
+        ]);
       }
     }
 
+    // Fallback: if no triangle data, create simple fan triangulation
+    if (triangles.length === 0) {
+      console.log(`   No triangle indices found, using fan triangulation fallback`);
+      for (let i = 1; i < vertices.length - 1; i++) {
+        triangles.push([0, i, i + 1]);
+      }
+    }
+
+    console.log(`   Extracted ${triangles.length} triangles for original shape`);
     return triangles;
   }
 
