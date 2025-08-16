@@ -539,9 +539,8 @@ export class ChamferedPartsExporter {
       return `solid chamfered_part_${chamferedFace.partIndex + 1}_error\nendsolid chamfered_part_${chamferedFace.partIndex + 1}_error\n`;
     }
 
-    const originalVertices = sourceVertices.map((v: THREE.Vector3) =>
-      v.clone().multiplyScalar(scale),
-    );
+    // Vertices are already scaled in the polygon faces, no need to scale again
+    const originalVertices = sourceVertices.map((v: THREE.Vector3) => v.clone());
 
     if (originalVertices.length < 3) {
       console.warn(`⚠️ Face ${chamferedFace.partIndex} has insufficient vertices (${originalVertices.length})`);
@@ -549,7 +548,8 @@ export class ChamferedPartsExporter {
     }
 
     const normal = faceInfo.normal ? faceInfo.normal.clone().normalize() : new THREE.Vector3(0, 0, 1);
-    const scaledThickness = thickness * scale;
+    // Use original thickness, not scaled (geometry is already scaled)
+    const partThickness = thickness;
 
     let stlContent = `solid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n`;
 
