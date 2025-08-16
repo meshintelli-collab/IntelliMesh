@@ -2372,6 +2372,9 @@ export default function STLWorkflowPanel({
                           if (currentExportType === "complete") {
                             exportSTL();
                           } else if (currentExportType === "parts") {
+                            console.log(`🔍 POLYGON PARTS STL EXPORT:`);
+                            console.log(`   triangleOptions.modelType: ${triangleOptions.modelType}`);
+                            console.log(`   useTriangulated will be: ${triangleOptions.modelType === "triangle"}`);
                             exportParts({
                               ...triangleOptions,
                               format: "stl",
