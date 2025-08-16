@@ -103,6 +103,14 @@ export class PolygonPartsExporter {
           PolygonExtruder.extractPolygonsFromTriangulatedGeometry(geometry);
         polygonType = "triangulated_fallback";
       } else {
+        console.log(`📊 MERGED MODE: Found ${mergedFaces.length} merged faces to export`);
+
+        // Log details about the merged faces
+        for (let i = 0; i < Math.min(3, mergedFaces.length); i++) {
+          const face = mergedFaces[i];
+          console.log(`   Face ${i}: ${face.type}, ${face.vertices?.length || 0} vertices, triangulation: ${(face as any).originalTriangulation?.length || 0} triangles`);
+        }
+
         // Check if merged faces might cause windmilling and auto-switch to triangulated
         const shouldForceTriangulated = this.shouldAvoidPolygonMerging(mergedFaces, geometry);
 
@@ -117,7 +125,7 @@ export class PolygonPartsExporter {
           polygonFaces = mergedFaces;
           polygonType = (geometry as any).polygonType || "merged";
           console.log(
-            `✅ Using merged polygon mode: ${polygonFaces.length} polygons`,
+            `✅ KEEPING merged polygon mode: ${polygonFaces.length} polygons (preserving structure)`,
           );
         }
       }
