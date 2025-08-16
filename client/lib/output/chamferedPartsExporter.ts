@@ -444,7 +444,7 @@ export class ChamferedPartsExporter {
 
               if (faceIndex < 3) { // Log first few faces for debugging
                 const convexity = isConvex ? "convex" : "concave";
-                console.log(`   Face ${faceIndex}, Edge ${i}: ${convexity} edge ${edgeAngle.toFixed(1)}° → chamfer ${chamferAngle.toFixed(1)}°`);
+                console.log(`   Face ${faceIndex}, Edge ${i}: ${convexity} edge ${edgeAngle.toFixed(1)}�� → chamfer ${chamferAngle.toFixed(1)}°`);
               }
             } else {
               console.warn(`⚠️ Face ${faceIndex}: adjacent face ${otherFaceIndex} missing normal, using default angles`);
@@ -538,15 +538,15 @@ export class ChamferedPartsExporter {
     if (useFrontFullSize) {
       // Front face: original size (where extrusion starts)
       frontFaceVertices = originalVertices;
-      // Back face: chamfered size (where extrusion ends, angled inward)
+      // Back face: chamfered size (moved inward and offset by thickness)
       backFaceVertices = chamferedVertices.map((v: THREE.Vector3) => v.clone().add(offset));
-      console.log(`📐 Using front face full size, back face chamfered`);
+      console.log(`📐 Front face: full size, Back face: chamfered + thickness offset`);
     } else {
-      // Front face: chamfered size (angled inward)
+      // Front face: chamfered size (moved inward from original)
       frontFaceVertices = chamferedVertices;
-      // Back face: original size
+      // Back face: original size (offset by thickness)
       backFaceVertices = originalVertices.map((v: THREE.Vector3) => v.clone().add(offset));
-      console.log(`📐 Using front face chamfered, back face full size`);
+      console.log(`📐 Front face: chamfered, Back face: full size + thickness offset`);
     }
 
     // Front face triangulation
