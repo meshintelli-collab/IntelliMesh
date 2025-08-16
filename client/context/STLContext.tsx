@@ -1541,7 +1541,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         console.log(`🐍 CALLING PYTHON COPLANAR MERGER: Starting with ${originalStats?.triangles || 0} triangles`);
 
         // Convert THREE.js geometry to STL for Python service
-        const stlContent = this.geometryToSTL(workingMeshTri);
+        const stlContent = geometryToSTL(workingMeshTri);
 
         // Create form data for Python service
         const formData = new FormData();
