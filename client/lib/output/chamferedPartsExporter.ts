@@ -129,6 +129,10 @@ export class ChamferedPartsExporter {
       throw new Error("No polygon faces found for chamfered export");
     }
 
+    // Apply scale to geometry BEFORE processing (not to thickness)
+    console.log(`🔧 Applying scale factor ${scale} to geometry before chamfering...`);
+    polygonFaces = scalePolygonFaces(polygonFaces, scale);
+
     // Track part information for Excel database
     const partDatabase: any[] = [];
 
