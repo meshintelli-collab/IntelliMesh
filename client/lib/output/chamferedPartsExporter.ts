@@ -509,26 +509,14 @@ export class ChamferedPartsExporter {
     }
 
     const normal = faceInfo.normal ? faceInfo.normal.clone().normalize() : new THREE.Vector3(0, 0, 1);
-    const scaledThickness = thickness * scale; // Account for scaling in thickness
-    const offset = normal.clone().multiplyScalar(scaledThickness);
+    const scaledThickness = thickness * scale;
 
     let stlContent = `solid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n`;
 
-    // Generate chamfered vertices for edge chamfering
-    const chamferSize = Math.min(scaledThickness * 0.2, 1.5); // Small chamfer
-    const chamferedVertices = this.generateChamferedVertices(
-      originalVertices,
-      chamferedFace.edges,
-      chamferSize,
-    );
+    console.log(`🔧 Creating properly angled chamfered walls for part ${chamferedFace.partIndex}`);
 
-    console.log(`🔍 Part ${chamferedFace.partIndex}: chamfer size ${chamferSize.toFixed(3)}mm`);
-
-    // Create front and back faces with chamfered vertices
-    console.log(`🔧 Generating faces with chamfered vertices`);
-
-    // Front face: chamfered polygon (smaller)
-    const frontTriangles = this.triangulatePolygon(chamferedVertices, normal);
+    // Create front face: keep original polygon at full size
+    const frontTriangles = this.triangulatePolygon(originalVertices, normal);
     for (const triangle of frontTriangles) {
       stlContent += this.addTriangleToSTL(
         triangle[0],
@@ -537,11 +525,12 @@ export class ChamferedPartsExporter {
         normal,
       );
     }
-    console.log(`✅ Added ${frontTriangles.length} front face triangles`);
+    console.log(`✅ Added ${frontTriangles.length} front face triangles (full size)`);
 
-    // Back face: chamfered polygon offset by thickness
-    const backChamferedVertices = chamferedVertices.map((v: THREE.Vector3) => v.clone().add(offset));
-    const backTriangles = this.triangulatePolygon(backChamferedVertices, normal.clone().negate());
+    // Create back face: also full size, offset by thickness
+    const offset = normal.clone().multiplyScalar(scaledThickness);
+    const backVertices = originalVertices.map((v: THREE.Vector3) => v.clone().add(offset));
+    const backTriangles = this.triangulatePolygon(backVertices, normal.clone().negate());
     for (const triangle of backTriangles) {
       const reversedTriangle = [triangle[2], triangle[1], triangle[0]]; // Reverse winding
       stlContent += this.addTriangleToSTL(
@@ -551,14 +540,15 @@ export class ChamferedPartsExporter {
         normal.clone().negate(),
       );
     }
-    console.log(`✅ Added ${backTriangles.length} back face triangles`);
+    console.log(`✅ Added ${backTriangles.length} back face triangles (full size)`);
 
-    // Add chamfered side walls connecting original and chamfered vertices
-    stlContent += this.addChamferedPerimeterWalls(
-      originalVertices,         // Original vertices (outer edge)
-      chamferedVertices,        // Chamfered vertices (inner edge)
-      backChamferedVertices,    // Back chamfered vertices
-      offset,                   // Thickness offset
+    // Add properly angled chamfered side walls
+    stlContent += this.addAngledChamferedWalls(
+      originalVertices,
+      backVertices,
+      chamferedFace.edges,
+      normal,
+      scaledThickness,
     );
 
     stlContent += `endsolid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n`;
