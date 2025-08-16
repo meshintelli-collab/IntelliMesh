@@ -1583,14 +1583,21 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
 
           // Call Python service with manual timeout
           const mergeController = new AbortController();
-          const mergeTimeout = setTimeout(() => mergeController.abort(), 15000); // 15 second timeout for processing
+          const mergeTimeout = setTimeout(() => {
+            console.log("Merge request timed out after 15 seconds");
+            mergeController.abort();
+          }, 15000); // 15 second timeout for processing
 
-          const response = await fetch('http://localhost:8001/merge_coplanar_faces', {
-            method: 'POST',
-            body: formData,
-            signal: mergeController.signal
-          });
-          clearTimeout(mergeTimeout);
+          let response;
+          try {
+            response = await fetch('http://localhost:8001/merge_coplanar_faces', {
+              method: 'POST',
+              body: formData,
+              signal: mergeController.signal
+            });
+          } finally {
+            clearTimeout(mergeTimeout);
+          }
 
           if (!response.ok) {
             const errorText = await response.text();
