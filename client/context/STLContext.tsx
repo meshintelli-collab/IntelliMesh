@@ -1507,36 +1507,52 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       try {
         setIsProcessingTool(true);
 
-        // Import the coplanar merger if not already available
-        const { EdgeAdjacentMerger } = await import(
-          "../lib/processing/edgeAdjacentMerger"
+        // Import the new triangle polygon merger
+        const { TrianglePolygonMerger } = await import(
+          "../lib/processing/trianglePolygonMerger"
         );
 
         const startTime = performance.now();
         const originalStats = getGeometryStats();
 
-        // Create merged mesh from current triangle mesh
-        const mergedMesh = workingMeshTri.clone();
+        console.log(`🔧 MERGING TRIANGLES: Starting with ${originalStats?.triangles || 0} triangles`);
 
-        // Apply coplanar face merging
-        const polygonFaces =
-          EdgeAdjacentMerger.mergeCoplanarTriangles(mergedMesh);
+        // Apply triangle to polygon merging - this creates actual new geometry!
+        const mergeResult = TrianglePolygonMerger.mergeTrianglesToPolygons(workingMeshTri);
 
-        // Add polygon face metadata to geometry
+        // Create merged polygon faces metadata from the merge result
+        const polygonFaces = mergeResult.polygons.map((polygon, index) => ({
+          type: polygon.type,
+          originalVertices: polygon.vertices,
+          vertices: polygon.vertices, // Set both for compatibility
+          normal: polygon.normal,
+          triangleIndices: polygon.originalTriangleIndices,
+        }));
+
+        // Use the new merged geometry (not just metadata!)
+        const mergedMesh = mergeResult.mergedGeometry;
+
+        // Add polygon metadata
         (mergedMesh as any).polygonFaces = polygonFaces;
+        (mergedMesh as any).polygonType = "triangle_polygon_merged";
 
         const processingTime = Math.round(performance.now() - startTime);
+
+        // Calculate new stats from the actual merged geometry
+        const newVertexCount = mergedMesh.attributes.position.count;
+        const newTriangleCount = Math.floor(newVertexCount / 9); // After triangulation
+
         const newStats = {
-          vertices: mergedMesh.attributes.position.count / 3,
-          faces: mergedMesh.index
-            ? mergedMesh.index.count / 3
-            : mergedMesh.attributes.position.count / 9,
+          vertices: newVertexCount / 3,
+          faces: mergeResult.stats.mergedPolygons, // Use polygon count as face count
+          triangles: newTriangleCount,
+          polygons: mergeResult.stats.mergedPolygons,
+          quads: mergeResult.stats.quads,
+          pentagons: mergeResult.stats.pentagons,
+          hexagons: mergeResult.stats.hexagons,
         };
 
-        // Apply polygon faces to the merged mesh geometry
-        const { PolygonFaceReconstructor } = await import("../lib/processing/polygonFaceReconstructor");
-        PolygonFaceReconstructor.applyReconstructedFaces(mergedMesh, polygonFaces);
-        (mergedMesh as any).polygonType = "user_generated_merged";
+        console.log(`✅ MERGE RESULT:`, mergeResult.stats);
 
         // Store the merged mesh and update preview
         setMergedGeometry(mergedMesh);
