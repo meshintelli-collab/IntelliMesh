@@ -21,35 +21,78 @@ export class PythonMeshProcessor {
    * Check if Python service is available
    */
   static async checkServiceHealth(): Promise<boolean> {
+    // Detect cloud environment where local Python service isn't available
+    const isCloudEnvironment = this.isCloudEnvironment();
+
+    if (isCloudEnvironment) {
+      console.log("🌐 Cloud environment detected - Python service not available, using JavaScript fallback");
+      return false;
+    }
+
     try {
       console.log("🔍 Checking Python Open3D service availability...");
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
 
       const response = await fetch(`${this.SERVICE_URL}/health`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
         },
-        // Add timeout to prevent hanging
-        signal: AbortSignal.timeout(3000), // 3 second timeout
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const health = await response.json();
         console.log(`✅ Python Open3D service is healthy (Open3D v${health.open3d_version})`);
         return true;
       } else {
-        console.log(`⚠️ Python service responded with status ${response.status}`);
+        console.log(`⚠️ Python service responded with status ${response.status} - using JavaScript fallback`);
         return false;
       }
     } catch (error) {
-      // Handle network errors, timeouts, or service unavailability
+      // Handle network errors, timeouts, or service unavailability gracefully
       if (error instanceof Error) {
-        console.log(`🐍 Python Open3D service unavailable: ${error.message}`);
+        if (error.name === 'AbortError') {
+          console.log("🐍 Python service connection timeout - using JavaScript fallback");
+        } else if (error.message.includes('fetch')) {
+          console.log("🐍 Python service not reachable (network error) - using JavaScript fallback");
+        } else {
+          console.log(`🐍 Python service error: ${error.message} - using JavaScript fallback`);
+        }
       } else {
-        console.log("🐍 Python Open3D service unavailable: Unknown error");
+        console.log("🐍 Python service unavailable (unknown error) - using JavaScript fallback");
       }
       return false;
     }
+  }
+
+  /**
+   * Detect if running in a cloud environment where localhost services aren't available
+   */
+  private static isCloudEnvironment(): boolean {
+    if (typeof window === 'undefined') return true; // Server-side
+
+    const hostname = window.location.hostname;
+
+    // Check for common cloud hosting patterns
+    const cloudPatterns = [
+      /\.fly\.dev$/,           // Fly.io
+      /\.vercel\.app$/,        // Vercel
+      /\.netlify\.app$/,       // Netlify
+      /\.herokuapp\.com$/,     // Heroku
+      /\.railway\.app$/,       // Railway
+      /\.onrender\.com$/,      // Render
+      /\.cloudflare\.com$/,    // Cloudflare Pages
+      /\.surge\.sh$/,          // Surge
+      /\.github\.io$/,         // GitHub Pages
+    ];
+
+    return cloudPatterns.some(pattern => pattern.test(hostname)) ||
+           hostname !== 'localhost' && hostname !== '127.0.0.1' && !hostname.startsWith('192.168.');
   }
 
   /**
