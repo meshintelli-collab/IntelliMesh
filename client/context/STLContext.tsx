@@ -402,7 +402,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         // Apply the merged faces to the preview geometry
         PolygonFaceReconstructor.applyReconstructedFaces(preview, mergedFaces);
         (preview as any).polygonFaces = mergedFaces;
-        (preview as any).polygonType = "edge_adjacent_merged";
+        (preview as any).polygonType = hasOriginalPolygons ? "preserved_procedural" : "edge_adjacent_merged";
 
         // Detailed logging for merged faces
         const faceTypeCounts = mergedFaces.reduce((counts: any, face: any) => {
@@ -411,7 +411,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         }, {});
 
         console.log(
-          `✅ Created merged preview with ${mergedFaces.length} polygon faces:`,
+          `✅ ${hasOriginalPolygons ? 'Preserved original' : 'Created merged'} preview with ${mergedFaces.length} polygon faces:`,
           faceTypeCounts,
         );
       } else {
