@@ -524,11 +524,11 @@ export class ChamferedPartsExporter {
 
     console.log(`🔍 Part ${chamferedFace.partIndex}: chamfer size ${chamferSize.toFixed(3)}mm`);
 
-    // Create front and back faces with chamfered edges
-    console.log(`🔧 Generating faces with edge chamfers`);
+    // Create front and back faces with chamfered vertices
+    console.log(`🔧 Generating faces with chamfered vertices`);
 
-    // Front face: original polygon with chamfered edges
-    const frontTriangles = this.triangulatePolygon(originalVertices, normal);
+    // Front face: chamfered polygon (smaller)
+    const frontTriangles = this.triangulatePolygon(chamferedVertices, normal);
     for (const triangle of frontTriangles) {
       stlContent += this.addTriangleToSTL(
         triangle[0],
@@ -539,9 +539,9 @@ export class ChamferedPartsExporter {
     }
     console.log(`✅ Added ${frontTriangles.length} front face triangles`);
 
-    // Back face: same polygon offset by thickness
-    const backVertices = originalVertices.map((v: THREE.Vector3) => v.clone().add(offset));
-    const backTriangles = this.triangulatePolygon(backVertices, normal.clone().negate());
+    // Back face: chamfered polygon offset by thickness
+    const backChamferedVertices = chamferedVertices.map((v: THREE.Vector3) => v.clone().add(offset));
+    const backTriangles = this.triangulatePolygon(backChamferedVertices, normal.clone().negate());
     for (const triangle of backTriangles) {
       const reversedTriangle = [triangle[2], triangle[1], triangle[0]]; // Reverse winding
       stlContent += this.addTriangleToSTL(
@@ -552,22 +552,6 @@ export class ChamferedPartsExporter {
       );
     }
     console.log(`✅ Added ${backTriangles.length} back face triangles`);
-
-    // Add chamfer faces (the 45° angled cuts on edges)
-    for (const chamferFace of chamferFaces) {
-      if (chamferFace.length >= 3) {
-        const chamferTriangles = this.triangulatePolygon(chamferFace, normal);
-        for (const triangle of chamferTriangles) {
-          stlContent += this.addTriangleToSTL(
-            triangle[0],
-            triangle[1],
-            triangle[2],
-            normal,
-          );
-        }
-      }
-    }
-    console.log(`✅ Added ${chamferFaces.length} chamfer face sections`);
 
     // Add side walls connecting front and back faces (with chamfered edges)
     stlContent += this.addChamferedPerimeterWalls(
