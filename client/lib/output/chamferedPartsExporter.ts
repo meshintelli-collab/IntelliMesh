@@ -38,13 +38,12 @@ interface ParametricVertex {
 }
 
 /**
- * Parametric triangle with vertex references
+ * Parametric polygon with vertex references
  */
-interface ParametricTriangle {
-  v1: string; // vertex ID
-  v2: string; // vertex ID
-  v3: string; // vertex ID
+interface ParametricPolygon {
+  vertexIds: string[]; // array of vertex IDs
   normal: THREE.Vector3;
+  type: 'front' | 'back' | 'wall'; // face type for debugging
 }
 
 /**
@@ -52,7 +51,7 @@ interface ParametricTriangle {
  */
 interface ParametricGeometry {
   vertices: Map<string, ParametricVertex>;
-  triangles: ParametricTriangle[];
+  polygons: ParametricPolygon[];
 }
 
 /**
