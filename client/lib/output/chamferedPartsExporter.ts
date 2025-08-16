@@ -257,6 +257,33 @@ export class ChamferedPartsExporter {
   }
 
   /**
+   * Create default edge information when edge angle calculation fails
+   */
+  private static createDefaultEdges(polygonFace: any): EdgeInfo[] {
+    const edges: EdgeInfo[] = [];
+
+    if (!polygonFace.originalVertices || polygonFace.originalVertices.length < 3) {
+      return edges;
+    }
+
+    const vertices = polygonFace.originalVertices;
+
+    for (let i = 0; i < vertices.length; i++) {
+      const v1 = vertices[i];
+      const v2 = vertices[(i + 1) % vertices.length];
+
+      edges.push({
+        vertices: [v1.clone(), v2.clone()],
+        adjacentFaces: [], // No adjacent face info for fallback
+        edgeAngle: 90, // Default right angle
+        chamferAngle: 45, // Default 45-degree chamfer
+      });
+    }
+
+    return edges;
+  }
+
+  /**
    * Calculate edge angles between adjacent faces and prepare chamfer data
    */
   private static calculateEdgeAngles(
