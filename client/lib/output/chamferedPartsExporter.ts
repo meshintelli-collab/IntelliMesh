@@ -583,73 +583,46 @@ export class ChamferedPartsExporter {
   }
 
   /**
-   * Generate edge chamfers by creating angled cuts along each edge
-   * Creates additional geometry for 45° chamfer surfaces on each edge
+   * Generate chamfered vertices by moving them inward slightly for edge chamfering
+   * This creates a simple inward chamfer on all edges
    */
-  private static generateEdgeChamfers(
+  private static generateChamferedVertices(
     originalVertices: THREE.Vector3[],
     edges: EdgeInfo[],
-    chamferSize: number, // Size of the chamfer cut
-  ): {
-    chamferedFaces: THREE.Vector3[][];
-    chamferFaces: THREE.Vector3[][];
-  } {
-    const chamferedFaces: THREE.Vector3[][] = [];
-    const chamferFaces: THREE.Vector3[][] = [];
+    chamferSize: number,
+  ): THREE.Vector3[] {
+    const chamferedVertices: THREE.Vector3[] = [];
 
-    console.log(`🔧 Generating edge chamfers (chamfer size: ${chamferSize})`);
+    console.log(`🔧 Generating chamfered vertices (chamfer size: ${chamferSize})`);
 
     for (let i = 0; i < originalVertices.length; i++) {
-      const v1 = originalVertices[i];
-      const v2 = originalVertices[(i + 1) % originalVertices.length];
-      const edge = edges[i];
+      const vertex = originalVertices[i];
+      const prevVertex = originalVertices[(i - 1 + originalVertices.length) % originalVertices.length];
+      const nextVertex = originalVertices[(i + 1) % originalVertices.length];
 
-      // Calculate chamfer points along this edge
-      const edgeVector = new THREE.Vector3().subVectors(v2, v1);
-      const edgeLength = edgeVector.length();
-      const edgeDir = edgeVector.normalize();
+      // Calculate inward direction (average of edge bisectors)
+      const edge1 = new THREE.Vector3().subVectors(prevVertex, vertex).normalize();
+      const edge2 = new THREE.Vector3().subVectors(nextVertex, vertex).normalize();
+      const bisector = new THREE.Vector3().addVectors(edge1, edge2);
 
-      // Create chamfer cuts at both ends of the edge (45° chamfer)
-      const chamferDistance = Math.min(chamferSize, edgeLength * 0.4); // Limit to 40% of edge length
-
-      // Chamfer points: move inward from each vertex along the edge
-      const chamferV1 = v1.clone().add(edgeDir.clone().multiplyScalar(chamferDistance));
-      const chamferV2 = v2.clone().add(edgeDir.clone().multiplyScalar(-chamferDistance));
-
-      // Create the chamfered edge (shortened edge)
-      if (chamferV1.distanceTo(chamferV2) > 0.001) {
-        // Store the chamfered edge
-        chamferedFaces.push([chamferV1, chamferV2]);
-
-        // Create 45° chamfer faces at each end
-        // Calculate perpendicular direction for chamfer faces
-        const perpDir = new THREE.Vector3().crossVectors(edgeDir, new THREE.Vector3(0, 0, 1)).normalize();
-        const chamferHeight = chamferDistance; // 45° means height = distance
-
-        // Chamfer face at v1 end
-        const chamferFace1 = [
-          v1,
-          chamferV1,
-          chamferV1.clone().add(new THREE.Vector3(0, 0, chamferHeight)),
-          v1.clone().add(new THREE.Vector3(0, 0, chamferHeight))
-        ];
-        chamferFaces.push(chamferFace1);
-
-        // Chamfer face at v2 end
-        const chamferFace2 = [
-          chamferV2,
-          v2,
-          v2.clone().add(new THREE.Vector3(0, 0, chamferHeight)),
-          chamferV2.clone().add(new THREE.Vector3(0, 0, chamferHeight))
-        ];
-        chamferFaces.push(chamferFace2);
+      // If bisector is zero (180° angle), use perpendicular
+      if (bisector.length() < 0.001) {
+        bisector.crossVectors(edge1, new THREE.Vector3(0, 0, 1));
       }
 
-      console.log(`   Edge ${i}: chamfered ${chamferDistance.toFixed(3)}mm at each end`);
+      bisector.normalize();
+
+      // Move vertex inward by chamfer size
+      const chamferedVertex = vertex.clone().add(bisector.multiplyScalar(chamferSize));
+      chamferedVertices.push(chamferedVertex);
+
+      if (i < 2) {
+        console.log(`   Vertex ${i}: moved inward by ${chamferSize.toFixed(3)}mm`);
+      }
     }
 
-    console.log(`✅ Generated ${chamferedFaces.length} chamfered edges with ${chamferFaces.length} chamfer faces`);
-    return { chamferedFaces, chamferFaces };
+    console.log(`✅ Generated ${chamferedVertices.length} chamfered vertices`);
+    return chamferedVertices;
   }
 
   /**
