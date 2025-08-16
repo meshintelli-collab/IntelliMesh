@@ -591,18 +591,30 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     try {
       const existingPolygonFaces = (workingGeometry as any).polygonFaces;
 
-      if (existingPolygonFaces && Array.isArray(existingPolygonFaces) && existingPolygonFaces.length > 0) {
+      if (
+        existingPolygonFaces &&
+        Array.isArray(existingPolygonFaces) &&
+        existingPolygonFaces.length > 0
+      ) {
         // Use preserved polygon faces from decimation
-        console.log(`🔧 Using preserved polygon faces: ${existingPolygonFaces.length} faces`);
+        console.log(
+          `🔧 Using preserved polygon faces: ${existingPolygonFaces.length} faces`,
+        );
         (preview as any).polygonFaces = existingPolygonFaces;
         (preview as any).polygonType = `${operationType}_preserved`;
         (preview as any).isPolygonPreserved = true;
       } else {
         // Reconstruct polygon faces from triangulated geometry
-        console.log(`🔧 Reconstructing polygon faces for ${operationType} preview`);
-        const polygonFaces = PolygonFaceReconstructor.reconstructPolygonFaces(workingGeometry);
+        console.log(
+          `🔧 Reconstructing polygon faces for ${operationType} preview`,
+        );
+        const polygonFaces =
+          PolygonFaceReconstructor.reconstructPolygonFaces(workingGeometry);
         if (polygonFaces.length > 0) {
-          PolygonFaceReconstructor.applyReconstructedFaces(preview, polygonFaces);
+          PolygonFaceReconstructor.applyReconstructedFaces(
+            preview,
+            polygonFaces,
+          );
           (preview as any).polygonType = `${operationType}_merged`;
         } else {
           // Fallback: use triangulated geometry as-is
@@ -984,16 +996,20 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
 
           // Keep polygon metadata if it exists for proper coloring
           if ((cleanTriangleMesh as any).polygonFaces) {
-            console.log(`✅ Preserved ${(cleanTriangleMesh as any).polygonFaces.length} polygon faces after decimation`);
+            console.log(
+              `✅ Preserved ${(cleanTriangleMesh as any).polygonFaces.length} polygon faces after decimation`,
+            );
           }
 
           // CRITICAL: Remove any existing normals and force flat normals for solid face coloring
           if (cleanTriangleMesh.attributes.normal) {
-            cleanTriangleMesh.deleteAttribute('normal');
+            cleanTriangleMesh.deleteAttribute("normal");
           }
           // Force recalculation of flat normals using right-hand rule
           cleanTriangleMesh.computeVertexNormals();
-          console.log("✅ Applied flat normals to decimated triangle mesh for solid face coloring");
+          console.log(
+            "✅ Applied flat normals to decimated triangle mesh for solid face coloring",
+          );
 
           setWorkingMeshTri(cleanTriangleMesh);
 

@@ -48,7 +48,7 @@ export function prepareGeometryForViewing(
   // Step 2: ALWAYS compute flat normals for crisp shading
   // Remove any existing normals first to ensure clean flat normals
   if (prepared.attributes.normal) {
-    prepared.deleteAttribute('normal');
+    prepared.deleteAttribute("normal");
   }
 
   // Force flat normals for solid face coloring (no vertex-based blending)

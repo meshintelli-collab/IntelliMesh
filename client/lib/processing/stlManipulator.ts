@@ -54,14 +54,22 @@ export class STLManipulator {
             processingTime: pythonResult.processingTime,
           };
         } catch (decimationError) {
-          console.log("🐍 ❌ Python decimation failed, using JavaScript fallback:", decimationError);
+          console.log(
+            "🐍 ❌ Python decimation failed, using JavaScript fallback:",
+            decimationError,
+          );
         }
       } else {
-        console.log("🔄 Using JavaScript decimation (Python service not available)");
+        console.log(
+          "🔄 Using JavaScript decimation (Python service not available)",
+        );
       }
     } catch (error) {
       // Handle any import or unexpected errors gracefully
-      console.log("🔄 Using JavaScript decimation (Python service error):", error);
+      console.log(
+        "🔄 Using JavaScript decimation (Python service error):",
+        error,
+      );
     }
 
     // Choose implementation based on method

@@ -262,7 +262,10 @@ export default function STLWorkflowPanel({
         duration: 2000,
       });
 
-      const result = await reducePoints(quadricReduction, "quadric_edge_collapse");
+      const result = await reducePoints(
+        quadricReduction,
+        "quadric_edge_collapse",
+      );
 
       if (result?.success) {
         toast({
@@ -271,7 +274,9 @@ export default function STLWorkflowPanel({
           duration: 3000,
         });
         setSimplificationStats(result.stats || {});
-        console.log("✅ Quadric decimation complete - mesh updated with proper statistics");
+        console.log(
+          "✅ Quadric decimation complete - mesh updated with proper statistics",
+        );
       } else {
         throw new Error(result?.message || "Decimation failed");
       }

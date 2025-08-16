@@ -1015,7 +1015,7 @@ function STLMesh() {
       materialType: "MeshStandardMaterial",
       baseColor: baseColor.toString(16),
       hasGeometry: !!geometry,
-      materialUuid: mat.uuid
+      materialUuid: mat.uuid,
     });
 
     return mat;
@@ -1236,29 +1236,56 @@ function STLMesh() {
         for (let i = 0; i < totalTriangles; i++) {
           const offset = i * 9;
           // Get normals for all 3 vertices of this triangle
-          const n1 = [normals[offset], normals[offset+1], normals[offset+2]];
-          const n2 = [normals[offset+3], normals[offset+4], normals[offset+5]];
-          const n3 = [normals[offset+6], normals[offset+7], normals[offset+8]];
+          const n1 = [
+            normals[offset],
+            normals[offset + 1],
+            normals[offset + 2],
+          ];
+          const n2 = [
+            normals[offset + 3],
+            normals[offset + 4],
+            normals[offset + 5],
+          ];
+          const n3 = [
+            normals[offset + 6],
+            normals[offset + 7],
+            normals[offset + 8],
+          ];
 
           // Check if all 3 normals are the same (flat shading)
           const tolerance = 0.001;
-          const same12 = Math.abs(n1[0] - n2[0]) < tolerance && Math.abs(n1[1] - n2[1]) < tolerance && Math.abs(n1[2] - n2[2]) < tolerance;
-          const same13 = Math.abs(n1[0] - n3[0]) < tolerance && Math.abs(n1[1] - n3[1]) < tolerance && Math.abs(n1[2] - n3[2]) < tolerance;
+          const same12 =
+            Math.abs(n1[0] - n2[0]) < tolerance &&
+            Math.abs(n1[1] - n2[1]) < tolerance &&
+            Math.abs(n1[2] - n2[2]) < tolerance;
+          const same13 =
+            Math.abs(n1[0] - n3[0]) < tolerance &&
+            Math.abs(n1[1] - n3[1]) < tolerance &&
+            Math.abs(n1[2] - n3[2]) < tolerance;
 
           if (same12 && same13) {
             flatTriangles++;
           } else {
             blendedTriangles++;
-            if (i < 3) { // Log first few blended triangles for debugging
-              console.log(`      ⚠️ Triangle ${i} has blended normals: n1[${n1.map(n=>n.toFixed(3)).join(',')}] n2[${n2.map(n=>n.toFixed(3)).join(',')}] n3[${n3.map(n=>n.toFixed(3)).join(',')}]`);
+            if (i < 3) {
+              // Log first few blended triangles for debugging
+              console.log(
+                `      ⚠️ Triangle ${i} has blended normals: n1[${n1.map((n) => n.toFixed(3)).join(",")}] n2[${n2.map((n) => n.toFixed(3)).join(",")}] n3[${n3.map((n) => n.toFixed(3)).join(",")}]`,
+              );
             }
           }
         }
-        console.log(`      ✅ Flat triangles: ${flatTriangles}/${totalTriangles} (${(flatTriangles/totalTriangles*100).toFixed(1)}%)`);
-        console.log(`      ❌ Blended triangles: ${blendedTriangles}/${totalTriangles} (${(blendedTriangles/totalTriangles*100).toFixed(1)}%)`);
+        console.log(
+          `      ✅ Flat triangles: ${flatTriangles}/${totalTriangles} (${((flatTriangles / totalTriangles) * 100).toFixed(1)}%)`,
+        );
+        console.log(
+          `      ❌ Blended triangles: ${blendedTriangles}/${totalTriangles} (${((blendedTriangles / totalTriangles) * 100).toFixed(1)}%)`,
+        );
 
         if (blendedTriangles > 0) {
-          console.log(`      🚨 PROBLEM: ${blendedTriangles} triangles have vertex-based normals (causing blended colors)`);
+          console.log(
+            `      🚨 PROBLEM: ${blendedTriangles} triangles have vertex-based normals (causing blended colors)`,
+          );
         }
       }
 
@@ -1268,7 +1295,9 @@ function STLMesh() {
       console.log(`   🎨 Polygon faces info:`);
       console.log(`      Available: ${!!polygonFaces}`);
       console.log(`      Count: ${polygonFaces?.length || 0}`);
-      console.log(`      Type: ${Array.isArray(polygonFaces) ? 'Array' : typeof polygonFaces}`);
+      console.log(
+        `      Type: ${Array.isArray(polygonFaces) ? "Array" : typeof polygonFaces}`,
+      );
 
       if (polygonFaces && Array.isArray(polygonFaces)) {
         for (let faceIndex = 0; faceIndex < polygonFaces.length; faceIndex++) {
@@ -1361,27 +1390,38 @@ function STLMesh() {
       let blendedColorTriangles = 0;
       const totalTriangles = Math.floor(colors.length / 9);
 
-      for (let i = 0; i < Math.min(totalTriangles, 10); i++) { // Check first 10 triangles
+      for (let i = 0; i < Math.min(totalTriangles, 10); i++) {
+        // Check first 10 triangles
         const offset = i * 9;
         // Get colors for all 3 vertices of this triangle
-        const c1 = [colors[offset], colors[offset+1], colors[offset+2]];
-        const c2 = [colors[offset+3], colors[offset+4], colors[offset+5]];
-        const c3 = [colors[offset+6], colors[offset+7], colors[offset+8]];
+        const c1 = [colors[offset], colors[offset + 1], colors[offset + 2]];
+        const c2 = [colors[offset + 3], colors[offset + 4], colors[offset + 5]];
+        const c3 = [colors[offset + 6], colors[offset + 7], colors[offset + 8]];
 
         // Check if all 3 vertices have the same color (solid face)
         const tolerance = 0.001;
-        const same12 = Math.abs(c1[0] - c2[0]) < tolerance && Math.abs(c1[1] - c2[1]) < tolerance && Math.abs(c1[2] - c2[2]) < tolerance;
-        const same13 = Math.abs(c1[0] - c3[0]) < tolerance && Math.abs(c1[1] - c3[1]) < tolerance && Math.abs(c1[2] - c3[2]) < tolerance;
+        const same12 =
+          Math.abs(c1[0] - c2[0]) < tolerance &&
+          Math.abs(c1[1] - c2[1]) < tolerance &&
+          Math.abs(c1[2] - c2[2]) < tolerance;
+        const same13 =
+          Math.abs(c1[0] - c3[0]) < tolerance &&
+          Math.abs(c1[1] - c3[1]) < tolerance &&
+          Math.abs(c1[2] - c3[2]) < tolerance;
 
         if (same12 && same13) {
           solidColorTriangles++;
         } else {
           blendedColorTriangles++;
-          console.log(`   ⚠️ Triangle ${i} has blended colors: v1[${c1.map(c=>c.toFixed(3)).join(',')}] v2[${c2.map(c=>c.toFixed(3)).join(',')}] v3[${c3.map(c=>c.toFixed(3)).join(',')}]`);
+          console.log(
+            `   ⚠️ Triangle ${i} has blended colors: v1[${c1.map((c) => c.toFixed(3)).join(",")}] v2[${c2.map((c) => c.toFixed(3)).join(",")}] v3[${c3.map((c) => c.toFixed(3)).join(",")}]`,
+          );
         }
       }
 
-      console.log(`   🎨 Color consistency: ${solidColorTriangles} solid, ${blendedColorTriangles} blended (of first 10 triangles)`);
+      console.log(
+        `   🎨 Color consistency: ${solidColorTriangles} solid, ${blendedColorTriangles} blended (of first 10 triangles)`,
+      );
 
       // Re-verify normals after computePolygonAwareFlatNormals
       if (geometry.attributes.normal) {
@@ -1391,22 +1431,44 @@ function STLMesh() {
 
         for (let i = 0; i < Math.min(totalTriangles, 10); i++) {
           const offset = i * 9;
-          const n1 = [normals[offset], normals[offset+1], normals[offset+2]];
-          const n2 = [normals[offset+3], normals[offset+4], normals[offset+5]];
-          const n3 = [normals[offset+6], normals[offset+7], normals[offset+8]];
+          const n1 = [
+            normals[offset],
+            normals[offset + 1],
+            normals[offset + 2],
+          ];
+          const n2 = [
+            normals[offset + 3],
+            normals[offset + 4],
+            normals[offset + 5],
+          ];
+          const n3 = [
+            normals[offset + 6],
+            normals[offset + 7],
+            normals[offset + 8],
+          ];
 
           const tolerance = 0.001;
-          const same12 = Math.abs(n1[0] - n2[0]) < tolerance && Math.abs(n1[1] - n2[1]) < tolerance && Math.abs(n1[2] - n2[2]) < tolerance;
-          const same13 = Math.abs(n1[0] - n3[0]) < tolerance && Math.abs(n1[1] - n3[1]) < tolerance && Math.abs(n1[2] - n3[2]) < tolerance;
+          const same12 =
+            Math.abs(n1[0] - n2[0]) < tolerance &&
+            Math.abs(n1[1] - n2[1]) < tolerance &&
+            Math.abs(n1[2] - n2[2]) < tolerance;
+          const same13 =
+            Math.abs(n1[0] - n3[0]) < tolerance &&
+            Math.abs(n1[1] - n3[1]) < tolerance &&
+            Math.abs(n1[2] - n3[2]) < tolerance;
 
           if (same12 && same13) {
             postFlatTriangles++;
           } else {
             postBlendedTriangles++;
-            console.log(`   ⚠️ Triangle ${i} STILL has blended normals after flat normal computation!`);
+            console.log(
+              `   ⚠️ Triangle ${i} STILL has blended normals after flat normal computation!`,
+            );
           }
         }
-        console.log(`   📐 Post-flat normals: ${postFlatTriangles} flat, ${postBlendedTriangles} still blended (of first 10 triangles)`);
+        console.log(
+          `   📐 Post-flat normals: ${postFlatTriangles} flat, ${postBlendedTriangles} still blended (of first 10 triangles)`,
+        );
       }
 
       // Debug: Sample some colors to verify they're applied (with bounds checking)
