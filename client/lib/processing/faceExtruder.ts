@@ -31,7 +31,12 @@ export class FaceExtruder {
    */
   static extrudeFace(face: Face, thickness: number): ExtrudedFace {
     console.log(`🔧 Extruding ${face.type} with ${face.vertices.length} vertices, thickness ${thickness}mm`);
-    
+
+    // DEBUG: Log input face details
+    console.log(`   📊 Input vertices:`, face.vertices.map((v, idx) =>
+      `${idx}: (${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)})`));
+    console.log(`   📊 Input normal:`, `(${face.normal.x.toFixed(3)}, ${face.normal.y.toFixed(3)}, ${face.normal.z.toFixed(3)})`);
+
     // Ensure normal is normalized and pointing outward (right hand rule)
     const normal = face.normal.clone().normalize();
     
