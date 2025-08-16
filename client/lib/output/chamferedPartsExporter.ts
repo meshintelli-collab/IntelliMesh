@@ -414,7 +414,7 @@ export class ChamferedPartsExporter {
               // Determine if this is convex or concave by checking the edge direction
               const edgeVector = new THREE.Vector3().subVectors(v2, v1).normalize();
               const crossProduct = new THREE.Vector3().crossVectors(faceNormal, otherNormal);
-              const isConvex = crossProduct.dot(edgeVector) > 0;
+              isConvex = crossProduct.dot(edgeVector) > 0;
 
               // For convex edges (external corners): edge angle < 180°
               // For concave edges (internal corners): edge angle > 180°
