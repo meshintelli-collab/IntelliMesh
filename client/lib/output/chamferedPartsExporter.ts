@@ -953,6 +953,51 @@ export class ChamferedPartsExporter {
   }
 
   /**
+   * Extract original triangle vertex indices from the polygon face
+   * This preserves the exact shape as it was in the original mesh
+   */
+  private static extractOriginalTriangles(
+    triangleIndices: number[],
+    faceInfo: any,
+    originalVertices: THREE.Vector3[]
+  ): number[][] {
+    const triangles: number[][] = [];
+
+    // If we have direct triangle data, use it
+    if (faceInfo.triangles && faceInfo.triangles.length > 0) {
+      console.log(`   Found direct triangle data: ${faceInfo.triangles.length} triangles`);
+      return faceInfo.triangles.map((tri: any) => [tri[0], tri[1], tri[2]]);
+    }
+
+    // If we have triangle indices, create triangles by grouping vertices by 3
+    if (triangleIndices.length > 0) {
+      console.log(`   Creating triangles from ${triangleIndices.length} indices`);
+
+      // Simple approach: every 3 consecutive vertices form a triangle
+      for (let i = 0; i < triangleIndices.length; i += 3) {
+        if (i + 2 < triangleIndices.length) {
+          triangles.push([
+            triangleIndices[i] % originalVertices.length,
+            triangleIndices[i + 1] % originalVertices.length,
+            triangleIndices[i + 2] % originalVertices.length
+          ]);
+        }
+      }
+    }
+
+    // Fallback: if no triangle data, create simple fan triangulation
+    if (triangles.length === 0) {
+      console.log(`   No triangle indices found, using fan triangulation fallback`);
+      for (let i = 1; i < originalVertices.length - 1; i++) {
+        triangles.push([0, i, i + 1]);
+      }
+    }
+
+    console.log(`   Extracted ${triangles.length} triangles for original shape`);
+    return triangles;
+  }
+
+  /**
    * Add simple edge-by-edge chamfered walls with vertex movement tracking
    * Tracks which vertices moved so we can update all faces that use them
    */
