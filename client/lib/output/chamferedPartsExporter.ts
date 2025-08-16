@@ -808,15 +808,12 @@ export class ChamferedPartsExporter {
       });
     }
 
-    // Use original triangulation to preserve exact polygon shapes
-    if (faceInfo.triangleIndices && faceInfo.triangleIndices.length > 0) {
-      console.log(`   Using original triangulation to preserve exact shape (${faceInfo.triangleIndices.length} triangles)`);
+    // Use corrected triangulation to preserve exact polygon shapes with proper winding
+    if (properFaceData.triangulation && properFaceData.triangulation.length > 0) {
+      console.log(`   Using corrected triangulation with proper winding (${properFaceData.triangulation.length} triangles)`);
 
-      // Extract original triangles from the geometry
-      const originalTriangles = this.extractOriginalTriangles(faceInfo.triangleIndices, faceInfo, originalVertices);
-
-      // Create front face polygons using original triangulation
-      for (const triangle of originalTriangles) {
+      // Create front face polygons using corrected triangulation
+      for (const triangle of properFaceData.triangulation) {
         polygons.push({
           vertexIds: [`front_${triangle[0]}`, `front_${triangle[1]}`, `front_${triangle[2]}`],
           normal: normal.clone(),
@@ -824,8 +821,8 @@ export class ChamferedPartsExporter {
         });
       }
 
-      // Create back face polygons (reversed winding)
-      for (const triangle of originalTriangles) {
+      // Create back face polygons (reversed winding for back face)
+      for (const triangle of properFaceData.triangulation) {
         polygons.push({
           vertexIds: [`back_${triangle[2]}`, `back_${triangle[1]}`, `back_${triangle[0]}`], // Reversed for back face
           normal: normal.clone().negate(),
