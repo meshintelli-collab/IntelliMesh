@@ -363,16 +363,21 @@ export class PolygonExtruder {
 
       // Fallback if no ear found (degenerate polygon)
       if (!earFound) {
-        console.warn("Ear clipping failed, falling back to fan triangulation");
-        // Use simple fan triangulation as fallback
-        for (let i = 1; i < indices.length - 1; i++) {
+        console.warn("🚨 Ear clipping failed - this creates WINDMILLING!");
+        console.warn("🚨 AVOIDING fan triangulation that causes windmill pattern");
+
+        // Instead of fan triangulation (which creates windmills),
+        // try to connect adjacent vertices sequentially
+        if (indices.length > 3) {
+          // Connect first 3 vertices as triangle and continue
           triangles.push([
             vertices[indices[0]],
-            vertices[indices[i]],
-            vertices[indices[i + 1]],
+            vertices[indices[1]],
+            vertices[indices[2]],
           ]);
+          indices.splice(1, 1); // Remove middle vertex
         }
-        break;
+        continue; // Try ear clipping again with reduced polygon
       }
     }
 
