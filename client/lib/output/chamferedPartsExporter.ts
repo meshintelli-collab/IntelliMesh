@@ -653,44 +653,64 @@ export class ChamferedPartsExporter {
   }
 
   /**
-   * Add side walls with actual edge chamfers (45° cuts)
-   * Creates regular side walls but with chamfered edges
+   * Add chamfered side walls that create the beveled edge effect
+   * Connects original vertices to chamfered vertices to create angled walls
    */
   private static addChamferedPerimeterWalls(
-    frontVertices: THREE.Vector3[],
-    backVertices: THREE.Vector3[],
-    chamferedEdges: THREE.Vector3[][],
+    originalVertices: THREE.Vector3[],
+    frontChamferedVertices: THREE.Vector3[],
+    backChamferedVertices: THREE.Vector3[],
     offset: THREE.Vector3,
-    chamferSize: number,
   ): string {
     let content = "";
 
-    console.log(`🔧 Creating side walls with edge chamfers`);
+    console.log(`🔧 Creating chamfered side walls`);
 
-    for (let i = 0; i < frontVertices.length; i++) {
-      const next = (i + 1) % frontVertices.length;
+    for (let i = 0; i < originalVertices.length; i++) {
+      const next = (i + 1) % originalVertices.length;
 
-      // Get the quad vertices for this edge
-      const f1 = frontVertices[i];     // Front current
-      const f2 = frontVertices[next];  // Front next
-      const b1 = backVertices[i];      // Back current
-      const b2 = backVertices[next];   // Back next
+      // Original vertices (full size outer edge)
+      const o1 = originalVertices[i];
+      const o2 = originalVertices[next];
+      const o3 = originalVertices[next].clone().add(offset); // Back original next
+      const o4 = originalVertices[i].clone().add(offset);    // Back original current
 
-      // Calculate the normal for this side wall
-      const edge1 = new THREE.Vector3().subVectors(f2, f1);
-      const edge2 = new THREE.Vector3().subVectors(b1, f1);
-      const wallNormal = new THREE.Vector3()
-        .crossVectors(edge1, edge2)
+      // Chamfered vertices (smaller inner edge)
+      const c1 = frontChamferedVertices[i];
+      const c2 = frontChamferedVertices[next];
+      const c3 = backChamferedVertices[next];
+      const c4 = backChamferedVertices[i];
+
+      // Create chamfer wall (angled surface connecting original to chamfered)
+      const chamferNormal = new THREE.Vector3()
+        .crossVectors(
+          new THREE.Vector3().subVectors(c1, o1),
+          new THREE.Vector3().subVectors(c2, o2)
+        )
         .normalize();
 
-      // Create the main side wall (this will have chamfered edges)
-      content += this.addTriangleToSTL(f1, f2, b2, wallNormal);
-      content += this.addTriangleToSTL(f1, b2, b1, wallNormal);
+      // Chamfer surface (front)
+      content += this.addTriangleToSTL(o1, c1, c2, chamferNormal);
+      content += this.addTriangleToSTL(o1, c2, o2, chamferNormal);
 
-      console.log(`   Side wall ${i}: created with chamfered edges`);
+      // Chamfer surface (back)
+      const backChamferNormal = chamferNormal.clone().negate();
+      content += this.addTriangleToSTL(o4, c3, c4, backChamferNormal);
+      content += this.addTriangleToSTL(o4, o3, c3, backChamferNormal);
+
+      // Outer wall (connecting original vertices)
+      const outerNormal = new THREE.Vector3()
+        .crossVectors(
+          new THREE.Vector3().subVectors(o2, o1),
+          new THREE.Vector3().subVectors(o4, o1)
+        )
+        .normalize();
+
+      content += this.addTriangleToSTL(o1, o2, o3, outerNormal);
+      content += this.addTriangleToSTL(o1, o3, o4, outerNormal);
     }
 
-    console.log(`✅ Created ${frontVertices.length} side walls with edge chamfers`);
+    console.log(`✅ Created chamfered side walls for ${originalVertices.length} edges`);
     return content;
   }
 
