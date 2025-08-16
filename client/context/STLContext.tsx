@@ -1525,9 +1525,22 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
             : mergedMesh.attributes.position.count / 9,
         };
 
-        // Store the merged mesh
+        // Apply polygon faces to the merged mesh geometry
+        const { PolygonFaceReconstructor } = await import("../lib/processing/polygonFaceReconstructor");
+        PolygonFaceReconstructor.applyReconstructedFaces(mergedMesh, polygonFaces);
+        (mergedMesh as any).polygonType = "user_generated_merged";
+
+        // Store the merged mesh and update preview
         setMergedGeometry(mergedMesh);
+        setPreviewMeshMerged(mergedMesh); // This is what the viewer actually uses!
         setHasMergedMesh(true);
+
+        // Force viewer update if currently in merged mode
+        if (viewerSettings.meshType === "merged") {
+          console.log("🔄 Forcing viewer update with new merged mesh");
+          const displayGeometry = prepareGeometryForViewing(mergedMesh, "merged_display");
+          setGeometry(displayGeometry);
+        }
 
         const reductionAchieved = originalStats
           ? (originalStats.faces - newStats.faces) / originalStats.faces
