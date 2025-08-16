@@ -699,17 +699,17 @@ export class VertexRemovalStitcher {
     nonIndexed.uuid = cloned.uuid;
 
     // CRITICAL: Preserve polygon face information for proper coloring
-    if ((originalGeometry as any).polygonFaces) {
-      (nonIndexed as any).polygonFaces = (originalGeometry as any).polygonFaces;
-      console.log(`🔧 Preserved polygon faces metadata: ${(originalGeometry as any).polygonFaces.length} faces`);
+    if ((geometry as any).polygonFaces) {
+      (nonIndexed as any).polygonFaces = (geometry as any).polygonFaces;
+      console.log(`🔧 Preserved polygon faces metadata: ${(geometry as any).polygonFaces.length} faces`);
     }
 
-    if ((originalGeometry as any).polygonType) {
-      (nonIndexed as any).polygonType = (originalGeometry as any).polygonType;
+    if ((geometry as any).polygonType) {
+      (nonIndexed as any).polygonType = (geometry as any).polygonType;
     }
 
-    if ((originalGeometry as any).isPolygonPreserved) {
-      (nonIndexed as any).isPolygonPreserved = (originalGeometry as any).isPolygonPreserved;
+    if ((geometry as any).isPolygonPreserved) {
+      (nonIndexed as any).isPolygonPreserved = (geometry as any).isPolygonPreserved;
     }
 
     // Recompute flat normals on the non-indexed geometry for solid coloring
