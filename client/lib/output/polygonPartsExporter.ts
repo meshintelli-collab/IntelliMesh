@@ -107,6 +107,10 @@ export class PolygonPartsExporter {
       throw new Error("No polygon faces found for export");
     }
 
+    // Apply scale to geometry BEFORE processing (not to thickness)
+    console.log(`🔧 Applying scale factor ${scale} to geometry before part creation...`);
+    polygonFaces = scalePolygonFaces(polygonFaces, scale);
+
     // Store original geometry data for triangle extraction
     const originalGeometry = geometry;
 
