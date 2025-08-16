@@ -743,9 +743,15 @@ export class ChamferedPartsExporter {
       });
     }
 
-    // Create side wall polygons (will be modified by chamfering)
-    for (let i = 0; i < originalVertices.length; i++) {
-      const next = (i + 1) % originalVertices.length;
+    // Create side wall polygons only for actual perimeter edges
+    // Skip creating walls that would be internal or create flaps
+    const perimeterEdges = this.identifyPerimeterEdges(originalVertices, faceInfo);
+
+    console.log(`   Creating side walls for ${perimeterEdges.length} perimeter edges (${originalVertices.length} total vertices)`);
+
+    for (const edge of perimeterEdges) {
+      const i = edge.startIndex;
+      const next = edge.endIndex;
 
       const f1 = `front_${i}`;
       const f2 = `front_${next}`;
