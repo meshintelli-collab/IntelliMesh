@@ -157,6 +157,12 @@ export class PolygonPartsExporter {
       // Use clean face extrusion (preserves exact polygon structure)
       console.log(`🔧 Creating part ${i + 1}: ${polygonFace.type} with ${polygonFace.vertices?.length || 0} vertices`);
 
+      // DEBUG: Log the actual face data to see what we're getting
+      console.log(`   📊 Face vertices:`, polygonFace.vertices?.map((v, idx) =>
+        `${idx}: (${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)})`));
+      console.log(`   📊 Face normal:`, polygonFace.normal);
+      console.log(`   📊 Face type:`, polygonFace.type);
+
       // Convert PolygonFace to Face interface
       const face: Face = {
         vertices: polygonFace.vertices || [],
