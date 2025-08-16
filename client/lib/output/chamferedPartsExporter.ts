@@ -917,6 +917,74 @@ export class ChamferedPartsExporter {
   }
 
   /**
+   * Identify which edges are actual perimeter edges (not internal connections)
+   * This prevents creating extra "flaps" on complex shapes
+   */
+  private static identifyPerimeterEdges(
+    originalVertices: THREE.Vector3[],
+    faceInfo: any
+  ): Array<{startIndex: number, endIndex: number}> {
+    const edges: Array<{startIndex: number, endIndex: number}> = [];
+
+    // If we have explicit edge information, use it
+    if (faceInfo.perimeterEdges && faceInfo.perimeterEdges.length > 0) {
+      console.log(`   Using explicit perimeter edges from face info`);
+      return faceInfo.perimeterEdges;
+    }
+
+    // If we have triangle indices, be more conservative about which edges to include
+    if (faceInfo.triangleIndices && faceInfo.triangleIndices.length > 0) {
+      console.log(`   Analyzing triangulation to identify perimeter edges`);
+
+      // Build edge usage map to find boundary edges
+      const edgeUsageMap = new Map<string, number>();
+      const triangleIndices = faceInfo.triangleIndices;
+
+      // Count how many times each edge is used
+      for (let i = 0; i < triangleIndices.length; i += 3) {
+        if (i + 2 < triangleIndices.length) {
+          const v1 = triangleIndices[i] % originalVertices.length;
+          const v2 = triangleIndices[i + 1] % originalVertices.length;
+          const v3 = triangleIndices[i + 2] % originalVertices.length;
+
+          // Add all triangle edges
+          this.addEdgeToUsageMap(edgeUsageMap, v1, v2);
+          this.addEdgeToUsageMap(edgeUsageMap, v2, v3);
+          this.addEdgeToUsageMap(edgeUsageMap, v3, v1);
+        }
+      }
+
+      // Boundary edges are used only once
+      for (const [edgeKey, usage] of edgeUsageMap.entries()) {
+        if (usage === 1) {
+          const [v1, v2] = edgeKey.split('-').map(Number);
+          edges.push({ startIndex: v1, endIndex: v2 });
+        }
+      }
+
+      console.log(`   Found ${edges.length} boundary edges from triangulation analysis`);
+    } else {
+      console.log(`   Using simple consecutive edges (no triangulation data)`);
+      // Fallback: use consecutive edges for simple shapes
+      for (let i = 0; i < originalVertices.length; i++) {
+        const next = (i + 1) % originalVertices.length;
+        edges.push({ startIndex: i, endIndex: next });
+      }
+    }
+
+    return edges;
+  }
+
+  /**
+   * Helper to add edge to usage counting map
+   */
+  private static addEdgeToUsageMap(edgeMap: Map<string, number>, v1: number, v2: number): void {
+    // Create consistent edge key (smaller index first)
+    const edgeKey = v1 < v2 ? `${v1}-${v2}` : `${v2}-${v1}`;
+    edgeMap.set(edgeKey, (edgeMap.get(edgeKey) || 0) + 1);
+  }
+
+  /**
    * Generate OBJ content from parametric polygon geometry
    * No triangulation needed - OBJ supports polygons directly
    */
