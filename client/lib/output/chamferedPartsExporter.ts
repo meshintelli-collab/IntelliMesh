@@ -432,9 +432,11 @@ export class ChamferedPartsExporter {
               // Ensure reasonable chamfer angles (15° to 75°)
               chamferAngle = Math.max(15, Math.min(75, Math.abs(chamferAngle)));
 
+              // For simplified approach, assume most edges are convex for 3D models
+              isConvex = true;
+
               if (faceIndex < 3) { // Log first few faces for debugging
-                const convexity = isConvex ? "convex" : "concave";
-                console.log(`   Face ${faceIndex}, Edge ${i}: ${convexity} edge ${edgeAngle.toFixed(1)}° → chamfer ${chamferAngle.toFixed(1)}°`);
+                console.log(`   Face ${faceIndex}, Edge ${i}: edge angle ${edgeAngle.toFixed(1)}° → chamfer ${chamferAngle.toFixed(1)}°`);
               }
             } else {
               console.warn(`⚠️ Face ${faceIndex}: adjacent face ${otherFaceIndex} missing normal, using default angles`);
