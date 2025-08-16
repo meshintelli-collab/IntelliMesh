@@ -691,9 +691,21 @@ export class VertexRemovalStitcher {
     // Recompute normals with flat shading to maintain crisp faces
     computeFlatNormals(cloned);
 
-    // Decimation process completed successfully
+    // CRITICAL: Convert to non-indexed geometry to prevent vertex blending/color interpolation
+    console.log("🔧 Converting decimated geometry to non-indexed for solid face coloring");
+    const nonIndexed = cloned.toNonIndexed();
 
-    return cloned;
+    // Copy metadata from original
+    nonIndexed.uuid = cloned.uuid;
+
+    // Recompute flat normals on the non-indexed geometry for solid coloring
+    computeFlatNormals(nonIndexed);
+
+    console.log(`✅ Decimation complete: ${newPositions.length / 3} vertices, ${nonIndexed.attributes.position.count / 3} triangles (non-indexed)`);
+
+    // Decimation process completed successfully - returning non-indexed geometry
+
+    return nonIndexed;
   }
 
   /**
