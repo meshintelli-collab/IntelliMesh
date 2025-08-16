@@ -86,8 +86,10 @@ export class EdgeAdjacentMerger {
    * Group coplanar triangles that share complete edges
    */
   static groupEdgeAdjacentTriangles(faces: PolygonFace[]): PolygonFace[] {
+    console.log(`🔧 CONSERVATIVE MERGING: Starting with ${faces.length} triangles`);
+
     // Debug first few faces to understand the geometry
-    for (let i = 0; i < Math.min(5, faces.length); i++) {
+    for (let i = 0; i < Math.min(3, faces.length); i++) {
       const face = faces[i];
       const normal = this.ensureVector3(face.normal);
       console.log(
@@ -101,15 +103,38 @@ export class EdgeAdjacentMerger {
     // Find connected components of coplanar faces
     const components = this.findCoplanarComponents(faces, adjacencyGraph);
 
-    console.log(`   Found ${components.length} connected components:`);
+    console.log(
+      `   📊 Found ${components.length} components from ${faces.length} triangles`,
+    );
 
-    // Merge each component into a single polygon
-    const mergedFaces = components.map((component, index) => {
-      return this.mergeComponent(component, faces);
-    });
+    // CONSERVATIVE MERGING: Only merge simple components, preserve complex ones
+    const mergedFaces: PolygonFace[] = [];
+
+    for (const component of components) {
+      if (component.length === 1) {
+        // Single triangle - keep as is
+        mergedFaces.push(faces[component[0]]);
+      } else if (component.length === 2) {
+        // Two triangles - try to merge into quad, otherwise keep separate
+        const quadResult = this.tryMergeToQuad(component, faces);
+        if (quadResult) {
+          mergedFaces.push(quadResult);
+        } else {
+          // Keep as separate triangles
+          mergedFaces.push(faces[component[0]]);
+          mergedFaces.push(faces[component[1]]);
+        }
+      } else {
+        // Complex component (3+ triangles) - DON'T MERGE to avoid windmilling
+        console.log(`   🚫 PRESERVING ${component.length} triangles separately (avoid windmilling)`);
+        for (const triangleIndex of component) {
+          mergedFaces.push(faces[triangleIndex]);
+        }
+      }
+    }
 
     console.log(
-      `✅ Output: ${mergedFaces.length} merged faces (from ${components.length} components)`,
+      `✅ CONSERVATIVE OUTPUT: ${mergedFaces.length} faces (preserved complex shapes)`,
     );
     return mergedFaces;
   }
