@@ -1355,6 +1355,9 @@ function STLMesh() {
       if (geometry.index) {
         console.log("🔧 Converting indexed geometry to non-indexed to prevent vertex sharing/blending");
 
+        // Clear any existing highlights since triangle indices will change
+        setHighlightedTriangle(null);
+
         // Convert to non-indexed geometry - each triangle gets its own vertices
         const newGeometry = geometry.toNonIndexed();
 
@@ -1365,6 +1368,7 @@ function STLMesh() {
         newGeometry.dispose();
 
         console.log(`✅ Converted to non-indexed: ${geometry.attributes.position.count} vertices, ${geometry.attributes.position.count / 3} triangles`);
+        console.log("🔧 Cleared highlighting due to geometry index changes");
       }
 
       // FORCE truly flat normals - delete existing and recompute from scratch
