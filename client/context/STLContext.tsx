@@ -1525,9 +1525,17 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
             : mergedMesh.attributes.position.count / 9,
         };
 
-        // Store the merged mesh
+        // Store the merged mesh and update preview
         setMergedGeometry(mergedMesh);
+        setPreviewMeshMerged(mergedMesh); // Update the preview mesh that viewer uses
         setHasMergedMesh(true);
+
+        // Force viewer update if currently in merged mode
+        if (viewerSettings.meshType === "merged") {
+          console.log("🔄 Forcing viewer update to show new merged mesh");
+          const displayGeometry = prepareGeometryForViewing(mergedMesh, "merged_display");
+          setGeometry(displayGeometry);
+        }
 
         const reductionAchieved = originalStats
           ? (originalStats.faces - newStats.faces) / originalStats.faces
