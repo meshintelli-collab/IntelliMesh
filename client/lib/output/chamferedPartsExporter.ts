@@ -635,6 +635,7 @@ export class ChamferedPartsExporter {
       normal,
       partThickness,
       chamferedFace.edges,
+      faceInfo, // Pass original face info for triangulation
     );
 
     // Apply chamfer transformations to the parametric vertices
