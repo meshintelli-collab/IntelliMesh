@@ -7,6 +7,8 @@ import {
   ExtrusionOptions,
   ChamferOptions,
 } from "../processing/polygonExtruder";
+import { FaceExtruder, Face } from "../processing/faceExtruder";
+import { FaceChamferer } from "../processing/faceChamferer";
 
 /**
  * Interface for edge information with angles
@@ -145,7 +147,7 @@ export class ChamferedPartsExporter {
         PolygonExtruder.extractPolygonsFromMergedGeometry(geometry);
       if (mergedFaces.length === 0) {
         console.log(
-          "⚠��� No merged faces found for chamfering, falling back to triangulated mode",
+          "⚠️ No merged faces found for chamfering, falling back to triangulated mode",
         );
         polygonFaces =
           PolygonExtruder.extractPolygonsFromTriangulatedGeometry(geometry);
