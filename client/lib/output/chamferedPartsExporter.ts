@@ -560,7 +560,7 @@ export class ChamferedPartsExporter {
       originalVertices,
       chamferedFace.edges,
       normal,
-      scaledThickness,
+      partThickness,
     );
 
     // Create front face: use chamfered intersection vertices
