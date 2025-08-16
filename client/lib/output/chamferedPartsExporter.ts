@@ -139,7 +139,7 @@ export class ChamferedPartsExporter {
     // Calculate edge angles for all faces first
     console.log("🔧 Calculating edge angles from 3D model for chamfering...");
     const chamferedFaces = this.calculateEdgeAngles(polygonFaces, geometry);
-    console.log(`�� Calculated edge angles for ${chamferedFaces.length} faces`);
+    console.log(`✅ Calculated edge angles for ${chamferedFaces.length} faces`);
 
     if (chamferedFaces.length !== polygonFaces.length) {
       console.warn(`⚠️ Mismatch: ${polygonFaces.length} polygon faces but ${chamferedFaces.length} chamfered faces`);
@@ -670,10 +670,10 @@ export class ChamferedPartsExporter {
   }
 
   /**
-   * Add properly angled chamfered side walls using intersection vertices
-   * All surfaces connect properly at chamfer intersection points
+   * Add simple edge-by-edge chamfered walls
+   * Each edge creates its own chamfered surface at the correct angle
    */
-  private static addAngledChamferedWalls(
+  private static addSimpleEdgeChamferedWalls(
     frontVertices: THREE.Vector3[],
     backVertices: THREE.Vector3[],
     edges: EdgeInfo[],
@@ -682,41 +682,53 @@ export class ChamferedPartsExporter {
   ): string {
     let content = "";
 
-    console.log(`🔧 Creating chamfered walls with proper intersections for ${frontVertices.length} edges`);
+    console.log(`🔧 Creating simple edge-by-edge chamfered walls`);
 
     for (let i = 0; i < frontVertices.length; i++) {
       const next = (i + 1) % frontVertices.length;
 
-      // Get edge info for this specific edge
+      // Get edge info for chamfer angle
       const edgeInfo = edges[i] || { chamferAngle: 45, isConvex: true };
       const chamferAngle = edgeInfo.chamferAngle;
 
-      // Front edge vertices (original, unchanged)
+      // Front edge (unchanged)
       const f1 = frontVertices[i];
       const f2 = frontVertices[next];
 
-      // Back edge vertices (already calculated as proper intersections)
+      // Back edge (unchanged)
       const b1 = backVertices[i];
       const b2 = backVertices[next];
 
-      // Calculate wall normal for this chamfered surface
+      // Calculate edge direction and perpendicular
+      const edgeDir = new THREE.Vector3().subVectors(f2, f1).normalize();
+      const edgePerp = new THREE.Vector3().crossVectors(edgeDir, faceNormal).normalize();
+
+      // Calculate chamfer offset for this edge
+      const chamferRadians = (chamferAngle * Math.PI) / 180;
+      const chamferOffset = thickness * Math.tan(chamferRadians);
+
+      // Create chamfered back edge by moving it inward
+      const cb1 = b1.clone().add(edgePerp.clone().multiplyScalar(-chamferOffset));
+      const cb2 = b2.clone().add(edgePerp.clone().multiplyScalar(-chamferOffset));
+
+      // Calculate normal for chamfered wall
       const wallNormal = new THREE.Vector3().crossVectors(
         new THREE.Vector3().subVectors(f2, f1),
-        new THREE.Vector3().subVectors(b1, f1)
+        new THREE.Vector3().subVectors(cb1, f1)
       ).normalize();
 
-      // Create chamfered wall connecting front edge to back intersection vertices
-      content += this.addTriangleToSTL(f1, f2, b2, wallNormal);
-      content += this.addTriangleToSTL(f1, b2, b1, wallNormal);
+      // Create chamfered wall: front edge to chamfered back edge
+      content += this.addTriangleToSTL(f1, f2, cb2, wallNormal);
+      content += this.addTriangleToSTL(f1, cb2, cb1, wallNormal);
 
       if (i < 2) {
-        console.log(`   Edge ${i}: chamfer angle ${chamferAngle.toFixed(1)}°`);
-        console.log(`   Front edge: (${f1.x.toFixed(2)}, ${f1.y.toFixed(2)}) to (${f2.x.toFixed(2)}, ${f2.y.toFixed(2)})`);
-        console.log(`   Back edge: (${b1.x.toFixed(2)}, ${b1.y.toFixed(2)}) to (${b2.x.toFixed(2)}, ${b2.y.toFixed(2)})`);
+        console.log(`   Edge ${i}: angle ${chamferAngle.toFixed(1)}°, offset ${chamferOffset.toFixed(3)}mm`);
+        console.log(`   Front: (${f1.x.toFixed(2)}, ${f1.y.toFixed(2)}) to (${f2.x.toFixed(2)}, ${f2.y.toFixed(2)})`);
+        console.log(`   Chamfered back: (${cb1.x.toFixed(2)}, ${cb1.y.toFixed(2)}) to (${cb2.x.toFixed(2)}, ${cb2.y.toFixed(2)})`);
       }
     }
 
-    console.log(`✅ Created chamfered walls with proper intersections for ${frontVertices.length} edges`);
+    console.log(`✅ Created simple chamfered walls for ${frontVertices.length} edges`);
     return content;
   }
 
