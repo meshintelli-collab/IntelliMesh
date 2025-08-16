@@ -107,7 +107,7 @@ export class EdgeAdjacentMerger {
       `   📊 Found ${components.length} components from ${faces.length} triangles`,
     );
 
-    // CONSERVATIVE MERGING: Only merge simple components, preserve complex ones
+    // SMART CONSERVATIVE MERGING: Balance between preserving shape and creating useful polygons
     const mergedFaces: PolygonFace[] = [];
 
     for (const component of components) {
@@ -124,8 +124,21 @@ export class EdgeAdjacentMerger {
           mergedFaces.push(faces[component[0]]);
           mergedFaces.push(faces[component[1]]);
         }
+      } else if (component.length <= 6) {
+        // Medium components (3-6 triangles) - try smart merging for shapes like stars
+        console.log(`   🔧 SMART MERGING ${component.length} triangles (medium complexity)`);
+        const smartMergeResult = this.trySmartMerge(component, faces);
+        if (smartMergeResult) {
+          mergedFaces.push(smartMergeResult);
+        } else {
+          // Fallback: keep as separate triangles
+          console.log(`   ⚠️ Smart merge failed, preserving ${component.length} triangles separately`);
+          for (const triangleIndex of component) {
+            mergedFaces.push(faces[triangleIndex]);
+          }
+        }
       } else {
-        // Complex component (3+ triangles) - DON'T MERGE to avoid windmilling
+        // Very complex component (7+ triangles) - DON'T MERGE to avoid windmilling
         console.log(`   ���� PRESERVING ${component.length} triangles separately (avoid windmilling)`);
         for (const triangleIndex of component) {
           mergedFaces.push(faces[triangleIndex]);
