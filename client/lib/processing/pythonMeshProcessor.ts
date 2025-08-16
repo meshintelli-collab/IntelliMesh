@@ -60,8 +60,8 @@ export class PythonMeshProcessor {
   }
 
   /**
-   * Decimate mesh using conservative Python Open3D service
-   * Optimized for user-uploaded models to avoid artifacts
+   * Decimate mesh using ONLY Python Open3D simple_quadric_decimation
+   * NO JavaScript fallback - Python service must be available
    */
   static async decimateMesh(
     geometry: THREE.BufferGeometry,
@@ -69,56 +69,29 @@ export class PythonMeshProcessor {
   ): Promise<PythonDecimationResult> {
     const startTime = Date.now();
 
-    console.log(`   Using conservative decimation for user models`);
+    console.log(`🐍 Open3D simple_quadric_decimation (Python-only)`);
+    console.log(`   Target reduction: ${Math.round(targetReduction * 100)}%`);
 
-    // Check service health first
+    // Check service health first - REQUIRED for Python-only approach
     const isHealthy = await this.checkServiceHealth();
     if (!isHealthy) {
-      throw new Error("Python service unavailable - using JavaScript fallback");
+      throw new Error("🐍 Python Open3D service unavailable. Please start the Python service on localhost:8001");
     }
 
-    // Check if geometry has polygon structure
-    const polygonFaces = (geometry as any).polygonFaces;
-
-    if (polygonFaces && Array.isArray(polygonFaces)) {
-      console.log(
-        `   🚫 CRITICAL: Model has ${polygonFaces.length} polygon faces - AVOIDING Python service`,
-      );
-      console.log(`   🔸 Using direct polygon vertex reduction instead`);
-
-      // Apply polygon-preserving reduction directly without Python service
-      const reducedGeometry = await this.polygonPreservingReduction(
-        geometry,
-        polygonFaces,
-        targetReduction,
-      );
-
-      const processingTime = Date.now() - startTime;
-
-      return {
-        geometry: reducedGeometry,
-        originalVertices: geometry.attributes.position.count,
-        finalVertices: reducedGeometry.attributes.position.count,
-        originalTriangles: 0, // Not applicable for polygons
-        finalTriangles: 0, // Not applicable for polygons
-        reductionAchieved: targetReduction,
-        processingTime,
-      };
-    }
-
-    console.log(`   Using Python service for triangle mesh`);
-
-    // Convert Three.js geometry to STL format for triangle meshes
+    // Convert Three.js geometry to clean STL format for Open3D
+    console.log("📤 Converting Three.js mesh to STL for Open3D...");
     const stlData = await this.geometryToSTL(geometry);
-    console.log(`   Generated STL data: ${stlData.length} bytes`);
+    console.log(`   Generated clean STL: ${stlData.byteLength} bytes`);
 
-    // Create form data for upload
+    // Create form data for upload to Python service
     const formData = new FormData();
     const stlBlob = new Blob([stlData], { type: "application/octet-stream" });
-    formData.append("file", stlBlob, "mesh.stl");
+    formData.append("file", stlBlob, "input_mesh.stl");
     formData.append("target_reduction", targetReduction.toString());
+    formData.append("preserve_boundary", "true"); // Preserve boundary edges
+    formData.append("method", "simple_quadric_decimation"); // Specify Open3D method
 
-    console.log("📤 Sending mesh to Python service...");
+    console.log("🐍 Sending STL to Python Open3D service...");
 
     try {
       const response = await fetch(`${this.SERVICE_URL}/decimate`, {
@@ -129,11 +102,11 @@ export class PythonMeshProcessor {
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(
-          `Python service error: ${response.status} - ${errorText}`,
+          `Python Open3D service error: ${response.status} - ${errorText}`,
         );
       }
 
-      // Get response headers with statistics
+      // Get response headers with accurate statistics from Open3D
       const originalVertices = parseInt(
         response.headers.get("X-Original-Vertices") || "0",
       );
@@ -150,25 +123,24 @@ export class PythonMeshProcessor {
         response.headers.get("X-Reduction-Achieved") || "0",
       );
 
+      console.log(`🐍 Open3D decimation results:`);
+      console.log(`   Vertices: ${originalVertices} → ${finalVertices}`);
       console.log(`   Triangles: ${originalTriangles} → ${finalTriangles}`);
+      console.log(`   Reduction: ${Math.round(reductionAchieved * 100)}%`);
 
-      // Get decimated mesh data
-      const contentType = response.headers.get("content-type") || "";
-      const filename =
-        response.headers.get("content-disposition")?.includes(".obj") || false;
-      const isOBJ = contentType.includes("text") || filename || polygonFaces; // Check if we sent OBJ
+      // Get decimated STL data back from Open3D
+      console.log("📥 Receiving decimated STL from Open3D...");
+      const decimatedSTLData = await response.arrayBuffer();
 
-      let decimatedGeometry: THREE.BufferGeometry;
+      // Convert back to Three.js geometry with proper flat normals
+      const decimatedGeometry = await this.stlToGeometry(decimatedSTLData);
 
-      if (isOBJ) {
-        console.log("   📥 Receiving OBJ format (polygon structure preserved)");
-        const decimatedOBJData = await response.text();
-        decimatedGeometry = await this.objToGeometry(decimatedOBJData);
-      } else {
-        console.log("   📥 Receiving STL format");
-        const decimatedSTLData = await response.arrayBuffer();
-        decimatedGeometry = await this.stlToGeometry(decimatedSTLData);
-      }
+      // Ensure flat normals are maintained for crisp face rendering
+      this.ensureFlatNormals(decimatedGeometry);
+
+      const processingTime = Date.now() - startTime;
+
+      console.log(`✅ Open3D decimation complete in ${processingTime}ms`);
 
       return {
         geometry: decimatedGeometry,
@@ -180,11 +152,26 @@ export class PythonMeshProcessor {
         processingTime,
       };
     } catch (error) {
-      console.error("❌ Python decimation failed:", error);
+      console.error("❌ Python Open3D decimation failed:", error);
       throw new Error(
-        `Python mesh processing failed: ${error instanceof Error ? error.message : String(error)}`,
+        `Open3D decimation failed: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
+  }
+
+  /**
+   * Ensure geometry has flat normals for crisp face rendering
+   */
+  private static ensureFlatNormals(geometry: THREE.BufferGeometry): void {
+    // Remove any existing normal attributes to force flat normals
+    if (geometry.attributes.normal) {
+      geometry.deleteAttribute('normal');
+    }
+
+    // Compute flat normals - each face gets its own normal
+    geometry.computeVertexNormals();
+
+    console.log("✅ Applied flat normals for crisp face rendering");
   }
 
   /**
