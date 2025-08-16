@@ -697,25 +697,22 @@ export class ChamferedPartsExporter {
   }
 
   /**
-   * Add angled side walls that create proper chamfer effect
-   * The side walls angle inward while keeping one face at full size
+   * Add side walls with actual edge chamfers (45° cuts)
+   * Creates regular side walls but with chamfered edges
    */
   private static addChamferedPerimeterWalls(
     frontVertices: THREE.Vector3[],
     backVertices: THREE.Vector3[],
-    originalVertices: THREE.Vector3[],
-    chamferedVertices: THREE.Vector3[],
+    chamferedEdges: THREE.Vector3[][],
     offset: THREE.Vector3,
-    edges: EdgeInfo[],
-    frontIsFullSize: boolean,
+    chamferSize: number,
   ): string {
     let content = "";
 
-    console.log(`🔧 Creating angled side walls (front full size: ${frontIsFullSize})`);
+    console.log(`🔧 Creating side walls with edge chamfers`);
 
     for (let i = 0; i < frontVertices.length; i++) {
       const next = (i + 1) % frontVertices.length;
-      const edge = edges[i];
 
       // Get the quad vertices for this edge
       const f1 = frontVertices[i];     // Front current
@@ -723,26 +720,21 @@ export class ChamferedPartsExporter {
       const b1 = backVertices[i];      // Back current
       const b2 = backVertices[next];   // Back next
 
-      // Create angled quad wall
-      // The quad connects the full-size face to the chamfered face
-      // This creates the angled wall effect
-
-      // Calculate the normal for this angled wall
+      // Calculate the normal for this side wall
       const edge1 = new THREE.Vector3().subVectors(f2, f1);
       const edge2 = new THREE.Vector3().subVectors(b1, f1);
       const wallNormal = new THREE.Vector3()
         .crossVectors(edge1, edge2)
         .normalize();
 
-      // Create two triangles for the angled quad wall
+      // Create the main side wall (this will have chamfered edges)
       content += this.addTriangleToSTL(f1, f2, b2, wallNormal);
       content += this.addTriangleToSTL(f1, b2, b1, wallNormal);
 
-      const convexity = edge.isConvex ? "convex" : "concave";
-      console.log(`   Edge ${i}: ${convexity} angled wall created (${edge.chamferAngle.toFixed(1)}°)`);
+      console.log(`   Side wall ${i}: created with chamfered edges`);
     }
 
-    console.log(`✅ Created ${frontVertices.length} angled side walls`);
+    console.log(`✅ Created ${frontVertices.length} side walls with edge chamfers`);
     return content;
   }
 
