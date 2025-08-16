@@ -1565,7 +1565,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         }
 
         const reductionAchieved = originalStats
-          ? (originalStats.faces - newStats.faces) / originalStats.faces
+          ? (originalStats.triangles - newStats.polygons) / originalStats.triangles
           : 0;
 
         return {
