@@ -857,7 +857,7 @@ export class ChamferedPartsExporter {
 
     // Create side wall polygons only for actual perimeter edges
     // Skip creating walls that would be internal or create flaps
-    const perimeterEdges = this.identifyPerimeterEdges(originalVertices, faceInfo);
+    const perimeterEdges = this.identifyPerimeterEdges(originalVertices, properFaceData);
 
     console.log(`   Creating side walls for ${perimeterEdges.length} perimeter edges (${originalVertices.length} total vertices)`);
 
