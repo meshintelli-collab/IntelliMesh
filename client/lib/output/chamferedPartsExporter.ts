@@ -603,6 +603,221 @@ export class ChamferedPartsExporter {
     return stlContent;
   }
 
+  /**
+   * Build parametric geometry with vertex IDs that can be transformed
+   */
+  private static buildParametricGeometry(
+    originalVertices: THREE.Vector3[],
+    normal: THREE.Vector3,
+    thickness: number,
+    edges: EdgeInfo[]
+  ): ParametricGeometry {
+    const vertices = new Map<string, ParametricVertex>();
+    const triangles: ParametricTriangle[] = [];
+
+    console.log(`🔧 Building parametric geometry with ${originalVertices.length} vertices`);
+
+    // Create parametric vertices
+    // Front vertices
+    for (let i = 0; i < originalVertices.length; i++) {
+      const vertexId = `front_${i}`;
+      vertices.set(vertexId, {
+        id: vertexId,
+        position: originalVertices[i].clone(),
+        originalPosition: originalVertices[i].clone()
+      });
+    }
+
+    // Back vertices
+    const offset = normal.clone().multiplyScalar(thickness);
+    for (let i = 0; i < originalVertices.length; i++) {
+      const vertexId = `back_${i}`;
+      const backPosition = originalVertices[i].clone().add(offset);
+      vertices.set(vertexId, {
+        id: vertexId,
+        position: backPosition,
+        originalPosition: backPosition.clone()
+      });
+    }
+
+    // Create front face triangles
+    const frontTriangleList = this.triangulatePolygonParametric(originalVertices.length, normal, 'front');
+    triangles.push(...frontTriangleList);
+
+    // Create back face triangles (reversed winding)
+    const backTriangleList = this.triangulatePolygonParametric(originalVertices.length, normal.clone().negate(), 'back', true);
+    triangles.push(...backTriangleList);
+
+    // Create side walls (will be modified by chamfering)
+    for (let i = 0; i < originalVertices.length; i++) {
+      const next = (i + 1) % originalVertices.length;
+
+      const f1 = `front_${i}`;
+      const f2 = `front_${next}`;
+      const b1 = `back_${i}`;
+      const b2 = `back_${next}`;
+
+      // Calculate wall normal
+      const wallNormal = new THREE.Vector3().crossVectors(
+        new THREE.Vector3().subVectors(originalVertices[next], originalVertices[i]),
+        normal
+      ).normalize();
+
+      // Two triangles for the wall
+      triangles.push({
+        v1: f1, v2: f2, v3: b2,
+        normal: wallNormal
+      });
+      triangles.push({
+        v1: f1, v2: b2, v3: b1,
+        normal: wallNormal
+      });
+    }
+
+    console.log(`✅ Built parametric geometry: ${vertices.size} vertices, ${triangles.length} triangles`);
+    return { vertices, triangles };
+  }
+
+  /**
+   * Create triangulation for parametric polygons
+   */
+  private static triangulatePolygonParametric(
+    vertexCount: number,
+    normal: THREE.Vector3,
+    prefix: string,
+    reverse: boolean = false
+  ): ParametricTriangle[] {
+    const triangles: ParametricTriangle[] = [];
+
+    if (vertexCount === 3) {
+      // Already a triangle
+      const indices = reverse ? [2, 1, 0] : [0, 1, 2];
+      triangles.push({
+        v1: `${prefix}_${indices[0]}`,
+        v2: `${prefix}_${indices[1]}`,
+        v3: `${prefix}_${indices[2]}`,
+        normal: normal.clone()
+      });
+    } else if (vertexCount === 4) {
+      // Quad - split into two triangles
+      if (reverse) {
+        triangles.push({
+          v1: `${prefix}_2`, v2: `${prefix}_1`, v3: `${prefix}_0`,
+          normal: normal.clone()
+        });
+        triangles.push({
+          v1: `${prefix}_3`, v2: `${prefix}_2`, v3: `${prefix}_0`,
+          normal: normal.clone()
+        });
+      } else {
+        triangles.push({
+          v1: `${prefix}_0`, v2: `${prefix}_1`, v3: `${prefix}_2`,
+          normal: normal.clone()
+        });
+        triangles.push({
+          v1: `${prefix}_0`, v2: `${prefix}_2`, v3: `${prefix}_3`,
+          normal: normal.clone()
+        });
+      }
+    } else {
+      // Polygon - use fan triangulation
+      for (let i = 1; i < vertexCount - 1; i++) {
+        if (reverse) {
+          triangles.push({
+            v1: `${prefix}_0`,
+            v2: `${prefix}_${i + 1}`,
+            v3: `${prefix}_${i}`,
+            normal: normal.clone()
+          });
+        } else {
+          triangles.push({
+            v1: `${prefix}_0`,
+            v2: `${prefix}_${i}`,
+            v3: `${prefix}_${i + 1}`,
+            normal: normal.clone()
+          });
+        }
+      }
+    }
+
+    return triangles;
+  }
+
+  /**
+   * Apply chamfer transformations to parametric vertices
+   */
+  private static applyChamferTransformations(
+    geometry: ParametricGeometry,
+    edges: EdgeInfo[],
+    normal: THREE.Vector3,
+    thickness: number
+  ): void {
+    console.log(`🔧 Applying chamfer transformations to parametric geometry`);
+
+    // Apply chamfering to back vertices based on adjacent edges
+    for (let i = 0; i < edges.length; i++) {
+      const edge = edges[i] || { chamferAngle: 45, isConvex: true };
+      const next = (i + 1) % edges.length;
+
+      // Get vertex IDs for this edge
+      const backV1Id = `back_${i}`;
+      const backV2Id = `back_${next}`;
+
+      const backV1 = geometry.vertices.get(backV1Id);
+      const backV2 = geometry.vertices.get(backV2Id);
+
+      if (backV1 && backV2) {
+        // Calculate edge direction and perpendicular
+        const frontV1 = geometry.vertices.get(`front_${i}`)!;
+        const frontV2 = geometry.vertices.get(`front_${next}`)!;
+
+        const edgeDir = new THREE.Vector3().subVectors(frontV2.position, frontV1.position).normalize();
+        const edgePerp = new THREE.Vector3().crossVectors(edgeDir, normal).normalize();
+
+        // Calculate chamfer offset
+        const chamferRadians = (edge.chamferAngle * Math.PI) / 180;
+        const chamferOffset = thickness * Math.tan(chamferRadians);
+
+        // Move back vertices inward for chamfering
+        const inwardOffset = edgePerp.clone().multiplyScalar(-chamferOffset);
+        backV1.position.add(inwardOffset);
+        backV2.position.add(inwardOffset);
+
+        if (i < 2) {
+          console.log(`   Edge ${i}: chamfer ${edge.chamferAngle.toFixed(1)}°, offset ${chamferOffset.toFixed(3)}mm`);
+        }
+      }
+    }
+
+    console.log(`✅ Applied chamfer transformations to ${edges.length} edges`);
+  }
+
+  /**
+   * Generate STL content from parametric geometry
+   */
+  private static generateSTLFromParametricGeometry(geometry: ParametricGeometry): string {
+    let content = "";
+
+    console.log(`🔧 Generating STL from parametric geometry: ${geometry.triangles.length} triangles`);
+
+    for (const triangle of geometry.triangles) {
+      const v1 = geometry.vertices.get(triangle.v1);
+      const v2 = geometry.vertices.get(triangle.v2);
+      const v3 = geometry.vertices.get(triangle.v3);
+
+      if (v1 && v2 && v3) {
+        content += this.addTriangleToSTL(
+          v1.position,
+          v2.position,
+          v3.position,
+          triangle.normal
+        );
+      }
+    }
+
+    console.log(`✅ Generated STL content for ${geometry.triangles.length} triangles`);
+    return content;
+  }
 
   /**
    * Add simple edge-by-edge chamfered walls with vertex movement tracking
