@@ -755,6 +755,23 @@ export class ChamferedPartsExporter {
   }
 
   /**
+   * Crop vertices that extend beyond the specified height range
+   * This prevents chamfered surfaces from intersecting
+   */
+  private static cropVerticesAtHeight(
+    vertices: THREE.Vector3[],
+    minZ: number,
+    maxZ: number,
+  ): THREE.Vector3[] {
+    return vertices.map(vertex => {
+      const croppedVertex = vertex.clone();
+      // Clamp Z coordinate to stay within bounds
+      croppedVertex.z = Math.max(minZ, Math.min(maxZ, vertex.z));
+      return croppedVertex;
+    });
+  }
+
+  /**
    * Triangulate a polygon using simple fan triangulation
    */
   private static triangulatePolygon(
