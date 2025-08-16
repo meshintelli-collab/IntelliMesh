@@ -444,7 +444,7 @@ export class ChamferedPartsExporter {
 
               if (faceIndex < 3) { // Log first few faces for debugging
                 const convexity = isConvex ? "convex" : "concave";
-                console.log(`   Face ${faceIndex}, Edge ${i}: ${convexity} edge ${edgeAngle.toFixed(1)}�� → chamfer ${chamferAngle.toFixed(1)}°`);
+                console.log(`   Face ${faceIndex}, Edge ${i}: ${convexity} edge ${edgeAngle.toFixed(1)}° → chamfer ${chamferAngle.toFixed(1)}°`);
               }
             } else {
               console.warn(`⚠️ Face ${faceIndex}: adjacent face ${otherFaceIndex} missing normal, using default angles`);
@@ -521,6 +521,13 @@ export class ChamferedPartsExporter {
       chamferedFace.edges,
       thickness, // Use thickness to calculate correct chamfer angle
     );
+
+    // Debug: Log vertex positions for fit verification
+    console.log(`🔍 Part ${chamferedFace.partIndex} thickness: ${thickness}`);
+    console.log(`🔍 Original vertex 0: [${originalVertices[0].x.toFixed(3)}, ${originalVertices[0].y.toFixed(3)}, ${originalVertices[0].z.toFixed(3)}]`);
+    console.log(`🔍 Chamfered vertex 0: [${chamferedVertices[0].x.toFixed(3)}, ${chamferedVertices[0].y.toFixed(3)}, ${chamferedVertices[0].z.toFixed(3)}]`);
+    const displacement = new THREE.Vector3().subVectors(chamferedVertices[0], originalVertices[0]);
+    console.log(`🔍 Chamfer displacement: [${displacement.x.toFixed(3)}, ${displacement.y.toFixed(3)}, ${displacement.z.toFixed(3)}], magnitude: ${displacement.length().toFixed(3)}`);
 
     // Determine which face should be full size based on edge convexity
     const hasConvexEdges = chamferedFace.edges.some(edge => edge.isConvex);
