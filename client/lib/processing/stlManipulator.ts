@@ -30,33 +30,38 @@ export class STLManipulator {
     try {
       const { PythonMeshProcessor } = await import("./pythonMeshProcessor");
 
-      // Check if Python service is available
+      // Check if Python service is available (handles cloud environment detection)
       const isAvailable = await PythonMeshProcessor.checkServiceHealth();
 
       if (isAvailable) {
         console.log("🐍 Using Python Open3D service for decimation");
-        const pythonResult = await PythonMeshProcessor.decimateMesh(
-          geometry,
-          targetReduction,
-        );
+        try {
+          const pythonResult = await PythonMeshProcessor.decimateMesh(
+            geometry,
+            targetReduction,
+          );
 
-        const newStats = this.calculateMeshStats(pythonResult.geometry);
-        const reductionAchieved =
-          1 - newStats.vertices / originalStats.vertices;
+          const newStats = this.calculateMeshStats(pythonResult.geometry);
+          const reductionAchieved =
+            1 - newStats.vertices / originalStats.vertices;
 
-        console.log("🐍 ✅ Python Open3D decimation completed successfully");
-        return {
-          geometry: pythonResult.geometry,
-          originalStats,
-          newStats,
-          reductionAchieved,
-          processingTime: pythonResult.processingTime,
-        };
+          console.log("🐍 ✅ Python Open3D decimation completed successfully");
+          return {
+            geometry: pythonResult.geometry,
+            originalStats,
+            newStats,
+            reductionAchieved,
+            processingTime: pythonResult.processingTime,
+          };
+        } catch (decimationError) {
+          console.log("🐍 ❌ Python decimation failed, using JavaScript fallback:", decimationError);
+        }
       } else {
-        console.log("🐍 ❌ Python service not available, using JavaScript fallback");
+        console.log("🔄 Using JavaScript decimation (Python service not available)");
       }
     } catch (error) {
-      console.log("🐍 ❌ Python service error, using JavaScript fallback:", error);
+      // Handle any import or unexpected errors gracefully
+      console.log("🔄 Using JavaScript decimation (Python service error):", error);
     }
 
     // Choose implementation based on method
