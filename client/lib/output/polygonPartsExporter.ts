@@ -81,7 +81,10 @@ export class PolygonPartsExporter {
     let polygonFaces: PolygonFace[];
     let polygonType: string;
 
-    if (useTriangulated) {
+    // TEMPORARY: Force triangulated mode to test windmilling fix
+    const forceTriangulated = true; // Set to false to use normal mode
+
+    if (useTriangulated || forceTriangulated) {
       // Triangulated mode: use exact original triangulation (NO windmilling)
       console.log(`🎯 FORCING triangulated mode to avoid windmilling artifacts`);
       polygonFaces =
