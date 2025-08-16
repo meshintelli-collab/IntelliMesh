@@ -116,23 +116,20 @@ export class PolygonPartsExporter {
           console.log(`   Face ${i}: ${face.type}, ${face.vertices?.length || 0} vertices, triangulation: ${(face as any).originalTriangulation?.length || 0} triangles`);
         }
 
-        // Check if merged faces might cause windmilling and auto-switch to triangulated
-        const shouldForceTriangulated = this.shouldAvoidPolygonMerging(mergedFaces, geometry);
+        // RESPECT user's choice - no auto-detection override
+        console.log(`✅ RESPECTING user's merged mode choice: using ${mergedFaces.length} polygons`);
 
-        if (shouldForceTriangulated) {
-          console.log(
-            `🎯 AUTO-DETECTING complex shape: switching to triangulated mode to avoid windmilling`,
-          );
-          polygonFaces =
-            PolygonExtruder.extractPolygonsFromTriangulatedGeometry(geometry);
-          polygonType = "triangulated_auto";
-        } else {
-          polygonFaces = mergedFaces;
-          polygonType = (geometry as any).polygonType || "merged";
-          console.log(
-            `✅ KEEPING merged polygon mode: ${polygonFaces.length} polygons (preserving structure)`,
-          );
+        // Optional: Show complexity warning but don't override user choice
+        const complexityInfo = this.analyzeShapeComplexity(mergedFaces, geometry);
+        if (complexityInfo.isComplex) {
+          console.warn(`⚠️ Complex shape detected (${complexityInfo.reason}) but respecting merged mode choice`);
         }
+
+        polygonFaces = mergedFaces;
+        polygonType = (geometry as any).polygonType || "merged";
+        console.log(
+          `✅ Using merged polygon mode: ${polygonFaces.length} polygons (preserving structure)`,
+        );
       }
     }
 
