@@ -394,6 +394,7 @@ export class ChamferedPartsExporter {
 
         let edgeAngle = 180; // Default for boundary edges
         let chamferAngle = 45; // Default chamfer
+        let isConvex = true; // Default for boundary edges (assume convex)
 
         if (adjacentFaces.length === 2) {
           // Find the other face that shares this edge
