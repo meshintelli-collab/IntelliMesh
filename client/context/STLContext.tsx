@@ -1573,7 +1573,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         console.log(`   Final triangles: ${finalTriangles}`);
         console.log(`   Final faces: ${finalFaces}`);
         console.log(`   Merged groups: ${mergedGroups}`);
-        console.log(`   Reduction: ${(reductionAchieved * 100).toFixed(1)}%`);
+        console.log(`   Reduction: ${(reductionFromPython * 100).toFixed(1)}%`);
 
         // Load the merged mesh back into THREE.js
         const mergedSTLContent = await response.arrayBuffer();
