@@ -159,7 +159,7 @@ export class PolygonPartsExporter {
       console.log(`🔧 Creating part ${i + 1}: ${polygonFace.type} with ${actualVertices.length} vertices`);
 
       // DEBUG: Log the actual face data to see what we're getting
-      console.log(`   �� Face vertices:`, actualVertices.map((v, idx) =>
+      console.log(`   📊 Face vertices:`, actualVertices.map((v, idx) =>
         `${idx}: (${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)})`));
       console.log(`   📊 Face normal:`, polygonFace.normal);
       console.log(`   📊 Face type:`, polygonFace.type);
@@ -192,7 +192,7 @@ export class PolygonPartsExporter {
         "File Name": partFilename,
         "Polygon Index": i + 1,
         "Face Type": polygonFace.type || "polygon",
-        "Vertex Count": polygonFace.vertices.length,
+        "Vertex Count": (polygonFace.vertices || polygonFace.originalVertices || []).length,
         "Thickness (mm)": partThickness,
         "Scale Factor": scale,
         "Area (mm²)": partInfo.area.toFixed(2),
