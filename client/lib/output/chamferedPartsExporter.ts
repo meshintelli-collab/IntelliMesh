@@ -747,9 +747,9 @@ export class ChamferedPartsExporter {
     }
 
     console.log(
-      `✅ Built parametric geometry: ${vertices.size} vertices, ${triangles.length} triangles`,
+      `✅ Built parametric polygon geometry: ${vertices.size} vertices, ${polygons.length} polygons`,
     );
-    return { vertices, triangles };
+    return { vertices, polygons };
   }
 
   /**
