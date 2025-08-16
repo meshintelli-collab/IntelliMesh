@@ -13,8 +13,9 @@ export interface MergedPolygon {
  * Creates new BufferGeometry with fewer, larger faces
  */
 export class TrianglePolygonMerger {
-  private static readonly NORMAL_TOLERANCE = 0.999; // Very strict for coplanar detection
-  private static readonly EDGE_TOLERANCE = 0.001; // Tight tolerance for shared edges
+  private static readonly NORMAL_TOLERANCE = 0.9999; // Extremely strict for coplanar detection
+  private static readonly EDGE_TOLERANCE = 0.0001; // Very tight tolerance for shared edges
+  private static readonly PLANE_DISTANCE_TOLERANCE = 0.0001; // Must be on same plane
   private static readonly MIN_AREA_THRESHOLD = 0.0001; // Skip degenerate polygons
 
   /**
