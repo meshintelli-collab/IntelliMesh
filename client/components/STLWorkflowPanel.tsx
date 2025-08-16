@@ -721,13 +721,12 @@ export default function STLWorkflowPanel({
           <Separator className="bg-white/20 my-6" />
 
           {/* 2. VISUALIZATION SECTION */}
+          <SectionHeader
+            title="2. MESH PREVIEW"
+            isExpanded={expandedSections.visualization}
+            onToggle={() => toggleSection("visualization")}
+          />
           <div className="mb-6">
-            <SectionHeader
-              title="2. MESH PREVIEW"
-              isExpanded={expandedSections.visualization}
-              onToggle={() => toggleSection("visualization")}
-            />
-
             {expandedSections.visualization && (
               <div className="mt-4 space-y-4">
                 {/* Mesh Type Toggle */}
