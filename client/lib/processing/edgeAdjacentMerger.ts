@@ -659,4 +659,39 @@ export class EdgeAdjacentMerger {
     // If any edge is more than 3x longer than others, probably not a good quad
     return maxVariation < 3;
   }
+
+  /**
+   * Check if a polygon is reasonable (not degenerate or too distorted)
+   */
+  private static isReasonablePolygon(polygon: PolygonFace): boolean {
+    const vertices = polygon.originalVertices || polygon.vertices || [];
+
+    if (vertices.length < 3) return false;
+    if (vertices.length > 12) return false; // Too many vertices likely means bad merging
+
+    // Calculate area to check for degenerate polygons
+    let area = 0;
+    for (let i = 0; i < vertices.length; i++) {
+      const next = (i + 1) % vertices.length;
+      area += vertices[i].x * vertices[next].y - vertices[next].x * vertices[i].y;
+    }
+    area = Math.abs(area) / 2;
+
+    if (area < 0.001) return false; // Too small/degenerate
+
+    // Check edge length variation
+    const distances: number[] = [];
+    for (let i = 0; i < vertices.length; i++) {
+      const next = (i + 1) % vertices.length;
+      distances.push(vertices[i].distanceTo(vertices[next]));
+    }
+
+    if (distances.length === 0) return false;
+
+    const avgDistance = distances.reduce((a, b) => a + b, 0) / distances.length;
+    const maxVariation = Math.max(...distances) / Math.min(...distances);
+
+    // Allow reasonable variation but not extreme distortion
+    return maxVariation < 4;
+  }
 }
