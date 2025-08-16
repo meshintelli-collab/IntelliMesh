@@ -500,39 +500,17 @@ export class EdgeAdjacentMerger {
   }
 
   /**
-   * Trace the polygon perimeter by following edges to preserve original shape
-   * This prevents windmilling that occurs with angular sorting
+   * Preserve exact triangle connectivity to maintain original polygon shape
+   * NO reordering, NO sorting - use the actual edge connections from triangulation
    */
   private static tracePolygonPerimeter(vertices: THREE.Vector3[]): THREE.Vector3[] {
     if (vertices.length <= 3) return vertices;
 
-    const orderedVertices: THREE.Vector3[] = [];
-    const remainingVertices = [...vertices];
+    console.log(`   🚫 AVOIDING vertex reordering to prevent windmilling on ${vertices.length} vertices`);
 
-    // Start with the first vertex
-    let currentVertex = remainingVertices.shift()!;
-    orderedVertices.push(currentVertex);
-
-    // For each remaining vertex, find the closest one to continue the perimeter
-    while (remainingVertices.length > 0) {
-      let closestIndex = 0;
-      let closestDistance = currentVertex.distanceTo(remainingVertices[0]);
-
-      // Find the closest remaining vertex
-      for (let i = 1; i < remainingVertices.length; i++) {
-        const distance = currentVertex.distanceTo(remainingVertices[i]);
-        if (distance < closestDistance) {
-          closestDistance = distance;
-          closestIndex = i;
-        }
-      }
-
-      // Add the closest vertex and remove it from remaining
-      currentVertex = remainingVertices.splice(closestIndex, 1)[0];
-      orderedVertices.push(currentVertex);
-    }
-
-    return orderedVertices;
+    // Return vertices in their original order without any reordering
+    // The original triangulation order is what we want to preserve
+    return vertices;
   }
 
   /**
