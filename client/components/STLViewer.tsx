@@ -1,6 +1,6 @@
 import React, { useRef, useMemo, useEffect, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Environment } from "@react-three/drei";
+import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { useSTL } from "../context/STLContext";
 import { STLManipulator, STLToolMode } from "../lib/processing/stlManipulator";
