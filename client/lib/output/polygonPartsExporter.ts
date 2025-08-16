@@ -153,19 +153,23 @@ export class PolygonPartsExporter {
       const polygonFace = polygonFaces[i];
       const fileExtension = format === "obj" ? "obj" : "stl";
 
-      // Use generalized polygon extruder for consistent geometry
-      const extrusionOptions: ExtrusionOptions = {
-        thickness: partThickness,
-        scale: scale,
+      // Use clean face extrusion (preserves exact polygon structure)
+      console.log(`🔧 Creating part ${i + 1}: ${polygonFace.type} with ${polygonFace.vertices?.length || 0} vertices`);
+
+      // Convert PolygonFace to Face interface
+      const face: Face = {
+        vertices: polygonFace.vertices || [],
+        normal: polygonFace.normal || new THREE.Vector3(0, 0, 1),
+        type: polygonFace.type || "polygon"
       };
 
-      const partContent =
-        format === "obj"
-          ? this.createPolygonOBJ(polygonFace, i, partThickness, scale) // Keep OBJ for now
-          : PolygonExtruder.createExtrudedPolygon(
-              polygonFace,
-              extrusionOptions,
-            );
+      // Extrude the face with specified thickness
+      const extrudedFace = FaceExtruder.extrudeFace(face, partThickness);
+
+      // Generate content in requested format
+      const partContent = format === "obj"
+        ? FaceExtruder.extrudedFaceToOBJ(extrudedFace, `part_${i + 1}`)
+        : FaceExtruder.extrudedFaceToSTL(extrudedFace, `part_${i + 1}`);
 
       const partFilename = `part_${String(i + 1).padStart(4, "0")}_${polygonFace.type || "polygon"}.${fileExtension}`;
 
