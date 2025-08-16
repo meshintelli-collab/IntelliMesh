@@ -580,10 +580,16 @@ export class ChamferedPartsExporter {
     }
     console.log(`✅ Added ${backTriangles.length} back face triangles`);
 
-    // Add angled side walls that create the chamfer effect
+    // Crop intersecting surfaces by limiting part height
+    const croppedFrontVertices = this.cropVerticesAtHeight(frontFaceVertices, 0, scaledThickness);
+    const croppedBackVertices = this.cropVerticesAtHeight(backFaceVertices, 0, scaledThickness);
+
+    console.log(`🔧 Cropped vertices: front ${frontFaceVertices.length}→${croppedFrontVertices.length}, back ${backFaceVertices.length}→${croppedBackVertices.length}`);
+
+    // Add angled side walls that create the chamfer effect (using cropped vertices)
     stlContent += this.addChamferedPerimeterWalls(
-      frontFaceVertices,    // Front face vertices (full or chamfered)
-      backFaceVertices,     // Back face vertices (chamfered or full)
+      croppedFrontVertices, // Cropped front face vertices
+      croppedBackVertices,  // Cropped back face vertices
       originalVertices,     // Original vertices for reference
       chamferedVertices,    // Chamfered vertices for reference
       offset,               // Thickness offset
