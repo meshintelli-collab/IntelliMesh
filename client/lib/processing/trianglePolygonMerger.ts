@@ -54,7 +54,7 @@ export class TrianglePolygonMerger {
 
     // Create new geometry from polygons
     const mergedGeometry = this.createGeometryFromPolygons(polygons);
-    console.log(`   ��� Generated new merged geometry`);
+    console.log(`   📊 Generated new merged geometry`);
 
     // Calculate stats
     const stats = this.calculateStats(triangles.length, polygons);
@@ -181,12 +181,16 @@ export class TrianglePolygonMerger {
   }
 
   /**
-   * Check if two triangles share a complete edge
+   * Check if two triangles share a complete edge (not just vertices!)
+   * STRICT: Both endpoints of the edge must match exactly
    */
   private static shareEdge(tri1: Triangle, tri2: Triangle): boolean {
-    for (const edge1 of tri1.edges) {
-      for (const edge2 of tri2.edges) {
+    for (let i = 0; i < tri1.edges.length; i++) {
+      const edge1 = tri1.edges[i];
+      for (let j = 0; j < tri2.edges.length; j++) {
+        const edge2 = tri2.edges[j];
         if (this.edgesMatch(edge1, edge2)) {
+          console.log(`     🔗 Found shared edge: Tri${tri1.index} edge ${i} matches Tri${tri2.index} edge ${j}`);
           return true;
         }
       }
@@ -196,14 +200,20 @@ export class TrianglePolygonMerger {
 
   /**
    * Check if two edges match (same vertices, any direction)
+   * VERY STRICT: Both endpoints must be within extremely tight tolerance
    */
   private static edgesMatch(edge1: [THREE.Vector3, THREE.Vector3], edge2: [THREE.Vector3, THREE.Vector3]): boolean {
     const [a1, b1] = edge1;
     const [a2, b2] = edge2;
 
-    // Check both orientations
-    const forwardMatch = a1.distanceTo(a2) < this.EDGE_TOLERANCE && b1.distanceTo(b2) < this.EDGE_TOLERANCE;
-    const reverseMatch = a1.distanceTo(b2) < this.EDGE_TOLERANCE && b1.distanceTo(a2) < this.EDGE_TOLERANCE;
+    // Check both orientations with very strict tolerance
+    const dist_a1_a2 = a1.distanceTo(a2);
+    const dist_b1_b2 = b1.distanceTo(b2);
+    const dist_a1_b2 = a1.distanceTo(b2);
+    const dist_b1_a2 = b1.distanceTo(a2);
+
+    const forwardMatch = dist_a1_a2 < this.EDGE_TOLERANCE && dist_b1_b2 < this.EDGE_TOLERANCE;
+    const reverseMatch = dist_a1_b2 < this.EDGE_TOLERANCE && dist_b1_a2 < this.EDGE_TOLERANCE;
 
     return forwardMatch || reverseMatch;
   }
