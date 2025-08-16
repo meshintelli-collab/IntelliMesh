@@ -360,11 +360,19 @@ export class EdgeAdjacentMerger {
           ? "quad"
           : "polygon";
 
+    // Store the original triangulation pattern to preserve exact shape
+    const originalTriangulation = this.preserveOriginalTriangulation(
+      componentIndices,
+      faces,
+      orderedVertices
+    );
+
     return {
       type: faceType,
       originalVertices: orderedVertices,
       normal: normal.clone().normalize(),
       triangleIndices: allTriangleIndices,
+      originalTriangulation: originalTriangulation, // Preserve original shape
     };
   }
 
