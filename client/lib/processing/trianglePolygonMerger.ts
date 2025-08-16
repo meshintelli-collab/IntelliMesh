@@ -153,24 +153,20 @@ export class TrianglePolygonMerger {
     // 1. Check normal alignment (must be nearly parallel)
     const normalDot = Math.abs(tri1.normal.dot(tri2.normal));
     if (normalDot < this.NORMAL_TOLERANCE) {
-      console.log(`   ❌ Triangles ${tri1.index} and ${tri2.index}: normals not aligned (${normalDot.toFixed(6)} < ${this.NORMAL_TOLERANCE})`);
       return false;
     }
 
     // 2. Check if triangles lie on the same plane
     if (!this.areOnSamePlane(tri1, tri2)) {
-      console.log(`   ❌ Triangles ${tri1.index} and ${tri2.index}: not on same plane`);
       return false;
     }
 
     // 3. Check for shared edge (complete edge, not just vertices)
     const hasSharedEdge = this.shareEdge(tri1, tri2);
     if (!hasSharedEdge) {
-      console.log(`   ❌ Triangles ${tri1.index} and ${tri2.index}: no shared edge`);
       return false;
     }
 
-    console.log(`   ✅ Triangles ${tri1.index} and ${tri2.index}: can merge (shared edge + coplanar)`);
     return true;
   }
 
