@@ -171,9 +171,9 @@ export class ChamferedPartsExporter {
         "Normal Vector Z": (
           polygonFace.normal || new THREE.Vector3(0, 0, 1)
         ).z.toFixed(6),
-        "Min Edge Angle (°)": useTriangulated ? "N/A" : "45.0",
-        "Max Edge Angle (°)": useTriangulated ? "N/A" : "45.0",
-        "Avg Chamfer Angle (°)": "45.0",
+        "Min Edge Angle (°)": useTriangulated ? "N/A" : minEdgeAngle.toFixed(1),
+        "Max Edge Angle (°)": useTriangulated ? "N/A" : maxEdgeAngle.toFixed(1),
+        "Avg Chamfer Angle (°)": avgChamferAngle.toFixed(1),
         "Surface Area (mm²)": partInfo.surfaceArea.toFixed(2),
         "Estimated Print Time (min)": partInfo.printTime.toFixed(1),
         "Estimated Material (g)": partInfo.material.toFixed(2),
