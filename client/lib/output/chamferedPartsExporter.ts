@@ -1044,26 +1044,23 @@ export class ChamferedPartsExporter {
       return faceInfo.perimeterEdges;
     }
 
-    // If we have triangle indices, be more conservative about which edges to include
-    if (faceInfo.triangleIndices && faceInfo.triangleIndices.length > 0) {
-      console.log(`   Analyzing triangulation to identify perimeter edges`);
+    // If we have triangulation data, use it to find boundary edges
+    if (faceInfo.triangulation && faceInfo.triangulation.length > 0) {
+      console.log(`   Analyzing corrected triangulation to identify perimeter edges`);
 
       // Build edge usage map to find boundary edges
       const edgeUsageMap = new Map<string, number>();
-      const triangleIndices = faceInfo.triangleIndices;
 
-      // Count how many times each edge is used
-      for (let i = 0; i < triangleIndices.length; i += 3) {
-        if (i + 2 < triangleIndices.length) {
-          const v1 = triangleIndices[i] % originalVertices.length;
-          const v2 = triangleIndices[i + 1] % originalVertices.length;
-          const v3 = triangleIndices[i + 2] % originalVertices.length;
+      // Count how many times each edge is used in the triangulation
+      for (const triangle of faceInfo.triangulation) {
+        const v1 = triangle[0];
+        const v2 = triangle[1];
+        const v3 = triangle[2];
 
-          // Add all triangle edges
-          this.addEdgeToUsageMap(edgeUsageMap, v1, v2);
-          this.addEdgeToUsageMap(edgeUsageMap, v2, v3);
-          this.addEdgeToUsageMap(edgeUsageMap, v3, v1);
-        }
+        // Add all triangle edges
+        this.addEdgeToUsageMap(edgeUsageMap, v1, v2);
+        this.addEdgeToUsageMap(edgeUsageMap, v2, v3);
+        this.addEdgeToUsageMap(edgeUsageMap, v3, v1);
       }
 
       // Boundary edges are used only once
