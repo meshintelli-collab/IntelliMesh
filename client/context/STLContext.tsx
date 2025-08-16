@@ -987,7 +987,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
           method,
         );
 
-        console.log("�� Decimation result:", {
+        console.log("��� Decimation result:", {
           hasGeometry: !!result.geometry,
           originalVertices: result.originalStats.vertices,
           newVertices: result.newStats.vertices,
@@ -1626,7 +1626,19 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
           };
 
         } catch (pythonError) {
-          console.warn(`⚠️ Python service unavailable (${pythonError}), falling back to JavaScript merger`);
+          // Handle different types of errors
+          let errorMessage = "Unknown error";
+          if (pythonError instanceof Error) {
+            if (pythonError.name === 'AbortError') {
+              errorMessage = "Request timed out";
+            } else if (pythonError.message.includes('fetch')) {
+              errorMessage = "Network error - service not accessible";
+            } else {
+              errorMessage = pythonError.message;
+            }
+          }
+
+          console.warn(`⚠️ Python service failed (${errorMessage}), falling back to JavaScript merger`);
 
           // Fallback to JavaScript EdgeAdjacentMerger
           console.log(`🔧 FALLBACK: Using JavaScript EdgeAdjacentMerger with ${originalStats?.triangles || 0} triangles`);
