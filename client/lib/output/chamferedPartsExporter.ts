@@ -551,9 +551,10 @@ export class ChamferedPartsExporter {
   }
 
   /**
-   * Generate chamfered vertices by moving points inward based on calculated edge angles
-   * Uses the formula: chamfer angle = 90° - (edge angle)/2
-   * Chamfers the inside face (face away from extrusion normal)
+   * Generate chamfered vertices using simplified approach:
+   * - For each vertex, use the bigger edge angle from adjacent edges
+   * - Move point perpendicular to the face being chamfered
+   * - Convex edges: chamfer outward, Concave edges: chamfer inward
    */
   private static generateChamferedVertices(
     originalVertices: THREE.Vector3[],
@@ -562,43 +563,57 @@ export class ChamferedPartsExporter {
   ): THREE.Vector3[] {
     const chamferedVertices: THREE.Vector3[] = [];
 
-    console.log(`🔧 Generating chamfered vertices for ${originalVertices.length} vertices`);
+    console.log(`🔧 Generating chamfered vertices for ${originalVertices.length} vertices (convex/concave aware)`);
 
     for (let i = 0; i < originalVertices.length; i++) {
       const vertex = originalVertices[i];
       const prevEdge = edges[(i - 1 + edges.length) % edges.length];
       const nextEdge = edges[i];
 
-      // Calculate edge directions
+      // Use the bigger edge angle from adjacent edges (simplified approach)
+      const maxEdgeAngle = Math.max(prevEdge.edgeAngle, nextEdge.edgeAngle);
+      const correspondingEdge = prevEdge.edgeAngle > nextEdge.edgeAngle ? prevEdge : nextEdge;
+
+      // Determine chamfer direction based on whether the edge is convex or concave
+      const isConvex = correspondingEdge.isConvex;
+      const chamferAngle = correspondingEdge.chamferAngle;
+
+      // Calculate chamfer direction perpendicular to the face
       const prevVertex = originalVertices[(i - 1 + originalVertices.length) % originalVertices.length];
       const nextVertex = originalVertices[(i + 1) % originalVertices.length];
 
-      const prevDir = new THREE.Vector3().subVectors(vertex, prevVertex).normalize();
-      const nextDir = new THREE.Vector3().subVectors(nextVertex, vertex).normalize();
+      // Calculate the angle bisector at this vertex
+      const incomingDir = new THREE.Vector3().subVectors(vertex, prevVertex).normalize();
+      const outgoingDir = new THREE.Vector3().subVectors(nextVertex, vertex).normalize();
+      const bisector = new THREE.Vector3().addVectors(incomingDir, outgoingDir).normalize();
 
-      // Calculate inward normal (toward polygon interior)
-      const edgeNormal1 = new THREE.Vector3().crossVectors(prevDir, new THREE.Vector3(0, 0, 1)).normalize();
-      const edgeNormal2 = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 0, 1), nextDir).normalize();
+      // Calculate perpendicular direction to the face being chamfered
+      // For 2D polygons, this is perpendicular to the bisector in the XY plane
+      const perpDirection = new THREE.Vector3(-bisector.y, bisector.x, 0).normalize();
 
-      // Average the inward normals to get chamfer direction
-      const inwardNormal = new THREE.Vector3().addVectors(edgeNormal1, edgeNormal2).normalize();
+      // Determine movement direction based on convexity
+      let moveDirection;
+      if (isConvex) {
+        // Convex: chamfer outward (away from polygon center)
+        moveDirection = perpDirection;
+      } else {
+        // Concave: chamfer inward (toward polygon center)
+        moveDirection = perpDirection.negate();
+      }
 
-      // Use calculated chamfer angles from edge analysis
-      const avgChamferAngle = (prevEdge.chamferAngle + nextEdge.chamferAngle) / 2;
+      // Calculate movement distance based on chamfer angle
+      const chamferAngleRad = (chamferAngle * Math.PI) / 180;
+      const moveDistance = chamferDepth / Math.tan(chamferAngleRad);
 
-      // Calculate how much to move points inward based on chamfer angle
-      // For chamfer angle = 90° - edge_angle/2, we want to move inward by:
-      const chamferAngleRad = (avgChamferAngle * Math.PI) / 180;
-      const insetDistance = chamferDepth / Math.tan(chamferAngleRad);
+      // Limit movement to reasonable bounds
+      const maxMove = chamferDepth * 3;
+      const actualMove = Math.min(Math.abs(moveDistance), maxMove);
 
-      // Limit inset to reasonable bounds
-      const maxInset = chamferDepth * 3;
-      const actualInset = Math.min(insetDistance, maxInset);
+      // Move vertex perpendicular to the face being chamfered
+      const chamferedVertex = vertex.clone().add(moveDirection.multiplyScalar(actualMove));
 
-      // Move vertex inward (toward polygon center) for chamfering
-      const chamferedVertex = vertex.clone().add(inwardNormal.multiplyScalar(actualInset));
-
-      console.log(`   Vertex ${i}: edge angles ${prevEdge.edgeAngle.toFixed(1)}°/${nextEdge.edgeAngle.toFixed(1)}°, chamfer ${avgChamferAngle.toFixed(1)}°, inset ${actualInset.toFixed(3)}mm`);
+      const convexity = isConvex ? "convex" : "concave";
+      console.log(`   Vertex ${i}: ${convexity} edge ${maxEdgeAngle.toFixed(1)}°, chamfer ${chamferAngle.toFixed(1)}°, move ${actualMove.toFixed(3)}mm ${isConvex ? 'outward' : 'inward'}`);
 
       chamferedVertices.push(chamferedVertex);
     }
