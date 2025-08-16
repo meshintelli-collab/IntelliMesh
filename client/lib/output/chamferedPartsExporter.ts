@@ -144,6 +144,50 @@ export class ChamferedPartsExporter {
               );
 
         const partFilename = `part_${String(i + 1).padStart(4, "0")}_${polygonFace.type || "polygon"}_chamfered.${fileExtension}`;
+
+        // Calculate part info for fallback case too
+        const partInfo = this.calculateChamferedPartInfo(
+          polygonFace,
+          partThickness,
+          chamferDepth,
+          scale,
+        );
+
+        // Add to database with default values
+        partDatabase.push({
+          "Part Number": `part_${String(i + 1).padStart(4, "0")}`,
+          "File Name": partFilename,
+          "Polygon Index": i + 1,
+          "Face Type": polygonFace.type || "polygon",
+          "Vertex Count": polygonFace.vertices?.length || 0,
+          "Edge Count": polygonFace.vertices?.length || 0,
+          "Thickness (mm)": partThickness,
+          "Chamfer Depth (mm)": chamferDepth,
+          "Scale Factor": scale,
+          "Area (mm²)": partInfo.area.toFixed(2),
+          "Perimeter (mm)": partInfo.perimeter.toFixed(2),
+          "Volume (mm³)": partInfo.volume.toFixed(2),
+          "Centroid X (mm)": partInfo.centroid.x.toFixed(3),
+          "Centroid Y (mm)": partInfo.centroid.y.toFixed(3),
+          "Centroid Z (mm)": partInfo.centroid.z.toFixed(3),
+          "Normal Vector X": (
+            polygonFace.normal || new THREE.Vector3(0, 0, 1)
+          ).x.toFixed(6),
+          "Normal Vector Y": (
+            polygonFace.normal || new THREE.Vector3(0, 0, 1)
+          ).y.toFixed(6),
+          "Normal Vector Z": (
+            polygonFace.normal || new THREE.Vector3(0, 0, 1)
+          ).z.toFixed(6),
+          "Min Edge Angle (°)": "90.0", // Default fallback
+          "Max Edge Angle (°)": "90.0", // Default fallback
+          "Avg Chamfer Angle (°)": "45.0", // Default fallback
+          "Surface Area (mm²)": partInfo.surfaceArea.toFixed(2),
+          "Estimated Print Time (min)": partInfo.printTime.toFixed(1),
+          "Estimated Material (g)": partInfo.material.toFixed(2),
+          "Complexity Score": partInfo.complexity.toFixed(2),
+        });
+
         zip.file(partFilename, partContent);
         continue;
       }
