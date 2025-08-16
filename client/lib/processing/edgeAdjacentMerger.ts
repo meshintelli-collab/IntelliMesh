@@ -658,4 +658,119 @@ export class EdgeAdjacentMerger {
     // If any edge is more than 3x longer than others, probably not a good quad
     return maxVariation < 3;
   }
+
+  /**
+   * Smart merge for medium complexity components (3-6 triangles)
+   * Attempts to create reasonable polygons while avoiding windmilling
+   */
+  private static trySmartMerge(componentIndices: number[], faces: PolygonFace[]): PolygonFace | null {
+    if (componentIndices.length < 3 || componentIndices.length > 6) {
+      return null;
+    }
+
+    try {
+      // Get all vertices from the component
+      const allVertices: THREE.Vector3[] = [];
+      const allTriangleIndices: number[] = [];
+
+      for (const index of componentIndices) {
+        const face = faces[index];
+        allVertices.push(...face.originalVertices);
+        allTriangleIndices.push(...(face.triangleIndices || []));
+      }
+
+      // Remove duplicate vertices
+      const uniqueVertices = this.removeDuplicateVertices(allVertices);
+
+      // For small polygons (3-6 triangles), allow merging if vertex count is reasonable
+      if (uniqueVertices.length <= 8 && uniqueVertices.length >= 3) {
+        const normal = this.ensureVector3(faces[componentIndices[0]].normal);
+
+        // Check if the shape is reasonable (not too distorted)
+        if (this.isReasonablePolygon(uniqueVertices)) {
+          console.log(`   ✅ Smart merged ${componentIndices.length} triangles into ${uniqueVertices.length}-vertex polygon`);
+
+          // Order vertices properly
+          let orderedVertices = this.orderPolygonVertices(uniqueVertices, normal);
+
+          // Ensure right-hand rule compliance
+          if (orderedVertices.length >= 3) {
+            const edge1 = new THREE.Vector3().subVectors(orderedVertices[1], orderedVertices[0]);
+            const edge2 = new THREE.Vector3().subVectors(orderedVertices[2], orderedVertices[0]);
+            const calculatedNormal = new THREE.Vector3().crossVectors(edge1, edge2).normalize();
+
+            if (calculatedNormal.dot(normal) < 0) {
+              orderedVertices = orderedVertices.reverse();
+            }
+          }
+
+          // Store original triangulation to preserve exact shape during export
+          const originalTriangulation = this.preserveOriginalTriangulation(
+            componentIndices,
+            faces,
+            orderedVertices
+          );
+
+          return {
+            type: this.getPolygonType(orderedVertices.length),
+            originalVertices: orderedVertices,
+            normal: normal.clone().normalize(),
+            triangleIndices: allTriangleIndices,
+            originalTriangulation: originalTriangulation,
+          };
+        }
+      }
+
+      return null; // Don't merge if conditions aren't met
+    } catch (error) {
+      console.log(`   ⚠️ Smart merge failed:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Check if vertices form a reasonable polygon (not too distorted)
+   */
+  private static isReasonablePolygon(vertices: THREE.Vector3[]): boolean {
+    if (vertices.length < 3 || vertices.length > 8) return false;
+
+    // Calculate area to check for degenerate polygons
+    let area = 0;
+    for (let i = 0; i < vertices.length; i++) {
+      const next = (i + 1) % vertices.length;
+      area += vertices[i].x * vertices[next].y - vertices[next].x * vertices[i].y;
+    }
+    area = Math.abs(area) / 2;
+
+    // Reject degenerate polygons
+    if (area < 0.001) return false;
+
+    // Check edge length variation
+    const distances: number[] = [];
+    for (let i = 0; i < vertices.length; i++) {
+      const next = (i + 1) % vertices.length;
+      distances.push(vertices[i].distanceTo(vertices[next]));
+    }
+
+    const avgDistance = distances.reduce((a, b) => a + b, 0) / distances.length;
+    const maxVariation = Math.max(...distances) / Math.min(...distances);
+
+    // Allow more variation for complex shapes but still reasonable
+    return maxVariation < 5;
+  }
+
+  /**
+   * Get polygon type name based on vertex count
+   */
+  private static getPolygonType(vertexCount: number): string {
+    switch (vertexCount) {
+      case 3: return "triangle";
+      case 4: return "quad";
+      case 5: return "pentagon";
+      case 6: return "hexagon";
+      case 7: return "heptagon";
+      case 8: return "octagon";
+      default: return "polygon";
+    }
+  }
 }
