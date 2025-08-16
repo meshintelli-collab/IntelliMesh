@@ -1566,7 +1566,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         const finalTriangles = parseInt(response.headers.get('X-Final-Triangles') || '0');
         const finalFaces = parseInt(response.headers.get('X-Final-Faces') || '0');
         const mergedGroups = parseInt(response.headers.get('X-Merged-Groups') || '0');
-        const reductionAchieved = parseFloat(response.headers.get('X-Reduction-Achieved') || '0');
+        const reductionFromPython = parseFloat(response.headers.get('X-Reduction-Achieved') || '0');
 
         console.log(`📊 PYTHON MERGER STATS:`);
         console.log(`   Original triangles: ${originalTriangles}`);
