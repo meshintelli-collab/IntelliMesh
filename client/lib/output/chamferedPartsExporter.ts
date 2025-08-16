@@ -220,11 +220,19 @@ export class ChamferedPartsExporter {
       );
 
       // Extract edge angle statistics from calculated chamfer data
-      const edgeAngles = chamferedFace.edges.map(e => e.edgeAngle);
-      const chamferAngles = chamferedFace.edges.map(e => e.chamferAngle);
-      const minEdgeAngle = Math.min(...edgeAngles);
-      const maxEdgeAngle = Math.max(...edgeAngles);
-      const avgChamferAngle = chamferAngles.reduce((a, b) => a + b, 0) / chamferAngles.length;
+      let minEdgeAngle = 90.0; // Default values
+      let maxEdgeAngle = 90.0;
+      let avgChamferAngle = 45.0;
+
+      if (chamferedFace.edges && chamferedFace.edges.length > 0) {
+        const edgeAngles = chamferedFace.edges.map(e => e.edgeAngle);
+        const chamferAngles = chamferedFace.edges.map(e => e.chamferAngle);
+        minEdgeAngle = Math.min(...edgeAngles);
+        maxEdgeAngle = Math.max(...edgeAngles);
+        avgChamferAngle = chamferAngles.reduce((a, b) => a + b, 0) / chamferAngles.length;
+      } else {
+        console.warn(`⚠️ Face ${i} has no edge data, using default angle values`);
+      }
 
       partDatabase.push({
         "Part Number": `part_${String(i + 1).padStart(4, "0")}`,
