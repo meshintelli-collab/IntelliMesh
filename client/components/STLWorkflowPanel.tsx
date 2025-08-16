@@ -329,7 +329,7 @@ export default function STLWorkflowPanel({
       }
     } catch (error) {
       toast({
-        title: "��� Coplanar Face Merging Error",
+        title: "�� Coplanar Face Merging Error",
         description:
           error instanceof Error ? error.message : "Unknown error occurred",
         duration: 3000,
@@ -1267,7 +1267,7 @@ export default function STLWorkflowPanel({
                     Export Complete Model
                   </Button>
                   <p className="text-xs text-white/60 mt-1">
-                    Download the complete model in STL or OBJ format
+                    Download the current model in STL or OBJ format
                   </p>
                 </div>
 
