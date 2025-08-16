@@ -724,6 +724,34 @@ export class ChamferedPartsExporter {
   }
 
   /**
+   * Triangulate a polygon using simple fan triangulation
+   */
+  private static triangulatePolygon(
+    vertices: THREE.Vector3[],
+    normal: THREE.Vector3,
+  ): THREE.Vector3[][] {
+    const triangles: THREE.Vector3[][] = [];
+
+    if (vertices.length < 3) return triangles;
+
+    if (vertices.length === 3) {
+      // Already a triangle
+      triangles.push([vertices[0], vertices[1], vertices[2]]);
+    } else if (vertices.length === 4) {
+      // Quad - split into two triangles
+      triangles.push([vertices[0], vertices[1], vertices[2]]);
+      triangles.push([vertices[0], vertices[2], vertices[3]]);
+    } else {
+      // Polygon - use fan triangulation from first vertex
+      for (let i = 1; i < vertices.length - 1; i++) {
+        triangles.push([vertices[0], vertices[i], vertices[i + 1]]);
+      }
+    }
+
+    return triangles;
+  }
+
+  /**
    * Add a single triangle to STL content
    */
   private static addTriangleToSTL(
