@@ -776,7 +776,7 @@ export class ChamferedPartsExporter {
     normal: THREE.Vector3,
     thickness: number,
     edges: EdgeInfo[],
-    faceInfo: any, // Original face info with triangulation data
+    properFaceData: any, // Corrected face data with proper winding
   ): ParametricGeometry {
     const vertices = new Map<string, ParametricVertex>();
     const polygons: ParametricPolygon[] = [];
