@@ -329,7 +329,7 @@ export default function STLWorkflowPanel({
       }
     } catch (error) {
       toast({
-        title: "❌ Coplanar Face Merging Error",
+        title: "�� Coplanar Face Merging Error",
         description:
           error instanceof Error ? error.message : "Unknown error occurred",
         duration: 3000,
@@ -1067,7 +1067,7 @@ export default function STLWorkflowPanel({
                 <div className="p-4 bg-white/10 rounded-lg border border-white/20">
                   <div className="text-white text-sm font-medium mb-3 flex items-center gap-2">
                     <span className="text-green-400">3.2</span>
-                    Open3D Quadric Decimation
+                    Open3D Decimation
                   </div>
 
                   <div className="mb-3">
