@@ -89,7 +89,7 @@ export class PolygonPartsExporter {
       if (mergedFaces.length === 0) {
         // Fallback to triangulated if no merged faces available
         console.log(
-          "⚠️ No merged faces found, falling back to triangulated mode",
+          "��️ No merged faces found, falling back to triangulated mode",
         );
         polygonFaces =
           PolygonExtruder.extractPolygonsFromTriangulatedGeometry(geometry);
@@ -522,9 +522,8 @@ export class PolygonPartsExporter {
     thickness: number,
     scale: number,
   ) {
-    const vertices = polygonFace.vertices.map((v: THREE.Vector3) =>
-      v.clone().multiplyScalar(scale),
-    );
+    // Vertices are already scaled in polygon faces
+    const vertices = polygonFace.vertices.map((v: THREE.Vector3) => v.clone());
 
     // Calculate polygon properties
     const edges = [];
