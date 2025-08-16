@@ -628,12 +628,22 @@ export class PolygonExtruder {
       return [];
     }
 
-    return polygonFaces.map((faceInfo: any, index: number) => ({
-      vertices: faceInfo.originalVertices || [],
-      normal: faceInfo.normal || new THREE.Vector3(0, 0, 1),
-      type: faceInfo.type || "polygon",
-      index,
-      originalTriangulation: faceInfo.originalTriangulation || [], // Preserve triangulation data
-    }));
+    console.log(`🔍 EXTRACTING ${polygonFaces.length} polygon faces from merged geometry:`);
+
+    return polygonFaces.map((faceInfo: any, index: number) => {
+      console.log(`   Face ${index}: ${faceInfo.type}, ${faceInfo.originalVertices?.length || 0} vertices`);
+      if (faceInfo.originalVertices && faceInfo.originalVertices.length > 0) {
+        console.log(`     Vertices:`, faceInfo.originalVertices.map((v: any, i: number) =>
+          `${i}: (${v.x?.toFixed(2) || 'N/A'}, ${v.y?.toFixed(2) || 'N/A'}, ${v.z?.toFixed(2) || 'N/A'})`));
+      }
+
+      return {
+        vertices: faceInfo.originalVertices || [],
+        normal: faceInfo.normal || new THREE.Vector3(0, 0, 1),
+        type: faceInfo.type || "polygon",
+        index,
+        originalTriangulation: faceInfo.originalTriangulation || [], // Preserve triangulation data
+      };
+    });
   }
 }
