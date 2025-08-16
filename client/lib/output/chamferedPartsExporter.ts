@@ -811,7 +811,7 @@ export class ChamferedPartsExporter {
     const chamferedVertices = this.generateChamferedVertices(
       originalVertices,
       chamferedFace.edges,
-      chamferDepth * scale,
+      thickness, // Use thickness for correct chamfer angle
     );
 
     // Create basic OBJ structure with chamfered vertices
