@@ -851,6 +851,24 @@ export class ChamferedPartsExporter {
   }
 
   /**
+   * Check if original triangulation data is available for complex polygons
+   */
+  private static hasOriginalTriangulation(firstEdge: EdgeInfo): boolean {
+    // Check if we have access to original triangulation data
+    // This would come from the polygon face extraction process
+    return false; // For now, always use simple triangulation
+  }
+
+  /**
+   * Get original triangulation indices for complex polygons
+   */
+  private static getOriginalTriangulation(firstEdge: EdgeInfo): number[][] {
+    // This would extract the original triangle indices from the polygon face
+    // For now, return empty array (fallback to simple triangulation)
+    return [];
+  }
+
+  /**
    * Apply chamfer transformations to parametric vertices
    */
   private static applyChamferTransformations(
