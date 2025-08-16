@@ -387,7 +387,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
 
       if (hasOriginalPolygons) {
         // For procedural models: preserve original polygon structure
-        console.log(`🎯 PRESERVING original polygon structure for procedural model`);
+        console.log(`�� PRESERVING original polygon structure for procedural model`);
         mergedFaces = (loadedGeometry as any).polygonFaces;
       } else {
         // For loaded files: apply coplanar merging
@@ -639,7 +639,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
   };
 
   const loadModelFromFile = useCallback(async (file: File) => {
-    console.log("🚀 loadModelFromFile called with:", file.name, file.size);
+    console.log("�� loadModelFromFile called with:", file.name, file.size);
 
     setIsLoading(true);
     setError(null);
@@ -1557,19 +1557,6 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
 
           let healthResponse;
           try {
-            // Safely check if signal is already aborted before making request
-            let isAlreadyAborted = false;
-            try {
-              isAlreadyAborted = healthController.signal.aborted;
-            } catch (signalError) {
-              // If checking the signal throws an error, treat it as aborted
-              isAlreadyAborted = true;
-            }
-
-            if (isAlreadyAborted) {
-              throw new Error('Request was cancelled before starting');
-            }
-
             healthResponse = await fetch('http://localhost:8001/health', {
               method: 'GET',
               signal: healthController.signal
