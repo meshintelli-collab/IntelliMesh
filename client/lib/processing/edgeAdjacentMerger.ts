@@ -633,6 +633,7 @@ export class EdgeAdjacentMerger {
     return {
       type: "quad",
       originalVertices: uniqueVertices, // Keep simple order
+      vertices: uniqueVertices, // Set both for compatibility
       normal: normal.clone().normalize(),
       triangleIndices: [componentIndices[0], componentIndices[1]],
       originalTriangulation: [[0, 1, 2], [0, 2, 3]], // Standard quad triangulation
