@@ -323,10 +323,20 @@ export class ChamferedPartsExporter {
     // Second pass: calculate edge angles for each face
     for (let faceIndex = 0; faceIndex < polygonFaces.length; faceIndex++) {
       const face = polygonFaces[faceIndex];
-      if (!face.originalVertices || face.originalVertices.length < 3) continue;
+
+      // Handle invalid faces by creating default chamfer data
+      if (!face.originalVertices || face.originalVertices.length < 3) {
+        console.warn(`⚠️ Face ${faceIndex} has invalid vertices, using default chamfer`);
+        chamferedFaces.push({
+          faceInfo: face,
+          edges: this.createDefaultEdges(face),
+          partIndex: faceIndex,
+        });
+        continue;
+      }
 
       const vertices = face.originalVertices;
-      const faceNormal = face.normal.clone().normalize();
+      const faceNormal = face.normal ? face.normal.clone().normalize() : new THREE.Vector3(0, 0, 1);
       const edges: EdgeInfo[] = [];
 
       for (let i = 0; i < vertices.length; i++) {
