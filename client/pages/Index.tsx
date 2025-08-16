@@ -166,7 +166,7 @@ export default function Index() {
               isMobile ? "text-xs" : "text-xs md:text-sm"
             }`}
           >
-            IntelliMesh
+            IntelliMesh (v0.1)
           </div>
           {!isMobile && (
             <div className="text-xs text-white/50 hidden md:block">
