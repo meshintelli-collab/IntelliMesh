@@ -103,11 +103,23 @@ export class PolygonPartsExporter {
           PolygonExtruder.extractPolygonsFromTriangulatedGeometry(geometry);
         polygonType = "triangulated_fallback";
       } else {
-        polygonFaces = mergedFaces;
-        polygonType = (geometry as any).polygonType || "merged";
-        console.log(
-          `⚠️ Using merged polygon mode: ${polygonFaces.length} polygons (may cause windmilling)`,
-        );
+        // Check if merged faces might cause windmilling and auto-switch to triangulated
+        const shouldForceTriangulated = this.shouldAvoidPolygonMerging(mergedFaces, geometry);
+
+        if (shouldForceTriangulated) {
+          console.log(
+            `🎯 AUTO-DETECTING complex shape: switching to triangulated mode to avoid windmilling`,
+          );
+          polygonFaces =
+            PolygonExtruder.extractPolygonsFromTriangulatedGeometry(geometry);
+          polygonType = "triangulated_auto";
+        } else {
+          polygonFaces = mergedFaces;
+          polygonType = (geometry as any).polygonType || "merged";
+          console.log(
+            `✅ Using merged polygon mode: ${polygonFaces.length} polygons`,
+          );
+        }
       }
     }
 
