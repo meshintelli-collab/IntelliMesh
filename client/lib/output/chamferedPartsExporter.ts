@@ -420,14 +420,20 @@ export class ChamferedPartsExporter {
               // Calculate the angle between face normals (0° to 180°)
               const faceAngle = (Math.acos(Math.abs(clampedDot)) * 180) / Math.PI;
 
-              // For cube: faceAngle = 90° (perpendicular faces)
-              // Internal edge angle = 360° - faceAngle = 270°
-              // But for chamfering, we want the "corner angle" which is faceAngle = 90°
-              edgeAngle = faceAngle;
+              // Debug: For cube, this should be 90°
+              if (faceIndex < 2) {
+                console.log(`🔍 Face angle between normals: ${faceAngle.toFixed(1)}°`);
+              }
 
-              // Simple chamfer formula: chamfer angle = 90° - (corner angle)/2
-              // For cube: chamfer angle = 90° - 90°/2 = 45°
-              chamferAngle = 90 - edgeAngle / 2;
+              // For chamfering, we need the EXTERIOR angle, not the angle between normals
+              // For a cube: exterior angle = 90° (the corner we're chamfering)
+              // Chamfer angle = exterior_angle / 2 = 45°
+              edgeAngle = faceAngle; // This is the exterior angle for convex edges
+              chamferAngle = edgeAngle / 2;  // FIXED: chamfer is half the exterior angle
+
+              if (faceIndex < 2) {
+                console.log(`🔍 Exterior angle: ${edgeAngle.toFixed(1)}°, Chamfer angle: ${chamferAngle.toFixed(1)}°`);
+              }
 
               // Ensure reasonable chamfer angles (15° to 75°)
               chamferAngle = Math.max(15, Math.min(75, Math.abs(chamferAngle)));
