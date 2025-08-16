@@ -5,6 +5,7 @@ export interface PolygonFace {
   originalVertices: THREE.Vector3[];
   normal: THREE.Vector3;
   triangleIndices?: number[];
+  originalTriangulation?: number[][]; // Preserves exact original triangle vertex indices
 }
 
 /**
