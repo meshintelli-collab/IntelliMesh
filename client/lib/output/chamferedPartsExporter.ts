@@ -292,8 +292,12 @@ export class ChamferedPartsExporter {
               // Apply chamfer formula: chamfer angle = 90° - (edge angle)/2
               chamferAngle = 90 - edgeAngle / 2;
 
-              // Ensure reasonable chamfer angles
+              // Ensure reasonable chamfer angles (15° to 75°)
               chamferAngle = Math.max(15, Math.min(75, chamferAngle));
+
+              if (faceIndex < 3) { // Log first few faces for debugging
+                console.log(`   Face ${faceIndex}, Edge ${i}: edge angle ${edgeAngle.toFixed(1)}° → chamfer ${chamferAngle.toFixed(1)}°`);
+              }
             }
           }
         }
