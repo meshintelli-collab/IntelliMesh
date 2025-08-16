@@ -54,7 +54,7 @@ export class TrianglePolygonMerger {
 
     // Create new geometry from polygons
     const mergedGeometry = this.createGeometryFromPolygons(polygons);
-    console.log(`   📊 Generated new merged geometry`);
+    console.log(`   ��� Generated new merged geometry`);
 
     // Calculate stats
     const stats = this.calculateStats(triangles.length, polygons);
@@ -131,16 +131,53 @@ export class TrianglePolygonMerger {
 
   /**
    * Check if two triangles can be merged (coplanar + shared edge)
+   * STRICT: Must share a complete edge AND be on the exact same plane
    */
   private static canMergeTriangles(tri1: Triangle, tri2: Triangle): boolean {
-    // Check coplanarity
+    // 1. Check normal alignment (must be nearly parallel)
     const normalDot = Math.abs(tri1.normal.dot(tri2.normal));
     if (normalDot < this.NORMAL_TOLERANCE) {
+      console.log(`   ❌ Triangles ${tri1.index} and ${tri2.index}: normals not aligned (${normalDot.toFixed(6)} < ${this.NORMAL_TOLERANCE})`);
       return false;
     }
 
-    // Check for shared edge
-    return this.shareEdge(tri1, tri2);
+    // 2. Check if triangles lie on the same plane
+    if (!this.areOnSamePlane(tri1, tri2)) {
+      console.log(`   ❌ Triangles ${tri1.index} and ${tri2.index}: not on same plane`);
+      return false;
+    }
+
+    // 3. Check for shared edge (complete edge, not just vertices)
+    const hasSharedEdge = this.shareEdge(tri1, tri2);
+    if (!hasSharedEdge) {
+      console.log(`   ❌ Triangles ${tri1.index} and ${tri2.index}: no shared edge`);
+      return false;
+    }
+
+    console.log(`   ✅ Triangles ${tri1.index} and ${tri2.index}: can merge (shared edge + coplanar)`);
+    return true;
+  }
+
+  /**
+   * Check if two triangles lie on the same plane
+   * Not just parallel normals, but actually on the same geometric plane
+   */
+  private static areOnSamePlane(tri1: Triangle, tri2: Triangle): boolean {
+    // Use first vertex of tri1 as reference point on the plane
+    const planePoint = tri1.vertices[0];
+    const planeNormal = tri1.normal;
+
+    // Check if all vertices of tri2 lie on the same plane
+    for (const vertex of tri2.vertices) {
+      const vectorToVertex = vertex.clone().sub(planePoint);
+      const distanceToPlane = Math.abs(vectorToVertex.dot(planeNormal));
+
+      if (distanceToPlane > this.PLANE_DISTANCE_TOLERANCE) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   /**
