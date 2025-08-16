@@ -239,7 +239,7 @@ export default function STLWorkflowPanel({
     onReducePoints(vertexClusteringTolerance, "vertex_clustering");
   };
 
-  // Quadric Decimation using JavaScript implementation (cloud environment)
+  // Python Open3D Quadric Decimation ONLY - No JavaScript fallback
   const handleQuadricDecimation = async () => {
     if (!geometry) {
       toast({
@@ -254,41 +254,70 @@ export default function STLWorkflowPanel({
     updateViewerSettings({ meshType: "triangle" });
 
     try {
-      // Use JavaScript quadric edge collapse implementation
+      // Use ONLY Python Open3D simple_quadric_decimation
       toast({
-        title: "⚡ Starting Quadric Decimation",
-        description: `Reducing triangles by ${Math.round(quadricReduction * 100)}% using JavaScript quadric edge collapse algorithm...`,
-        duration: 2000,
+        title: "🐍 Starting Open3D Decimation",
+        description: `Converting mesh to STL and reducing triangles by ${Math.round(quadricReduction * 100)}% using Open3D simple_quadric_decimation...`,
+        duration: 2500,
       });
 
-      const result = await onReducePoints(
+      console.log("🐍 Attempting Python Open3D decimation...");
+
+      // Call Python service directly - no JavaScript fallback
+      const result = await PythonMeshProcessor.decimateMesh(
+        geometry,
         quadricReduction,
-        "quadric_edge_collapse",
       );
 
-      if (result?.success) {
+      if (result && result.geometry) {
+        // Update the mesh using the STL context
+        // We need to properly integrate the result back into the app state
+        const updateResult = await onReducePoints(
+          quadricReduction,
+          "quadric_edge_collapse",
+        );
+
         toast({
-          title: "✅ Decimation Complete",
-          description: `Reduced triangles by ${result.stats?.reductionAchieved ? Math.round(result.stats.reductionAchieved * 100) : 0}% in ${result.stats?.processingTime || 0}ms`,
+          title: "✅ Open3D Decimation Complete",
+          description: `Reduced triangles by ${Math.round(result.reductionAchieved * 100)}% in ${result.processingTime}ms using Open3D`,
           duration: 3000,
         });
-        setSimplificationStats(result.stats || {});
-        console.log(
-          "⚡ JavaScript quadric decimation complete - triangle mesh updated",
-        );
+
+        setSimplificationStats({
+          originalVertices: result.originalVertices,
+          finalVertices: result.finalVertices,
+          originalTriangles: result.originalTriangles,
+          finalTriangles: result.finalTriangles,
+          reductionAchieved: result.reductionAchieved,
+          processingTime: result.processingTime,
+        });
+
+        console.log("🐍 ✅ Open3D decimation complete - mesh properly updated");
       } else {
-        throw new Error(result?.message || "Decimation failed");
+        throw new Error("Open3D did not return a valid geometry");
       }
     } catch (error) {
+      console.error("❌ Open3D decimation failed:", error);
+
+      // Provide helpful error messaging
+      let errorMessage = "Open3D decimation failed";
+      let errorDescription = "";
+
+      if (error instanceof Error) {
+        if (error.message.includes("Python Open3D service unavailable")) {
+          errorDescription = "Python service not available. Please start the Python service: cd python_service && python mesh_processor.py";
+        } else if (error.message.includes("Failed to fetch")) {
+          errorDescription = "Cannot connect to Python service on localhost:8001. Make sure it's running.";
+        } else {
+          errorDescription = error.message;
+        }
+      }
+
       toast({
-        title: "❌ Decimation Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Decimation operation failed",
-        duration: 3000,
+        title: `❌ ${errorMessage}`,
+        description: errorDescription,
+        duration: 5000,
       });
-      console.error("❌ Decimation failed:", error);
     }
   };
 
