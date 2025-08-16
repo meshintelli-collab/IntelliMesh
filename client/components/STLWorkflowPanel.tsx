@@ -240,7 +240,7 @@ export default function STLWorkflowPanel({
     onReducePoints(vertexClusteringTolerance, "vertex_clustering");
   };
 
-  // Python Open3D Quadric Decimation ONLY - No JavaScript fallback
+  // Quadric Decimation with automatic Python Open3D detection and JavaScript fallback
   const handleQuadricDecimation = async () => {
     if (!geometry) {
       toast({
@@ -255,71 +255,36 @@ export default function STLWorkflowPanel({
     updateViewerSettings({ meshType: "triangle" });
 
     try {
-      // Use ONLY Python Open3D simple_quadric_decimation
+      // Use the context's reducePoints - it will automatically try Python Open3D first
       toast({
-        title: "🐍 Starting Open3D Decimation",
-        description: `Converting mesh to STL and reducing triangles by ${Math.round(quadricReduction * 100)}% using Open3D simple_quadric_decimation...`,
-        duration: 2500,
+        title: "⚡ Starting Quadric Decimation",
+        description: `Checking for Python Open3D service and reducing triangles by ${Math.round(quadricReduction * 100)}%...`,
+        duration: 2000,
       });
 
-      console.log("🐍 Attempting Python Open3D decimation...");
+      const result = await reducePoints(quadricReduction, "quadric_edge_collapse");
 
-      // Call Python service directly - no JavaScript fallback
-      const result = await PythonMeshProcessor.decimateMesh(
-        geometry,
-        quadricReduction,
-      );
-
-      if (result && result.geometry) {
-        // Use the context's reducePoints but with a custom callback that uses our Open3D result
-        const updateResult = await reducePoints(quadricReduction, "quadric_edge_collapse");
-
-        // The actual geometry replacement should be handled by the context
-        // But we'll use our Open3D statistics for display
-        if (updateResult.success) {
-          toast({
-            title: "✅ Open3D Decimation Complete",
-            description: `Reduced triangles by ${Math.round(result.reductionAchieved * 100)}% in ${result.processingTime}ms using Open3D`,
-            duration: 3000,
-          });
-
-          setSimplificationStats({
-            originalVertices: result.originalVertices,
-            finalVertices: result.finalVertices,
-            originalTriangles: result.originalTriangles,
-            finalTriangles: result.finalTriangles,
-            reductionAchieved: result.reductionAchieved,
-            processingTime: result.processingTime,
-          });
-
-          console.log("🐍 ✅ Open3D decimation complete - mesh properly updated");
-        } else {
-          throw new Error(updateResult.message || "Failed to update mesh in context");
-        }
+      if (result?.success) {
+        toast({
+          title: "✅ Decimation Complete",
+          description: `Reduced triangles by ${result.stats?.reductionAchieved ? Math.round(result.stats.reductionAchieved * 100) : 0}% in ${result.stats?.processingTime || 0}ms`,
+          duration: 3000,
+        });
+        setSimplificationStats(result.stats || {});
+        console.log("✅ Quadric decimation complete - mesh updated with proper statistics");
       } else {
-        throw new Error("Open3D did not return a valid geometry");
+        throw new Error(result?.message || "Decimation failed");
       }
     } catch (error) {
-      console.error("❌ Open3D decimation failed:", error);
-
-      // Provide helpful error messaging
-      let errorMessage = "Open3D decimation failed";
-      let errorDescription = "";
-
-      if (error instanceof Error) {
-        if (error.message.includes("Python Open3D service unavailable")) {
-          errorDescription = "Python service not available. Please start the Python service: cd python_service && python mesh_processor.py";
-        } else if (error.message.includes("Failed to fetch")) {
-          errorDescription = "Cannot connect to Python service on localhost:8001. Make sure it's running.";
-        } else {
-          errorDescription = error.message;
-        }
-      }
+      console.error("❌ Decimation failed:", error);
 
       toast({
-        title: `❌ ${errorMessage}`,
-        description: errorDescription,
-        duration: 5000,
+        title: "❌ Decimation Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Decimation operation failed",
+        duration: 3000,
       });
     }
   };
@@ -2514,7 +2479,7 @@ export default function STLWorkflowPanel({
                                 sizeEstimate && (
                                   <>
                                     <div className="flex justify-between">
-                                      <span>📄 File size:</span>
+                                      <span>���� File size:</span>
                                       <span className="font-mono">
                                         {sizeEstimate.obj?.formatted ||
                                           "~" +
