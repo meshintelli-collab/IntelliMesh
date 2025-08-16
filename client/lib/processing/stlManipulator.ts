@@ -34,6 +34,7 @@ export class STLManipulator {
       const isAvailable = await PythonMeshProcessor.checkServiceHealth();
 
       if (isAvailable) {
+        console.log("🐍 Using Python Open3D service for decimation");
         const pythonResult = await PythonMeshProcessor.decimateMesh(
           geometry,
           targetReduction,
@@ -43,6 +44,7 @@ export class STLManipulator {
         const reductionAchieved =
           1 - newStats.vertices / originalStats.vertices;
 
+        console.log("🐍 ✅ Python Open3D decimation completed successfully");
         return {
           geometry: pythonResult.geometry,
           originalStats,
@@ -50,9 +52,11 @@ export class STLManipulator {
           reductionAchieved,
           processingTime: pythonResult.processingTime,
         };
+      } else {
+        console.log("🐍 ❌ Python service not available, using JavaScript fallback");
       }
     } catch (error) {
-      // Python service unavailable, fall back to JavaScript
+      console.log("🐍 ❌ Python service error, using JavaScript fallback:", error);
     }
 
     // Choose implementation based on method
