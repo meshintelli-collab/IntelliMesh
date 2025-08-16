@@ -772,19 +772,13 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
 
       updateProgress(50, "Converting", "Converting to BufferGeometry...");
 
-      // Convert to BufferGeometry
-      const isGearStarCross = ["gear", "star", "cross"].includes(modelName);
+      // Convert to BufferGeometry using normal triangulation for all shapes
+      // This ensures triangles share edges and can be merged by EdgeAdjacentMerger
       let bufferGeometry: THREE.BufferGeometry;
 
-      if (isGearStarCross) {
-        bufferGeometry =
-          PolygonGeometryBuilder.toBufferGeometryWithCenterTriangulation(
-            polygonGeometry,
-          );
-      } else {
-        bufferGeometry =
-          PolygonGeometryBuilder.toBufferGeometry(polygonGeometry);
-      }
+      bufferGeometry = PolygonGeometryBuilder.toBufferGeometry(polygonGeometry);
+
+      console.log(`✅ Using normal triangulation for ${modelName} to enable edge sharing`);
 
       updateProgress(80, "Processing", "Setting up mesh system...");
 
