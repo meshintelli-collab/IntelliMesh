@@ -82,9 +82,13 @@ export class PolygonPartsExporter {
     let polygonFaces: PolygonFace[];
     let polygonType: string;
 
+    console.log(`🔍 EXPORT MODE DEBUGGING:`);
+    console.log(`   useTriangulated parameter: ${useTriangulated}`);
+    console.log(`   Expected: false for Merged mode, true for Triangle mode`);
+
     if (useTriangulated) {
       // Triangulated mode: use exact original triangulation (NO windmilling)
-      console.log(`🎯 FORCING triangulated mode to avoid windmilling artifacts`);
+      console.log(`🎯 USING TRIANGULATED MODE (as requested by UI)`);
       polygonFaces =
         PolygonExtruder.extractPolygonsFromTriangulatedGeometry(geometry);
       polygonType = "triangulated_exact";
