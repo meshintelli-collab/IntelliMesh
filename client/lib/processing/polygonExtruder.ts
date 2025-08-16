@@ -68,8 +68,13 @@ export class PolygonExtruder {
     const polygonAny = polygon as any;
     let frontTriangles: THREE.Vector3[][];
 
+    console.log(`🔍 DEBUGGING WINDMILLING: Polygon has ${frontVertices.length} vertices`);
+    console.log(`🔍 originalTriangulation available:`, !!polygonAny.originalTriangulation);
+    console.log(`🔍 originalTriangulation length:`, polygonAny.originalTriangulation?.length || 0);
+
     if (polygonAny.originalTriangulation && polygonAny.originalTriangulation.length > 0) {
-      console.log(`   Using original triangulation to preserve exact shape (${polygonAny.originalTriangulation.length} triangles)`);
+      console.log(`✅ USING ORIGINAL TRIANGULATION to preserve exact shape (${polygonAny.originalTriangulation.length} triangles)`);
+      console.log(`🎯 NO WINDMILLING: Using preserved triangulation pattern`);
 
       // Use original triangulation with current vertices
       frontTriangles = [];
@@ -80,12 +85,17 @@ export class PolygonExtruder {
 
         if (v1 && v2 && v3) {
           frontTriangles.push([v1, v2, v3]);
+        } else {
+          console.warn(`⚠️ Invalid triangle indices:`, triangle, `for ${frontVertices.length} vertices`);
         }
       }
+      console.log(`✅ Created ${frontTriangles.length} triangles from original pattern`);
     } else {
-      console.log(`   No original triangulation found, using fallback triangulation`);
+      console.log(`❌ NO ORIGINAL TRIANGULATION - WILL CAUSE WINDMILLING!`);
+      console.log(`🚨 Falling back to polygon triangulation (windmill risk)`);
       // Fallback to re-triangulation
       frontTriangles = this.triangulatePolygon(frontVertices, normal);
+      console.log(`⚠️ Created ${frontTriangles.length} triangles via re-triangulation (may windmill)`);
     }
 
     // Front face
