@@ -308,19 +308,19 @@ export class PolygonPartsExporter {
           positions.getX(vertexStart / 3),
           positions.getY(vertexStart / 3),
           positions.getZ(vertexStart / 3),
-        ).multiplyScalar(scale);
+        ); // Geometry already scaled
 
         const v2 = new THREE.Vector3(
           positions.getX((vertexStart + 3) / 3),
           positions.getY((vertexStart + 3) / 3),
           positions.getZ((vertexStart + 3) / 3),
-        ).multiplyScalar(scale);
+        ); // Geometry already scaled
 
         const v3 = new THREE.Vector3(
           positions.getX((vertexStart + 6) / 3),
           positions.getY((vertexStart + 6) / 3),
           positions.getZ((vertexStart + 6) / 3),
-        ).multiplyScalar(scale);
+        ); // Geometry already scaled
 
         triangles.push([v1, v2, v3]);
       }
