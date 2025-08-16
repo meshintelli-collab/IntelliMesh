@@ -695,6 +695,58 @@ export class ChamferedPartsExporter {
   }
 
   /**
+   * Apply tracked vertex movements to all existing geometry
+   * This ensures all faces that share moved vertices stay connected
+   */
+  private static applyVertexMovements(stlContent: string, vertexMap: Map<string, THREE.Vector3>): string {
+    if (vertexMap.size === 0) {
+      return stlContent;
+    }
+
+    console.log(`🔧 Applying ${vertexMap.size} vertex movements to existing geometry`);
+
+    // Helper to create vertex key for lookup
+    const getVertexKey = (v: THREE.Vector3): string => {
+      return `${v.x.toFixed(6)},${v.y.toFixed(6)},${v.z.toFixed(6)}`;
+    };
+
+    // Parse and update STL content
+    const lines = stlContent.split('\n');
+    const updatedLines: string[] = [];
+    let movementCount = 0;
+
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+
+      if (trimmedLine.startsWith('vertex ')) {
+        // Extract vertex coordinates
+        const coords = trimmedLine.split(/\s+/).slice(1).map(Number);
+        if (coords.length === 3) {
+          const vertex = new THREE.Vector3(coords[0], coords[1], coords[2]);
+          const vertexKey = getVertexKey(vertex);
+
+          // Check if this vertex should be moved
+          if (vertexMap.has(vertexKey)) {
+            const newVertex = vertexMap.get(vertexKey)!;
+            const newLine = `      vertex ${newVertex.x.toFixed(6)} ${newVertex.y.toFixed(6)} ${newVertex.z.toFixed(6)}`;
+            updatedLines.push(newLine);
+            movementCount++;
+          } else {
+            updatedLines.push(line);
+          }
+        } else {
+          updatedLines.push(line);
+        }
+      } else {
+        updatedLines.push(line);
+      }
+    }
+
+    console.log(`✅ Applied ${movementCount} vertex movements to maintain connectivity`);
+    return updatedLines.join('\n');
+  }
+
+  /**
    * Post-process chamfered geometry to create a proper manifold solid
    * Merges overlapping faces and cleans up geometry
    */
