@@ -514,15 +514,15 @@ export class ChamferedPartsExporter {
 
     let stlContent = `solid chamfered_part_${chamferedFace.partIndex + 1}_${faceInfo.type}\n`;
 
-    // Generate edge chamfers - cuts along each edge at 45°
-    const chamferSize = Math.min(scaledThickness * 0.3, 2.0); // Reasonable chamfer size
-    const { chamferedFaces, chamferFaces } = this.generateEdgeChamfers(
+    // Generate chamfered vertices for edge chamfering
+    const chamferSize = Math.min(scaledThickness * 0.2, 1.5); // Small chamfer
+    const chamferedVertices = this.generateChamferedVertices(
       originalVertices,
       chamferedFace.edges,
       chamferSize,
     );
 
-    console.log(`🔍 Part ${chamferedFace.partIndex}: ${chamferedFaces.length} chamfered edges, ${chamferFaces.length} chamfer faces`);
+    console.log(`🔍 Part ${chamferedFace.partIndex}: chamfer size ${chamferSize.toFixed(3)}mm`);
 
     // Create front and back faces with chamfered edges
     console.log(`🔧 Generating faces with edge chamfers`);
