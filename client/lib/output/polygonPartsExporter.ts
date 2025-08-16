@@ -155,10 +155,11 @@ export class PolygonPartsExporter {
       const fileExtension = format === "obj" ? "obj" : "stl";
 
       // Use clean face extrusion (preserves exact polygon structure)
-      console.log(`🔧 Creating part ${i + 1}: ${polygonFace.type} with ${polygonFace.vertices?.length || 0} vertices`);
+      const actualVertices = polygonFace.vertices || polygonFace.originalVertices || [];
+      console.log(`🔧 Creating part ${i + 1}: ${polygonFace.type} with ${actualVertices.length} vertices`);
 
       // DEBUG: Log the actual face data to see what we're getting
-      console.log(`   📊 Face vertices:`, polygonFace.vertices?.map((v, idx) =>
+      console.log(`   �� Face vertices:`, actualVertices.map((v, idx) =>
         `${idx}: (${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)})`));
       console.log(`   📊 Face normal:`, polygonFace.normal);
       console.log(`   📊 Face type:`, polygonFace.type);
