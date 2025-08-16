@@ -533,4 +533,52 @@ export class EdgeAdjacentMerger {
 
     return orderedVertices;
   }
+
+  /**
+   * Preserve the original triangulation pattern when merging triangles into polygons
+   * This ensures that parts export can use the exact original shape structure
+   */
+  private static preserveOriginalTriangulation(
+    componentIndices: number[],
+    faces: PolygonFace[],
+    orderedVertices: THREE.Vector3[]
+  ): number[][] {
+    const originalTriangulation: number[][] = [];
+
+    console.log(`   🔧 Preserving original triangulation for ${componentIndices.length} triangles`);
+
+    // For each triangle in the component, map its vertices to the ordered vertices array
+    for (const triangleIndex of componentIndices) {
+      const triangle = faces[triangleIndex];
+      const triangleVertices = triangle.originalVertices;
+
+      if (triangleVertices.length === 3) {
+        // Find the indices of these triangle vertices in the ordered vertices array
+        const indices: number[] = [];
+
+        for (const triVertex of triangleVertices) {
+          // Find the matching vertex in the ordered array
+          let matchIndex = -1;
+          for (let i = 0; i < orderedVertices.length; i++) {
+            if (triVertex.distanceTo(orderedVertices[i]) < this.EDGE_TOLERANCE) {
+              matchIndex = i;
+              break;
+            }
+          }
+
+          if (matchIndex !== -1) {
+            indices.push(matchIndex);
+          }
+        }
+
+        // Only add if we found all 3 vertices
+        if (indices.length === 3) {
+          originalTriangulation.push(indices);
+        }
+      }
+    }
+
+    console.log(`   ✅ Preserved ${originalTriangulation.length} triangles in original pattern`);
+    return originalTriangulation;
+  }
 }
