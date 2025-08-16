@@ -552,7 +552,7 @@ export class ChamferedPartsExporter {
   }
 
   /**
-   * Create chamfered OBJ file (placeholder for now)
+   * Create chamfered OBJ file with proper edge angle calculation
    */
   private static createChamferedPolygonOBJ(
     chamferedFace: ChamferedFaceInfo,
@@ -560,14 +560,66 @@ export class ChamferedPartsExporter {
     chamferDepth: number,
     scale: number,
   ): string {
-    // For now, delegate to non-chamfered version
-    const { PolygonPartsExporter } = require("./polygonPartsExporter");
-    return PolygonPartsExporter.createPolygonOBJ(
-      chamferedFace.faceInfo,
-      chamferedFace.partIndex,
-      thickness,
-      scale,
+    const faceInfo = chamferedFace.faceInfo;
+
+    // Generate chamfered vertices based on calculated edge angles
+    const originalVertices = faceInfo.originalVertices.map((v: THREE.Vector3) =>
+      v.clone().multiplyScalar(scale),
     );
+
+    const chamferedVertices = this.generateChamferedVertices(
+      originalVertices,
+      chamferedFace.edges,
+      chamferDepth * scale,
+    );
+
+    // Create basic OBJ structure with chamfered vertices
+    let objContent = `# Chamfered OBJ Part ${chamferedFace.partIndex + 1}\n`;
+    objContent += `# Generated with edge-angle-based chamfering\n\n`;
+
+    // Add front face vertices (chamfered)
+    chamferedVertices.forEach((v, i) => {
+      objContent += `v ${v.x.toFixed(6)} ${v.y.toFixed(6)} ${v.z.toFixed(6)}\n`;
+    });
+
+    // Add back face vertices (chamfered + offset)
+    const normal = faceInfo.normal.clone().normalize();
+    const offset = normal.clone().multiplyScalar(thickness);
+    chamferedVertices.forEach((v, i) => {
+      const backV = v.clone().add(offset);
+      objContent += `v ${backV.x.toFixed(6)} ${backV.y.toFixed(6)} ${backV.z.toFixed(6)}\n`;
+    });
+
+    objContent += `\n# Faces\n`;
+
+    // Front face (using chamfered vertices)
+    if (chamferedVertices.length >= 3) {
+      objContent += `f`;
+      for (let i = 0; i < chamferedVertices.length; i++) {
+        objContent += ` ${i + 1}`;
+      }
+      objContent += `\n`;
+
+      // Back face (reversed order)
+      objContent += `f`;
+      for (let i = chamferedVertices.length - 1; i >= 0; i--) {
+        objContent += ` ${i + 1 + chamferedVertices.length}`;
+      }
+      objContent += `\n`;
+
+      // Side faces
+      for (let i = 0; i < chamferedVertices.length; i++) {
+        const next = (i + 1) % chamferedVertices.length;
+        const v1 = i + 1; // front current
+        const v2 = next + 1; // front next
+        const v3 = next + 1 + chamferedVertices.length; // back next
+        const v4 = i + 1 + chamferedVertices.length; // back current
+
+        objContent += `f ${v1} ${v2} ${v3} ${v4}\n`;
+      }
+    }
+
+    return objContent;
   }
 
   /**
