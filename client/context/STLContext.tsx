@@ -987,7 +987,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
           method,
         );
 
-        console.log("��� Decimation result:", {
+        console.log("�� Decimation result:", {
           hasGeometry: !!result.geometry,
           originalVertices: result.originalStats.vertices,
           newVertices: result.newStats.vertices,
@@ -1550,16 +1550,23 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
 
           // Create manual timeout for health check
           const healthController = new AbortController();
-          const healthTimeout = setTimeout(() => healthController.abort(), 2000);
+          const healthTimeout = setTimeout(() => {
+            console.log("Health check timed out after 2 seconds");
+            healthController.abort();
+          }, 2000);
 
-          const healthResponse = await fetch('http://localhost:8001/health', {
-            method: 'GET',
-            signal: healthController.signal
-          });
-          clearTimeout(healthTimeout);
+          let healthResponse;
+          try {
+            healthResponse = await fetch('http://localhost:8001/health', {
+              method: 'GET',
+              signal: healthController.signal
+            });
+          } finally {
+            clearTimeout(healthTimeout);
+          }
 
           if (!healthResponse.ok) {
-            throw new Error('Python service not available');
+            throw new Error(`Python service returned ${healthResponse.status}: ${healthResponse.statusText}`);
           }
 
           console.log(`✅ Python service is available, proceeding with coplanar merge`);
