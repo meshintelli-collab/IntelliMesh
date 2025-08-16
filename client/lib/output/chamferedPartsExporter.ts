@@ -628,13 +628,16 @@ export class ChamferedPartsExporter {
 
     console.log(`🔧 Using parametric geometry approach for chamfering`);
 
+    // Extract face data with proper winding and parametrization
+    const properFaceData = this.extractProperFaceData(faceInfo, originalVertices, normal);
+
     // Build parametric geometry with vertex IDs that can be transformed
     const parametricGeometry = this.buildParametricGeometry(
-      originalVertices,
-      normal,
+      properFaceData.vertices,
+      properFaceData.normal,
       partThickness,
       chamferedFace.edges,
-      faceInfo, // Pass original face info for triangulation
+      properFaceData, // Pass corrected face info
     );
 
     // Apply chamfer transformations to the parametric vertices
