@@ -562,6 +562,82 @@ export class ChamferedPartsExporter {
   }
 
   /**
+   * Calculate chamfered vertices where angled walls intersect
+   * This ensures the front and back faces match the angled wall intersections
+   */
+  private static calculateChamferedIntersectionVertices(
+    originalVertices: THREE.Vector3[],
+    edges: EdgeInfo[],
+    faceNormal: THREE.Vector3,
+    thickness: number,
+  ): { frontChamferedVertices: THREE.Vector3[], backChamferedVertices: THREE.Vector3[] } {
+    const frontChamferedVertices: THREE.Vector3[] = [];
+    const backChamferedVertices: THREE.Vector3[] = [];
+
+    console.log(`🔧 Calculating chamfered intersection vertices`);
+
+    for (let i = 0; i < originalVertices.length; i++) {
+      const vertex = originalVertices[i];
+      const prevIdx = (i - 1 + originalVertices.length) % originalVertices.length;
+      const nextIdx = (i + 1) % originalVertices.length;
+
+      // Get edge info for adjacent edges
+      const prevEdgeInfo = edges[prevIdx] || { chamferAngle: 45, isConvex: true };
+      const currEdgeInfo = edges[i] || { chamferAngle: 45, isConvex: true };
+
+      // Calculate directions to previous and next vertices
+      const prevVertex = originalVertices[prevIdx];
+      const nextVertex = originalVertices[nextIdx];
+      const toPrev = new THREE.Vector3().subVectors(prevVertex, vertex).normalize();
+      const toNext = new THREE.Vector3().subVectors(nextVertex, vertex).normalize();
+
+      // Calculate perpendicular directions (outward from edges)
+      const prevPerp = new THREE.Vector3().crossVectors(toPrev, faceNormal).normalize();
+      const nextPerp = new THREE.Vector3().crossVectors(toNext, faceNormal).normalize();
+
+      // Calculate chamfer offsets for adjacent edges
+      const prevChamferRadians = (prevEdgeInfo.chamferAngle * Math.PI) / 180;
+      const currChamferRadians = (currEdgeInfo.chamferAngle * Math.PI) / 180;
+      const prevChamferOffset = thickness * Math.tan(prevChamferRadians);
+      const currChamferOffset = thickness * Math.tan(currChamferRadians);
+
+      // Calculate intersection of the two angled planes
+      // For simplicity, use average offset for vertex movement
+      const avgChamferOffset = (prevChamferOffset + currChamferOffset) / 2;
+
+      // Calculate bisector direction for vertex movement
+      const bisector = new THREE.Vector3().addVectors(prevPerp, nextPerp);
+
+      // Handle special case where bisector is near zero (180° angle)
+      if (bisector.length() < 0.001) {
+        bisector.copy(prevPerp);
+      } else {
+        bisector.normalize();
+      }
+
+      // Calculate how much to move vertex based on angle between edges
+      const angle = Math.acos(Math.max(-1, Math.min(1, toPrev.dot(toNext.clone().negate()))));
+      const offsetScale = avgChamferOffset / Math.sin(angle / 2);
+
+      // Move vertex inward for front face (keep original for now, adjust based on intersection)
+      const frontChamferedVertex = vertex.clone().add(bisector.clone().multiplyScalar(-offsetScale * 0.5));
+      frontChamferedVertices.push(frontChamferedVertex);
+
+      // Move vertex inward for back face
+      const backOffset = faceNormal.clone().multiplyScalar(thickness);
+      const backChamferedVertex = vertex.clone().add(backOffset).add(bisector.clone().multiplyScalar(-offsetScale));
+      backChamferedVertices.push(backChamferedVertex);
+
+      if (i < 2) {
+        console.log(`   Vertex ${i}: offset scale ${offsetScale.toFixed(3)}mm, angle ${(angle * 180 / Math.PI).toFixed(1)}°`);
+      }
+    }
+
+    console.log(`✅ Calculated ${frontChamferedVertices.length} chamfered intersection vertices`);
+    return { frontChamferedVertices, backChamferedVertices };
+  }
+
+  /**
    * Add properly angled chamfered side walls between front and back faces
    * Each wall is angled at the calculated chamfer angle for perfect mating
    */
