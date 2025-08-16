@@ -556,46 +556,83 @@ export class ChamferedPartsExporter {
   }
 
   /**
-   * Generate chamfered vertices by moving them inward slightly for edge chamfering
-   * This creates a simple inward chamfer on all edges
+   * Add properly angled chamfered side walls between front and back faces
+   * Each wall is angled at the calculated chamfer angle for perfect mating
    */
-  private static generateChamferedVertices(
-    originalVertices: THREE.Vector3[],
+  private static addAngledChamferedWalls(
+    frontVertices: THREE.Vector3[],
+    backVertices: THREE.Vector3[],
     edges: EdgeInfo[],
-    chamferSize: number,
-  ): THREE.Vector3[] {
-    const chamferedVertices: THREE.Vector3[] = [];
+    faceNormal: THREE.Vector3,
+    thickness: number,
+  ): string {
+    let content = "";
 
-    console.log(`🔧 Generating chamfered vertices (chamfer size: ${chamferSize})`);
+    console.log(`🔧 Creating angled chamfered walls for ${frontVertices.length} edges`);
 
-    for (let i = 0; i < originalVertices.length; i++) {
-      const vertex = originalVertices[i];
-      const prevVertex = originalVertices[(i - 1 + originalVertices.length) % originalVertices.length];
-      const nextVertex = originalVertices[(i + 1) % originalVertices.length];
+    for (let i = 0; i < frontVertices.length; i++) {
+      const next = (i + 1) % frontVertices.length;
 
-      // Calculate inward direction (average of edge bisectors)
-      const edge1 = new THREE.Vector3().subVectors(prevVertex, vertex).normalize();
-      const edge2 = new THREE.Vector3().subVectors(nextVertex, vertex).normalize();
-      const bisector = new THREE.Vector3().addVectors(edge1, edge2);
+      // Get edge info for chamfer angle
+      const edgeInfo = edges[i] || { chamferAngle: 45, isConvex: true };
+      const chamferAngle = edgeInfo.chamferAngle; // This should be 45° for a cube
 
-      // If bisector is zero (180° angle), use perpendicular
-      if (bisector.length() < 0.001) {
-        bisector.crossVectors(edge1, new THREE.Vector3(0, 0, 1));
-      }
+      // Front edge vertices
+      const f1 = frontVertices[i];
+      const f2 = frontVertices[next];
 
-      bisector.normalize();
+      // Back edge vertices
+      const b1 = backVertices[i];
+      const b2 = backVertices[next];
 
-      // Move vertex inward by chamfer size
-      const chamferedVertex = vertex.clone().add(bisector.multiplyScalar(chamferSize));
-      chamferedVertices.push(chamferedVertex);
+      // Calculate edge direction and perpendicular
+      const edgeDir = new THREE.Vector3().subVectors(f2, f1).normalize();
+      const edgePerp = new THREE.Vector3().crossVectors(edgeDir, faceNormal).normalize();
+
+      // Calculate chamfer offset distance
+      const chamferRadians = (chamferAngle * Math.PI) / 180;
+      const chamferOffset = thickness * Math.tan(chamferRadians);
+
+      // Create chamfered vertices by moving inward
+      const cf1 = f1.clone().add(edgePerp.clone().multiplyScalar(-chamferOffset));
+      const cf2 = f2.clone().add(edgePerp.clone().multiplyScalar(-chamferOffset));
+      const cb1 = b1.clone().add(edgePerp.clone().multiplyScalar(-chamferOffset));
+      const cb2 = b2.clone().add(edgePerp.clone().multiplyScalar(-chamferOffset));
+
+      // Calculate wall normal (angled)
+      const wallNormal = new THREE.Vector3().crossVectors(
+        new THREE.Vector3().subVectors(cf1, f1),
+        new THREE.Vector3().subVectors(f2, f1)
+      ).normalize();
+
+      // Outer wall (full thickness, straight)
+      content += this.addTriangleToSTL(f1, f2, b2, wallNormal);
+      content += this.addTriangleToSTL(f1, b2, b1, wallNormal);
+
+      // Chamfered wall (angled inward)
+      const chamferNormal = new THREE.Vector3().crossVectors(
+        new THREE.Vector3().subVectors(cf2, f2),
+        new THREE.Vector3().subVectors(cf1, f1)
+      ).normalize();
+
+      content += this.addTriangleToSTL(f1, cf1, cf2, chamferNormal);
+      content += this.addTriangleToSTL(f1, cf2, f2, chamferNormal);
+
+      content += this.addTriangleToSTL(b1, cb2, cb1, chamferNormal.clone().negate());
+      content += this.addTriangleToSTL(b1, b2, cb2, chamferNormal.clone().negate());
+
+      // Connect chamfered edges (sides of chamfer)
+      const sideNormal = edgePerp.clone().negate();
+      content += this.addTriangleToSTL(cf1, cb1, cb2, sideNormal);
+      content += this.addTriangleToSTL(cf1, cb2, cf2, sideNormal);
 
       if (i < 2) {
-        console.log(`   Vertex ${i}: moved inward by ${chamferSize.toFixed(3)}mm`);
+        console.log(`   Edge ${i}: chamfer angle ${chamferAngle.toFixed(1)}°, offset ${chamferOffset.toFixed(3)}mm`);
       }
     }
 
-    console.log(`✅ Generated ${chamferedVertices.length} chamfered vertices`);
-    return chamferedVertices;
+    console.log(`✅ Created angled chamfered walls for ${frontVertices.length} edges`);
+    return content;
   }
 
   /**
