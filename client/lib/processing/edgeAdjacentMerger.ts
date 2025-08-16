@@ -3,7 +3,6 @@ import * as THREE from "three";
 export interface PolygonFace {
   type: string;
   originalVertices: THREE.Vector3[];
-  vertices?: THREE.Vector3[]; // Optional for compatibility
   normal: THREE.Vector3;
   triangleIndices?: number[];
   originalTriangulation?: number[][]; // Preserves exact original triangle vertex indices
@@ -87,7 +86,7 @@ export class EdgeAdjacentMerger {
    * Group coplanar triangles that share complete edges
    */
   static groupEdgeAdjacentTriangles(faces: PolygonFace[]): PolygonFace[] {
-    console.log(`🔧 SMART MERGING: Starting with ${faces.length} triangles`);
+    console.log(`🔧 CONSERVATIVE MERGING: Starting with ${faces.length} triangles`);
 
     // Debug first few faces to understand the geometry
     for (let i = 0; i < Math.min(3, faces.length); i++) {
@@ -108,25 +107,7 @@ export class EdgeAdjacentMerger {
       `   📊 Found ${components.length} components from ${faces.length} triangles`,
     );
 
-    // Debug component sizes to understand the structure
-    const componentSizes = components.map(c => c.length).sort((a, b) => b - a);
-    console.log(`   📊 Component sizes: [${componentSizes.slice(0, 10).join(', ')}${componentSizes.length > 10 ? '...' : ''}]`);
-
-    let singleTriangles = 0;
-    let pairs = 0;
-    let mediumComponents = 0;
-    let largeComponents = 0;
-
-    for (const component of components) {
-      if (component.length === 1) singleTriangles++;
-      else if (component.length === 2) pairs++;
-      else if (component.length <= 6) mediumComponents++;
-      else largeComponents++;
-    }
-
-    console.log(`   📊 Component breakdown: ${singleTriangles} singles, ${pairs} pairs, ${mediumComponents} medium (3-6), ${largeComponents} large (7+)`);
-
-    // SMART CONSERVATIVE MERGING: Balance between preserving shape and creating useful polygons
+    // CONSERVATIVE MERGING: Only merge simple components, preserve complex ones
     const mergedFaces: PolygonFace[] = [];
 
     for (const component of components) {
@@ -143,21 +124,8 @@ export class EdgeAdjacentMerger {
           mergedFaces.push(faces[component[0]]);
           mergedFaces.push(faces[component[1]]);
         }
-      } else if (component.length <= 6) {
-        // Medium components (3-6 triangles) - try smart merging for shapes like stars
-        console.log(`   🔧 SMART MERGING ${component.length} triangles (medium complexity)`);
-        const smartMergeResult = this.trySmartMerge(component, faces);
-        if (smartMergeResult) {
-          mergedFaces.push(smartMergeResult);
-        } else {
-          // Fallback: keep as separate triangles
-          console.log(`   ⚠️ Smart merge failed, preserving ${component.length} triangles separately`);
-          for (const triangleIndex of component) {
-            mergedFaces.push(faces[triangleIndex]);
-          }
-        }
       } else {
-        // Very complex component (7+ triangles) - DON'T MERGE to avoid windmilling
+        // Complex component (3+ triangles) - DON'T MERGE to avoid windmilling
         console.log(`   ���� PRESERVING ${component.length} triangles separately (avoid windmilling)`);
         for (const triangleIndex of component) {
           mergedFaces.push(faces[triangleIndex]);
@@ -166,7 +134,7 @@ export class EdgeAdjacentMerger {
     }
 
     console.log(
-      `✅ SMART MERGE OUTPUT: ${mergedFaces.length} faces (balanced merging with shape preservation)`,
+      `✅ CONSERVATIVE OUTPUT: ${mergedFaces.length} faces (preserved complex shapes)`,
     );
     return mergedFaces;
   }
@@ -204,17 +172,6 @@ export class EdgeAdjacentMerger {
     let connectedFaces = 0;
     for (const [faceId, neighbors] of graph) {
       if (neighbors.size > 0) connectedFaces++;
-    }
-
-    console.log(`   📊 Edge adjacency: ${sharedEdgeCount} shared edges, ${connectedFaces}/${faces.length} faces connected`);
-
-    // Show some specific connections for debugging
-    let connectionExamples = 0;
-    for (const [faceId, neighbors] of graph) {
-      if (neighbors.size > 0 && connectionExamples < 3) {
-        console.log(`   📊 Face ${faceId} connects to: [${Array.from(neighbors).join(', ')}]`);
-        connectionExamples++;
-      }
     }
 
     return graph;
@@ -439,7 +396,6 @@ export class EdgeAdjacentMerger {
     return {
       type: faceType,
       originalVertices: orderedVertices,
-      vertices: orderedVertices, // Set both for compatibility
       normal: normal.clone().normalize(),
       triangleIndices: allTriangleIndices,
       originalTriangulation: originalTriangulation, // Preserve original shape
@@ -664,7 +620,6 @@ export class EdgeAdjacentMerger {
     return {
       type: "quad",
       originalVertices: uniqueVertices, // Keep simple order
-      vertices: uniqueVertices, // Set both for compatibility
       normal: normal.clone().normalize(),
       triangleIndices: [componentIndices[0], componentIndices[1]],
       originalTriangulation: [[0, 1, 2], [0, 2, 3]], // Standard quad triangulation
@@ -689,121 +644,5 @@ export class EdgeAdjacentMerger {
 
     // If any edge is more than 3x longer than others, probably not a good quad
     return maxVariation < 3;
-  }
-
-  /**
-   * Smart merge for medium complexity components (3-6 triangles)
-   * Attempts to create reasonable polygons while avoiding windmilling
-   */
-  private static trySmartMerge(componentIndices: number[], faces: PolygonFace[]): PolygonFace | null {
-    if (componentIndices.length < 3 || componentIndices.length > 6) {
-      return null;
-    }
-
-    try {
-      // Get all vertices from the component
-      const allVertices: THREE.Vector3[] = [];
-      const allTriangleIndices: number[] = [];
-
-      for (const index of componentIndices) {
-        const face = faces[index];
-        allVertices.push(...face.originalVertices);
-        allTriangleIndices.push(...(face.triangleIndices || []));
-      }
-
-      // Remove duplicate vertices
-      const uniqueVertices = this.removeDuplicateVertices(allVertices);
-
-      // For small polygons (3-6 triangles), allow merging if vertex count is reasonable
-      if (uniqueVertices.length <= 8 && uniqueVertices.length >= 3) {
-        const normal = this.ensureVector3(faces[componentIndices[0]].normal);
-
-        // Check if the shape is reasonable (not too distorted)
-        if (this.isReasonablePolygon(uniqueVertices)) {
-          console.log(`   ✅ Smart merged ${componentIndices.length} triangles into ${uniqueVertices.length}-vertex polygon`);
-
-          // Order vertices properly
-          let orderedVertices = this.orderPolygonVertices(uniqueVertices, normal);
-
-          // Ensure right-hand rule compliance
-          if (orderedVertices.length >= 3) {
-            const edge1 = new THREE.Vector3().subVectors(orderedVertices[1], orderedVertices[0]);
-            const edge2 = new THREE.Vector3().subVectors(orderedVertices[2], orderedVertices[0]);
-            const calculatedNormal = new THREE.Vector3().crossVectors(edge1, edge2).normalize();
-
-            if (calculatedNormal.dot(normal) < 0) {
-              orderedVertices = orderedVertices.reverse();
-            }
-          }
-
-          // Store original triangulation to preserve exact shape during export
-          const originalTriangulation = this.preserveOriginalTriangulation(
-            componentIndices,
-            faces,
-            orderedVertices
-          );
-
-          return {
-            type: this.getPolygonType(orderedVertices.length),
-            originalVertices: orderedVertices,
-            vertices: orderedVertices, // Set both for compatibility
-            normal: normal.clone().normalize(),
-            triangleIndices: allTriangleIndices,
-            originalTriangulation: originalTriangulation,
-          };
-        }
-      }
-
-      return null; // Don't merge if conditions aren't met
-    } catch (error) {
-      console.log(`   ⚠️ Smart merge failed:`, error);
-      return null;
-    }
-  }
-
-  /**
-   * Check if vertices form a reasonable polygon (not too distorted)
-   */
-  private static isReasonablePolygon(vertices: THREE.Vector3[]): boolean {
-    if (vertices.length < 3 || vertices.length > 8) return false;
-
-    // Calculate area to check for degenerate polygons
-    let area = 0;
-    for (let i = 0; i < vertices.length; i++) {
-      const next = (i + 1) % vertices.length;
-      area += vertices[i].x * vertices[next].y - vertices[next].x * vertices[i].y;
-    }
-    area = Math.abs(area) / 2;
-
-    // Reject degenerate polygons
-    if (area < 0.001) return false;
-
-    // Check edge length variation
-    const distances: number[] = [];
-    for (let i = 0; i < vertices.length; i++) {
-      const next = (i + 1) % vertices.length;
-      distances.push(vertices[i].distanceTo(vertices[next]));
-    }
-
-    const avgDistance = distances.reduce((a, b) => a + b, 0) / distances.length;
-    const maxVariation = Math.max(...distances) / Math.min(...distances);
-
-    // Allow more variation for complex shapes but still reasonable
-    return maxVariation < 5;
-  }
-
-  /**
-   * Get polygon type name based on vertex count
-   */
-  private static getPolygonType(vertexCount: number): string {
-    switch (vertexCount) {
-      case 3: return "triangle";
-      case 4: return "quad";
-      case 5: return "pentagon";
-      case 6: return "hexagon";
-      case 7: return "heptagon";
-      case 8: return "octagon";
-      default: return "polygon";
-    }
   }
 }

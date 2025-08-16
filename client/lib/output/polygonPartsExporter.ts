@@ -155,18 +155,17 @@ export class PolygonPartsExporter {
       const fileExtension = format === "obj" ? "obj" : "stl";
 
       // Use clean face extrusion (preserves exact polygon structure)
-      const actualVertices = polygonFace.vertices || polygonFace.originalVertices || [];
-      console.log(`🔧 Creating part ${i + 1}: ${polygonFace.type} with ${actualVertices.length} vertices`);
+      console.log(`🔧 Creating part ${i + 1}: ${polygonFace.type} with ${polygonFace.vertices?.length || 0} vertices`);
 
       // DEBUG: Log the actual face data to see what we're getting
-      console.log(`   📊 Face vertices:`, actualVertices.map((v, idx) =>
+      console.log(`   📊 Face vertices:`, polygonFace.vertices?.map((v, idx) =>
         `${idx}: (${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)})`));
       console.log(`   📊 Face normal:`, polygonFace.normal);
       console.log(`   📊 Face type:`, polygonFace.type);
 
       // Convert PolygonFace to Face interface
       const face: Face = {
-        vertices: polygonFace.vertices || polygonFace.originalVertices || [],
+        vertices: polygonFace.vertices || [],
         normal: polygonFace.normal || new THREE.Vector3(0, 0, 1),
         type: polygonFace.type || "polygon"
       };
@@ -192,7 +191,7 @@ export class PolygonPartsExporter {
         "File Name": partFilename,
         "Polygon Index": i + 1,
         "Face Type": polygonFace.type || "polygon",
-        "Vertex Count": (polygonFace.vertices || polygonFace.originalVertices || []).length,
+        "Vertex Count": polygonFace.vertices.length,
         "Thickness (mm)": partThickness,
         "Scale Factor": scale,
         "Area (mm²)": partInfo.area.toFixed(2),
@@ -542,7 +541,7 @@ export class PolygonPartsExporter {
     scale: number,
   ) {
     // Vertices are already scaled in polygon faces
-    const vertices = (polygonFace.vertices || polygonFace.originalVertices || []).map((v: THREE.Vector3) => v.clone());
+    const vertices = polygonFace.vertices.map((v: THREE.Vector3) => v.clone());
 
     // Calculate polygon properties
     const edges = [];
