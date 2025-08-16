@@ -886,6 +886,48 @@ export class ChamferedPartsExporter {
   }
 
   /**
+   * Generate OBJ content from parametric polygon geometry
+   * No triangulation needed - OBJ supports polygons directly
+   */
+  private static generateOBJFromParametricGeometry(
+    geometry: ParametricGeometry,
+    partIndex: number,
+    faceType: string,
+  ): string {
+    let content = `# Chamfered OBJ Part ${partIndex + 1} - ${faceType}\n`;
+    content += `# Generated with polygon-based chamfering (no triangulation)\n\n`;
+
+    // Add all vertices
+    const vertexIdToIndex = new Map<string, number>();
+    let vertexIndex = 1;
+
+    for (const [vertexId, vertex] of geometry.vertices) {
+      content += `v ${vertex.position.x.toFixed(6)} ${vertex.position.y.toFixed(6)} ${vertex.position.z.toFixed(6)}\n`;
+      vertexIdToIndex.set(vertexId, vertexIndex);
+      vertexIndex++;
+    }
+
+    content += `\n# Faces (polygons preserved)\n`;
+
+    // Add polygons as faces (no triangulation!)
+    for (const polygon of geometry.polygons) {
+      content += `f`;
+      for (const vertexId of polygon.vertexIds) {
+        const index = vertexIdToIndex.get(vertexId);
+        if (index) {
+          content += ` ${index}`;
+        }
+      }
+      content += `\n`;
+    }
+
+    console.log(
+      `✅ Generated OBJ content: ${geometry.vertices.size} vertices, ${geometry.polygons.length} polygons (no triangulation)`,
+    );
+    return content;
+  }
+
+  /**
    * Add simple edge-by-edge chamfered walls with vertex movement tracking
    * Tracks which vertices moved so we can update all faces that use them
    */
