@@ -948,7 +948,7 @@ export class ChamferedPartsExporter {
     area = Math.abs(area) / 2;
 
     // Adjust area for chamfering (slight reduction)
-    const chamferAreaReduction = chamferDepth * scale * 2 * vertices.length;
+    const chamferAreaReduction = chamferDepth * 2 * vertices.length;
     area = Math.max(0, area - chamferAreaReduction);
 
     // Perimeter
