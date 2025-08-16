@@ -661,52 +661,65 @@ export class ChamferedPartsExporter {
 
   /**
    * Add properly angled chamfered side walls between front and back faces
-   * Uses the pre-calculated chamfered intersection vertices for perfect alignment
+   * Each edge gets its own specific chamfer angle based on adjacent face angles
    */
   private static addAngledChamferedWalls(
-    frontChamferedVertices: THREE.Vector3[],
-    backChamferedVertices: THREE.Vector3[],
+    frontVertices: THREE.Vector3[],
+    backVertices: THREE.Vector3[],
     edges: EdgeInfo[],
     faceNormal: THREE.Vector3,
     thickness: number,
   ): string {
     let content = "";
 
-    console.log(`🔧 Creating angled chamfered walls for ${frontChamferedVertices.length} edges`);
+    console.log(`🔧 Creating edge-specific chamfered walls for ${frontVertices.length} edges`);
 
-    for (let i = 0; i < frontChamferedVertices.length; i++) {
-      const next = (i + 1) % frontChamferedVertices.length;
+    for (let i = 0; i < frontVertices.length; i++) {
+      const next = (i + 1) % frontVertices.length;
 
-      // Get edge info for chamfer angle
+      // Get edge info for this specific edge
       const edgeInfo = edges[i] || { chamferAngle: 45, isConvex: true };
       const chamferAngle = edgeInfo.chamferAngle;
 
-      // Front edge vertices (already chamfered to intersection points)
-      const f1 = frontChamferedVertices[i];
-      const f2 = frontChamferedVertices[next];
+      // Front edge vertices (original, unchanged)
+      const f1 = frontVertices[i];
+      const f2 = frontVertices[next];
 
-      // Back edge vertices (already chamfered to intersection points)
-      const b1 = backChamferedVertices[i];
-      const b2 = backChamferedVertices[next];
+      // Back edge vertices (chamfered based on adjacent edges)
+      const b1 = backVertices[i];
+      const b2 = backVertices[next];
 
-      // Calculate wall normal for the angled surface
+      // Calculate this edge's specific chamfer
+      // The wall should be angled at the chamfer angle for this edge
+      const edgeDir = new THREE.Vector3().subVectors(f2, f1).normalize();
+      const edgePerp = new THREE.Vector3().crossVectors(edgeDir, faceNormal).normalize();
+
+      // Calculate the proper chamfered back edge for this specific edge
+      const chamferRadians = (chamferAngle * Math.PI) / 180;
+      const edgeChamferOffset = thickness * Math.tan(chamferRadians);
+
+      // Create chamfered back edge by moving inward by edge-specific offset
+      const cb1 = f1.clone().add(faceNormal.clone().multiplyScalar(thickness)).add(edgePerp.clone().multiplyScalar(-edgeChamferOffset));
+      const cb2 = f2.clone().add(faceNormal.clone().multiplyScalar(thickness)).add(edgePerp.clone().multiplyScalar(-edgeChamferOffset));
+
+      // Calculate wall normal for this edge's chamfered surface
       const wallNormal = new THREE.Vector3().crossVectors(
         new THREE.Vector3().subVectors(f2, f1),
-        new THREE.Vector3().subVectors(b1, f1)
+        new THREE.Vector3().subVectors(cb1, f1)
       ).normalize();
 
-      // Create angled wall connecting chamfered front and back edges
-      content += this.addTriangleToSTL(f1, f2, b2, wallNormal);
-      content += this.addTriangleToSTL(f1, b2, b1, wallNormal);
+      // Create chamfered wall for this edge (front edge to chamfered back edge)
+      content += this.addTriangleToSTL(f1, f2, cb2, wallNormal);
+      content += this.addTriangleToSTL(f1, cb2, cb1, wallNormal);
 
       if (i < 2) {
-        console.log(`   Edge ${i}: chamfer angle ${chamferAngle.toFixed(1)}°`);
+        console.log(`   Edge ${i}: chamfer angle ${chamferAngle.toFixed(1)}°, offset ${edgeChamferOffset.toFixed(3)}mm`);
         console.log(`   Front edge: (${f1.x.toFixed(2)}, ${f1.y.toFixed(2)}) to (${f2.x.toFixed(2)}, ${f2.y.toFixed(2)})`);
-        console.log(`   Back edge: (${b1.x.toFixed(2)}, ${b1.y.toFixed(2)}) to (${b2.x.toFixed(2)}, ${b2.y.toFixed(2)})`);
+        console.log(`   Chamfered back: (${cb1.x.toFixed(2)}, ${cb1.y.toFixed(2)}) to (${cb2.x.toFixed(2)}, ${cb2.y.toFixed(2)})`);
       }
     }
 
-    console.log(`✅ Created angled chamfered walls for ${frontChamferedVertices.length} edges`);
+    console.log(`✅ Created edge-specific chamfered walls for ${frontVertices.length} edges`);
     return content;
   }
 
