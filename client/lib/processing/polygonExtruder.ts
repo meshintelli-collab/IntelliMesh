@@ -621,12 +621,19 @@ export class PolygonExtruder {
       .crossVectors(nextEdgeDir, faceNormal)
       .normalize();
 
-    // Calculate chamfer offsets for each edge
+    // CORRECT CHAMFER FORMULA: chamfer angle = 90° - internal edge angle / 2
+    // The chamfer angles passed in should already be calculated correctly in the exporter
+    // but let's ensure we're using them properly
     const prevChamferRadians = (prevChamferAngle * Math.PI) / 180;
     const currentChamferRadians = (currentChamferAngle * Math.PI) / 180;
 
     const prevChamferOffset = chamferDepth * Math.tan(prevChamferRadians);
     const currentChamferOffset = chamferDepth * Math.tan(currentChamferRadians);
+
+    if (vertexIndex < 3) {
+      console.log(`   Vertex ${vertexIndex}: prevAngle=${prevChamferAngle.toFixed(1)}°, currentAngle=${currentChamferAngle.toFixed(1)}°`);
+      console.log(`   Offsets: prev=${prevChamferOffset.toFixed(3)}, current=${currentChamferOffset.toFixed(3)}`);
+    }
 
     // Calculate the two chamfer plane movements
     const prevInwardDirection = prevOutwardNormal.clone().negate();
