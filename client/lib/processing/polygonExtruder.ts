@@ -70,7 +70,7 @@ export class PolygonExtruder {
 
     console.log(`🔍 DEBUGGING WINDMILLING: Polygon has ${frontVertices.length} vertices`);
     console.log(`🔍 originalTriangulation available:`, !!polygonAny.originalTriangulation);
-    console.log(`🔍 originalTriangulation length:`, polygonAny.originalTriangulation?.length || 0);
+    console.log(`���� originalTriangulation length:`, polygonAny.originalTriangulation?.length || 0);
 
     if (polygonAny.originalTriangulation && polygonAny.originalTriangulation.length > 0) {
       console.log(`✅ USING ORIGINAL TRIANGULATION to preserve exact shape (${polygonAny.originalTriangulation.length} triangles)`);
@@ -202,7 +202,9 @@ export class PolygonExtruder {
       frontTriangles = this.triangulatePolygon(frontVertices, normal);
     }
 
-    // Front face - ORIGINAL polygon (full cross-sectional area)
+    // Front face - ORIGINAL vertices (full cross-sectional area for mating)
+    console.log(`   Creating ${frontTriangles.length} front face triangles using ORIGINAL FULL-SIZE vertices`);
+
     for (const triangle of frontTriangles) {
       stlContent += this.addTriangleToSTL(
         triangle[0],
