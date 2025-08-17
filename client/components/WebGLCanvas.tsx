@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { webglErrorHandler } from '../lib/utilities/webglErrorHandler';
+import WebGLErrorBoundary from './WebGLErrorBoundary';
 
 interface WebGLCanvasProps {
   children: React.ReactNode;
