@@ -18,6 +18,7 @@ interface EdgeInfo {
   edgeAngle: number; // angle between adjacent faces in degrees (0-360°)
   chamferAngle: number; // calculated chamfer angle
   isConvex: boolean; // true for convex (external) edges, false for concave (internal)
+  chamferOnInteriorFace?: boolean; // true if chamfer should be on interior face, false for exterior
 }
 
 /**
@@ -235,7 +236,7 @@ export class ChamferedPartsExporter {
         // STL: Use PolygonExtruder (creates triangulated STL)
         console.log(`🔧 Creating STL chamfered part ${i + 1} using PolygonExtruder`);
         partContent = PolygonExtruder.createChamferedPolygon(polygonFaceForExtruder, extrusionOptions, chamferOptions);
-        console.log(`���� STL content length: ${partContent.length} characters`);
+        console.log(`🔧 STL content length: ${partContent.length} characters`);
 
         if (partContent.length < 100) {
           console.error(`❌ STL content suspiciously short! Content: ${partContent.substring(0, 200)}...`);
