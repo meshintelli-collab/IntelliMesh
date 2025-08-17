@@ -663,35 +663,33 @@ export class ChamferedPartsExporter {
     // Write faces (PRESERVE POLYGON STRUCTURE - NO TRIANGULATION)
     objContent += `\n# Faces (polygons preserved)\n`;
 
-    // Front face (original polygon) - indices 1 to frontVertices.length
-    objContent += `# Front face (original polygon)\nf`;
-    for (let i = 1; i <= frontVertices.length; i++) {
+    // Front face (chamfered - smaller polygon)
+    objContent += `# Front face (chamfered - smaller polygon)\nf`;
+    for (let i = 1; i <= actualFrontVertices.length; i++) {
       objContent += ` ${i}//1`;
     }
     objContent += `\n`;
 
-    // Back face (original polygon) - indices frontVertices.length+1 to 2*frontVertices.length, reversed
-    objContent += `# Back face (original polygon)\nf`;
-    for (let i = frontVertices.length * 2; i > frontVertices.length; i--) {
+    // Back face (full size polygon) - reversed winding
+    objContent += `# Back face (full size polygon)\nf`;
+    for (let i = actualFrontVertices.length * 2; i > actualFrontVertices.length; i--) {
       objContent += ` ${i}//2`;
     }
     objContent += `\n`;
 
-    // Chamfered side walls (quads)
-    objContent += `# Chamfered side walls (quads)\n`;
-    for (let i = 0; i < frontVertices.length; i++) {
-      const next = (i + 1) % frontVertices.length;
+    // Angled chamfer walls (quads) - these CREATE the chamfer
+    objContent += `# Angled chamfer walls (quads) - these are the chamfer faces\n`;
+    for (let i = 0; i < actualFrontVertices.length; i++) {
+      const next = (i + 1) % actualFrontVertices.length;
 
-      // Indices:
-      const frontCurrent = i + 1;
-      const frontNext = next + 1;
-      const backNext = frontVertices.length + next + 1;
-      const backCurrent = frontVertices.length + i + 1;
-      const chamferedBackCurrent = frontVertices.length * 2 + i + 1;
-      const chamferedBackNext = frontVertices.length * 2 + next + 1;
+      // Indices for quad: chamfered front → full back
+      const chamferedFrontCurrent = i + 1;
+      const chamferedFrontNext = next + 1;
+      const fullBackNext = actualFrontVertices.length + next + 1;
+      const fullBackCurrent = actualFrontVertices.length + i + 1;
 
-      // Create chamfered wall as quad: front edge to chamfered back edge
-      objContent += `f ${frontCurrent} ${frontNext} ${chamferedBackNext} ${chamferedBackCurrent}\n`;
+      // Create angled chamfer wall quad: chamfered front edge to full back edge
+      objContent += `f ${chamferedFrontCurrent} ${chamferedFrontNext} ${fullBackNext} ${fullBackCurrent}\n`;
     }
 
     console.log(`✅ Generated chamfered OBJ: ${frontVertices.length} vertices per face, polygons preserved (no triangulation)`);
