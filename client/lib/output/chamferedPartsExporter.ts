@@ -511,6 +511,11 @@ export class ChamferedPartsExporter {
               // Step 5: Determine dihedral angle and chamfer face based on geometry
               let interiorAngle: number;
 
+              // Store dot product signs for debugging
+              const dotAVSign = dotAV > 0 ? 'p' : 'n';
+              const dotBUSign = dotBU > 0 ? 'p' : 'n';
+              const dotProductSignature = dotAVSign + dotBUSign;
+
               if (dotAV <= 0 && dotBU <= 0) {
                 // Convex edge: dihedral = 180° - angle_between_normals
                 interiorAngle = 180 - angleBetweenNormals;
@@ -800,7 +805,7 @@ export class ChamferedPartsExporter {
           `   🎯 Vertex ${edgeIndex} moves: (${currentVertexMovement.x.toFixed(3)}, ${currentVertexMovement.y.toFixed(3)})`,
         );
         console.log(
-          `   ��� Vertex ${nextVertexIndex} moves: (${nextVertexMovement.x.toFixed(3)}, ${nextVertexMovement.y.toFixed(3)})`,
+          `   🎯 Vertex ${nextVertexIndex} moves: (${nextVertexMovement.x.toFixed(3)}, ${nextVertexMovement.y.toFixed(3)})`,
         );
       }
     }
