@@ -548,33 +548,7 @@ export class ChamferedPartsExporter {
               // NO CLAMPING - allow full range of chamfer angles
               // chamferAngle = chamferAngle; // Keep original calculated value
 
-              if (faceIndex < 8) { // Increased to capture more faces for octahedron debugging
-                // Log detailed sophisticated calculation for debugging
-                console.log(
-                  `   🔬 OCTAHEDRON ANALYSIS Face ${faceIndex}, Edge ${i}:`,
-                );
-                console.log(
-                  `   Face normals - u: (${u.x.toFixed(3)}, ${u.y.toFixed(3)}, ${u.z.toFixed(3)})`,
-                );
-                console.log(
-                  `   Face normals - v: (${v.x.toFixed(3)}, ${v.y.toFixed(3)}, ${v.z.toFixed(3)})`,
-                );
-                console.log(
-                  `   Dot products: u·v=${dotUV.toFixed(6)}, a·v=${dotAV.toFixed(3)}, b·u=${dotBU.toFixed(3)}`,
-                );
-                console.log(
-                  `   🎯 Interior angle: ${interiorAngle.toFixed(3)}° (Expected ~109.47° for octahedron)`,
-                );
-                console.log(
-                  `   🧮 Chamfer calculation: 90° - ${interiorAngle.toFixed(3)}°/2 = 90° - ${(interiorAngle/2).toFixed(3)}° = ${originalChamferAngle.toFixed(3)}°`,
-                );
-                console.log(
-                  `   🎯 Expected chamfer angle: ~35.265° for octahedron`);
-                console.log(
-                  `   ✅ UNCLAMPED chamfer angle: ${chamferAngle.toFixed(3)}° (no artificial limits applied)`);
-                console.log(
-                  `   ${Math.abs(chamferAngle - 35.265) < 1 ? '✅ CORRECT' : '❌ INCORRECT'} angle calculation`);
-              }
+              // Clean calculation without verbose logging
             }
           }
         }
