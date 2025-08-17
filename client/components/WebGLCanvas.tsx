@@ -163,69 +163,18 @@ const WebGLCanvas: React.FC<WebGLCanvasProps> = ({
               <Canvas
                 ref={canvasRef}
                 onCreated={(state) => {
+                  // Very simple validation - just log success
                   console.log('✅ Canvas created successfully');
 
-                  // Comprehensive WebGL context validation with safe error handling
-                  if (!state.gl) {
-                    console.warn('⚠️ No WebGL context in onCreated state - Canvas may still work');
-                    return;
-                  }
-
-                  // Check if it's a proper WebGL context
-                  if (typeof state.gl.getParameter !== 'function') {
-                    console.warn('⚠️ Invalid WebGL context - missing getParameter method. Canvas should still function for basic rendering:', {
-                      gl: state.gl,
-                      type: typeof state.gl,
-                      constructor: state.gl.constructor?.name || 'Unknown',
-                      hasCanvas: 'canvas' in state.gl,
-                      isContextLost: 'isContextLost' in state.gl ? (
-                        typeof state.gl.isContextLost === 'function' ? state.gl.isContextLost() : 'Method not available'
-                      ) : 'Property not available'
-                    });
-
-                    // Don't trigger error handler - this might be normal for some @react-three/fiber setups
-                    console.log('🎮 Proceeding with Canvas despite WebGL context validation issues');
-                    return;
-                  }
-
-                  // Check if context is lost
-                  if (state.gl.isContextLost && state.gl.isContextLost()) {
-                    console.warn('⚠️ WebGL context is lost in onCreated - may recover automatically');
-                    return;
-                  }
-
-                  // Safe parameter retrieval with error handling
+                  // Optional: Try to get basic info without causing errors
                   try {
-                    const webglInfo = {
-                      contextLost: state.gl.isContextLost ? state.gl.isContextLost() : 'Unknown'
-                    };
-
-                    // Safely get renderer info
-                    try {
-                      webglInfo.renderer = state.gl.getParameter(state.gl.RENDERER);
-                    } catch (e) {
-                      webglInfo.renderer = 'Failed to retrieve';
-                      console.warn('Could not get RENDERER parameter:', e);
+                    if (state.gl && typeof state.gl.getParameter === 'function') {
+                      const version = state.gl.getParameter(state.gl.VERSION);
+                      console.log('📊 WebGL Version:', version);
                     }
-
-                    try {
-                      webglInfo.vendor = state.gl.getParameter(state.gl.VENDOR);
-                    } catch (e) {
-                      webglInfo.vendor = 'Failed to retrieve';
-                      console.warn('Could not get VENDOR parameter:', e);
-                    }
-
-                    try {
-                      webglInfo.version = state.gl.getParameter(state.gl.VERSION);
-                    } catch (e) {
-                      webglInfo.version = 'Failed to retrieve';
-                      console.warn('Could not get VERSION parameter:', e);
-                    }
-
-                    console.log('📊 WebGL Info:', webglInfo);
-                  } catch (error) {
-                    console.warn('⚠️ Could not retrieve WebGL parameters, but Canvas should still work:', error);
-                    // Don't call handleWebGLError here as it may cause React state update issues
+                  } catch (e) {
+                    // Silently ignore validation errors
+                    console.log('🎮 Canvas running without WebGL parameter access');
                   }
                 }}
                 onError={(error) => {
