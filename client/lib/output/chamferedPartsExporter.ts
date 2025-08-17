@@ -643,14 +643,14 @@ export class ChamferedPartsExporter {
     // Write vertices
     let vertexIndex = 1;
 
-    // Front face vertices (chamfered - smaller)
-    objContent += `# Front face vertices (chamfered - smaller)\n`;
+    // Front face vertices (FULL SIZE for mating)
+    objContent += `# Front face vertices (FULL SIZE for mating)\n`;
     actualFrontVertices.forEach((v) => {
       objContent += `v ${v.x.toFixed(6)} ${v.y.toFixed(6)} ${v.z.toFixed(6)}\n`;
     });
 
-    // Back face vertices (full size - original)
-    objContent += `\n# Back face vertices (full size - original)\n`;
+    // Back face vertices (CHAMFERED - smaller for taper)
+    objContent += `\n# Back face vertices (CHAMFERED - smaller for taper)\n`;
     actualBackVertices.forEach((v) => {
       objContent += `v ${v.x.toFixed(6)} ${v.y.toFixed(6)} ${v.z.toFixed(6)}\n`;
     });
