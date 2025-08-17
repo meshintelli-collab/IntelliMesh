@@ -189,23 +189,23 @@ export class EdgeAdjacentMerger {
   }
 
   /**
-   * Check if two faces are coplanar
+   * Check if two faces are perfectly parallel and coplanar
    */
   private static areCoplanar(face1: PolygonFace, face2: PolygonFace): boolean {
     const normal1 = this.ensureVector3(face1.normal);
     const normal2 = this.ensureVector3(face2.normal);
-    
-    // Check normal alignment
+
+    // Check for perfect parallelism - normals must be nearly identical
     const normalDot = Math.abs(normal1.dot(normal2));
     if (normalDot < this.NORMAL_TOLERANCE) {
       return false;
     }
-    
-    // Check if faces lie on same plane
+
+    // For perfectly parallel faces, also check they're on the same plane
     const face1Center = this.getFaceCenter(face1.originalVertices);
     const face2Center = this.getFaceCenter(face2.originalVertices);
     const planeDistance = this.distanceToPlane(face1Center, face2Center, normal1);
-    
+
     return Math.abs(planeDistance) < this.DISTANCE_TOLERANCE;
   }
 
