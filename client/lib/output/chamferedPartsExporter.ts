@@ -730,11 +730,14 @@ export class ChamferedPartsExporter {
       const nextEdgePerp = new THREE.Vector3().crossVectors(nextEdgeDir, faceNormal).normalize();
 
       // Calculate chamfer offsets for each edge
+      // FOR FULL-THROUGH CHAMFERING: inward_offset = thickness * tan(chamfer_angle)
       const prevChamferRadians = (prevEdgeChamferAngle * Math.PI) / 180;
       const currentChamferRadians = (currentEdgeChamferAngle * Math.PI) / 180;
 
-      const prevChamferOffset = chamferDepth * Math.tan(prevChamferRadians);
-      const currentChamferOffset = chamferDepth * Math.tan(currentChamferRadians);
+      // chamferDepth parameter is now the part thickness for full-through chamfering
+      const partThickness = chamferDepth;
+      const prevChamferOffset = partThickness * Math.tan(prevChamferRadians);
+      const currentChamferOffset = partThickness * Math.tan(currentChamferRadians);
 
       // Calculate the movements from each chamfer plane
       const prevMovement = prevEdgePerp.clone().multiplyScalar(-prevChamferOffset);
