@@ -744,18 +744,29 @@ export class ChamferedPartsExporter {
       console.log(`   OBJ Offsets: prev=${prevChamferOffset.toFixed(3)}, current=${currentChamferOffset.toFixed(3)}`);
     }
 
-    // Calculate the two chamfer plane movements
-    const prevInwardDirection = prevOutwardNormal.clone().negate();
-    const currentInwardDirection = nextOutwardNormal.clone().negate();
+    // PARAMETRIC VERTEX CHAMFERING:
+    // Determine chamfer direction based on whether chamfer is on interior or exterior face
 
-    // Average the two movements for intersection point
-    // This works well for most polygon shapes where chamfer planes intersect reasonably
+    // For now, assume chamfer is on interior face (moving vertices inward)
+    // TODO: This should be updated to use the chamferOnInteriorFace property from edge calculation
+    const prevChamferDirection = prevOutwardNormal.clone().negate(); // Inward
+    const currentChamferDirection = nextOutwardNormal.clone().negate(); // Inward
+
+    // Calculate individual chamfer movements
+    const prevChamferMovement = prevChamferDirection.clone().multiplyScalar(prevChamferOffset);
+    const currentChamferMovement = currentChamferDirection.clone().multiplyScalar(currentChamferOffset);
+
+    // PARAMETRIC INTERSECTION: Find where the two chamfer planes meet
+    // For now using averaging method, but this could be improved with actual plane-plane intersection
     const averageMovement = new THREE.Vector3()
-      .addVectors(
-        prevInwardDirection.clone().multiplyScalar(prevChamferOffset),
-        currentInwardDirection.clone().multiplyScalar(currentChamferOffset)
-      )
+      .addVectors(prevChamferMovement, currentChamferMovement)
       .multiplyScalar(0.5);
+
+    if (vertexIndex < 3) {
+      console.log(`   Prev chamfer movement: (${prevChamferMovement.x.toFixed(3)}, ${prevChamferMovement.y.toFixed(3)}, ${prevChamferMovement.z.toFixed(3)})`);
+      console.log(`   Current chamfer movement: (${currentChamferMovement.x.toFixed(3)}, ${currentChamferMovement.y.toFixed(3)}, ${currentChamferMovement.z.toFixed(3)})`);
+      console.log(`   Average movement: (${averageMovement.x.toFixed(3)}, ${averageMovement.y.toFixed(3)}, ${averageMovement.z.toFixed(3)})`);
+    }
 
     // Apply the movement to get the final chamfered vertex position
     const chamferedVertex = currentVertex.clone().add(averageMovement);
