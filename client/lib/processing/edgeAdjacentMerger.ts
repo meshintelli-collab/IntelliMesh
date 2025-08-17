@@ -89,10 +89,7 @@ export class EdgeAdjacentMerger {
     // Step 2: Find all connected components
     const components = this.findAllConnectedComponents(faces, adjacencyMap);
 
-    console.log(`📊 Found ${components.length} connected components:`);
-    components.forEach((comp, i) => {
-      console.log(`   Component ${i}: ${comp.length} triangles`);
-    });
+    // Found connected components
 
     // Step 3: Merge each component systematically
     const mergedFaces: PolygonFace[] = [];
