@@ -484,26 +484,136 @@ export class ChamferedPartsExporter {
   }
 
   /**
-   * Create chamfered OBJ using the PolygonExtruder
+   * Create chamfered OBJ that preserves polygon faces (no triangulation)
    */
   private static createChamferedPolygonOBJ(
     polygon: PolygonFace,
     extrusionOptions: ExtrusionOptions,
     chamferOptions: ChamferOptions,
   ): string {
-    // For now, use the STL version and convert to OBJ format
-    // This can be improved later with proper OBJ polygon support
-    const stlContent = PolygonExtruder.createChamferedPolygon(polygon, extrusionOptions, chamferOptions);
-    
-    // Basic OBJ header
+    const { thickness, scale, centerZ = 0 } = extrusionOptions;
+    const { chamferDepth, edgeAngles, defaultChamferAngle = 45 } = chamferOptions;
+
+    // Scale and position vertices (but scale should already be applied)
+    const originalVertices = polygon.vertices.map(
+      (v) => new THREE.Vector3(v.x * scale, v.y * scale, v.z * scale + centerZ),
+    );
+
+    // Calculate or use provided normal
+    let normal = polygon.normal?.clone().normalize();
+    if (!normal || normal.length() < 0.001) {
+      normal = this.calculatePolygonNormal(originalVertices);
+    }
+
+    // CORRECT CHAMFERING: Keep original vertices for front/back faces
+    const frontVertices = originalVertices; // Keep original polygon shape
+    const offset = normal.clone().multiplyScalar(thickness);
+    const backVertices = originalVertices.map((v) => v.clone().add(offset)); // Keep original polygon shape
+
+    // Calculate chamfered back vertices for the walls
+    const chamferedBackVertices: THREE.Vector3[] = [];
+    for (let i = 0; i < frontVertices.length; i++) {
+      const chamferAngle = (edgeAngles && edgeAngles[i]) || defaultChamferAngle;
+      const chamferRadians = (chamferAngle * Math.PI) / 180;
+
+      // Calculate edge direction and outward normal
+      const nextIndex = (i + 1) % frontVertices.length;
+      const edgeDirection = new THREE.Vector3().subVectors(frontVertices[nextIndex], frontVertices[i]).normalize();
+      const outwardNormal = new THREE.Vector3().crossVectors(edgeDirection, normal).normalize();
+
+      // Calculate chamfer offset
+      const chamferOffset = chamferDepth * Math.tan(chamferRadians);
+      const inwardDirection = outwardNormal.clone().negate();
+
+      // Create chamfered back vertex
+      const chamferedBackVertex = backVertices[i].clone().add(inwardDirection.multiplyScalar(chamferOffset));
+      chamferedBackVertices.push(chamferedBackVertex);
+    }
+
+    // Generate OBJ content
     let objContent = `# Chamfered OBJ Part ${polygon.index || 0} - ${polygon.type}\n`;
-    objContent += `# Generated with polygon-based chamfering\n\n`;
-    objContent += `# NOTE: This is a basic conversion from STL triangulation\n`;
-    objContent += `# Future versions will support proper OBJ polygon output\n\n`;
-    
-    // For now, return a placeholder OBJ
-    // The PolygonExtruder could be extended to support OBJ output directly
+    objContent += `# Generated with polygon-based chamfering (preserves polygon faces)\n\n`;
+
+    // Write vertices
+    let vertexIndex = 1;
+
+    // Front face vertices (original polygon)
+    objContent += `# Front face vertices (original polygon)\n`;
+    frontVertices.forEach((v) => {
+      objContent += `v ${v.x.toFixed(6)} ${v.y.toFixed(6)} ${v.z.toFixed(6)}\n`;
+    });
+
+    // Back face vertices (original polygon)
+    objContent += `\n# Back face vertices (original polygon)\n`;
+    backVertices.forEach((v) => {
+      objContent += `v ${v.x.toFixed(6)} ${v.y.toFixed(6)} ${v.z.toFixed(6)}\n`;
+    });
+
+    // Chamfered wall vertices
+    objContent += `\n# Chamfered wall vertices\n`;
+    chamferedBackVertices.forEach((v) => {
+      objContent += `v ${v.x.toFixed(6)} ${v.y.toFixed(6)} ${v.z.toFixed(6)}\n`;
+    });
+
+    // Write normals
+    objContent += `\n# Normals\n`;
+    objContent += `vn ${normal.x.toFixed(6)} ${normal.y.toFixed(6)} ${normal.z.toFixed(6)}\n`; // Front normal
+    objContent += `vn ${(-normal.x).toFixed(6)} ${(-normal.y).toFixed(6)} ${(-normal.z).toFixed(6)}\n`; // Back normal
+
+    // Write faces (PRESERVE POLYGON STRUCTURE - NO TRIANGULATION)
+    objContent += `\n# Faces (polygons preserved)\n`;
+
+    // Front face (original polygon) - indices 1 to frontVertices.length
+    objContent += `# Front face (original polygon)\nf`;
+    for (let i = 1; i <= frontVertices.length; i++) {
+      objContent += ` ${i}//1`;
+    }
+    objContent += `\n`;
+
+    // Back face (original polygon) - indices frontVertices.length+1 to 2*frontVertices.length, reversed
+    objContent += `# Back face (original polygon)\nf`;
+    for (let i = frontVertices.length * 2; i > frontVertices.length; i--) {
+      objContent += ` ${i}//2`;
+    }
+    objContent += `\n`;
+
+    // Chamfered side walls (quads)
+    objContent += `# Chamfered side walls (quads)\n`;
+    for (let i = 0; i < frontVertices.length; i++) {
+      const next = (i + 1) % frontVertices.length;
+
+      // Indices:
+      const frontCurrent = i + 1;
+      const frontNext = next + 1;
+      const backNext = frontVertices.length + next + 1;
+      const backCurrent = frontVertices.length + i + 1;
+      const chamferedBackCurrent = frontVertices.length * 2 + i + 1;
+      const chamferedBackNext = frontVertices.length * 2 + next + 1;
+
+      // Create chamfered wall as quad: front edge to chamfered back edge
+      objContent += `f ${frontCurrent} ${frontNext} ${chamferedBackNext} ${chamferedBackCurrent}\n`;
+    }
+
+    console.log(`✅ Generated chamfered OBJ: ${frontVertices.length} vertices per face, polygons preserved (no triangulation)`);
     return objContent;
+  }
+
+  /**
+   * Calculate polygon normal from vertices using Newell's method
+   */
+  private static calculatePolygonNormal(vertices: THREE.Vector3[]): THREE.Vector3 {
+    const normal = new THREE.Vector3();
+
+    for (let i = 0; i < vertices.length; i++) {
+      const current = vertices[i];
+      const next = vertices[(i + 1) % vertices.length];
+
+      normal.x += (current.y - next.y) * (current.z + next.z);
+      normal.y += (current.z - next.z) * (current.x + next.x);
+      normal.z += (current.x - next.x) * (current.y + next.y);
+    }
+
+    return normal.normalize();
   }
 
   /**
