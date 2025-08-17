@@ -93,22 +93,20 @@ class WebGLErrorHandler {
         return this.webglSupport;
       }
 
-      // Step 4: Test basic WebGL capabilities
-      console.log('🔧 Testing WebGL capabilities...');
-      const maxTextures = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
-      const maxVertexAttribs = gl.getParameter(gl.MAX_VERTEX_ATTRIBS);
-      const vendor = gl.getParameter(gl.VENDOR);
-      const renderer = gl.getParameter(gl.RENDERER);
+      // Step 4: Quick capability test
+      try {
+        gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
+      } catch (e) {
+        this.webglSupport = {
+          supported: false,
+          error: 'WebGL parameter access failed',
+          fallbackReason: 'WebGL context not fully functional',
+          recommendation: 'Try refreshing the page or updating graphics drivers'
+        };
+        return this.webglSupport;
+      }
 
-      console.log('📊 WebGL Info:', {
-        vendor,
-        renderer,
-        maxTextures,
-        maxVertexAttribs
-      });
-
-      // Step 5: Test THREE.js WebGLRenderer creation with minimal settings
-      console.log('🎮 Testing THREE.js WebGLRenderer creation...');
+      // Step 5: Quick THREE.js test
       let threeRenderer: THREE.WebGLRenderer | null = null;
 
       try {
