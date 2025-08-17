@@ -622,13 +622,19 @@ export class ChamferedPartsExporter {
     const offset = normal.clone().multiplyScalar(thickness);
     const backVertices = originalVertices.map((v) => v.clone().add(offset)); // Keep original polygon shape
 
-    // Calculate chamfered back vertices using the same parametric method as PolygonExtruder
-    const chamferedBackVertices = this.calculateChamferedVerticesFromPlaneIntersections(
-      frontVertices,
-      backVertices,
+    // For OBJ: Use proper chamfered front face (like PolygonExtruder does)
+    // Front face should be chamfered, back face should be full size for proper chamfer geometry
+
+    // Generate chamfered front vertices using the same method as PolygonExtruder
+    const chamferedFrontVertices = this.generateChamferedVerticesOBJ(
+      originalVertices,
       chamferDepth,
-      edgeAngles || Array(frontVertices.length).fill(defaultChamferAngle)
+      edgeAngles || Array(originalVertices.length).fill(defaultChamferAngle)
     );
+
+    // Update front vertices to be chamfered
+    const actualFrontVertices = chamferedFrontVertices;
+    const actualBackVertices = backVertices; // Keep full size
 
     // Generate OBJ content
     let objContent = `# Chamfered OBJ Part ${polygon.index || 0} - ${polygon.type}\n`;
