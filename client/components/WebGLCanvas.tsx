@@ -97,16 +97,28 @@ const WebGLCanvas: React.FC<WebGLCanvasProps> = ({
 
   // Render the Canvas with error handling
   try {
+    console.log('🎮 Attempting to create Canvas with Three.js...');
+
     return (
       <Canvas
         ref={canvasRef}
         onCreated={(state) => {
-          console.log('✅ Canvas created successfully:', state);
+          console.log('✅ Canvas created successfully');
+          console.log('📊 WebGL Info:', {
+            renderer: state.gl.getParameter(state.gl.RENDERER),
+            vendor: state.gl.getParameter(state.gl.VENDOR),
+            version: state.gl.getParameter(state.gl.VERSION)
+          });
         }}
-        onError={handleWebGLError}
+        onError={(error) => {
+          console.error('❌ Canvas onError callback triggered:', error);
+          handleWebGLError(error);
+        }}
         gl={{
           antialias: false,
           alpha: false,
+          depth: true,
+          stencil: false,
           powerPreference: 'default',
           failIfMajorPerformanceCaveat: false,
           preserveDrawingBuffer: false,
@@ -117,7 +129,7 @@ const WebGLCanvas: React.FC<WebGLCanvasProps> = ({
       </Canvas>
     );
   } catch (error) {
-    console.error('Canvas creation error:', error);
+    console.error('❌ Canvas creation threw exception:', error);
     handleWebGLError(error instanceof Error ? error : new Error('Canvas creation failed'));
     return fallbackComponent || <WebGLFallback />;
   }
