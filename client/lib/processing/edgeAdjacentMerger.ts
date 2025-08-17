@@ -176,7 +176,7 @@ export class EdgeAdjacentMerger {
   }
 
   /**
-   * Check if two faces are both coplanar AND share a complete edge
+   * Check if two faces are both perfectly parallel AND share a complete edge
    */
   private static facesAreAdjacentAndCoplanar(face1: PolygonFace, face2: PolygonFace): boolean {
     // First check coplanarity (faster check)
