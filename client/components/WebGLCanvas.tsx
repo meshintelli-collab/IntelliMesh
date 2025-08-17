@@ -110,6 +110,41 @@ const WebGLCanvas: React.FC<WebGLCanvasProps> = ({
     return fallbackComponent || <WebGLFallback />;
   }
 
+  // Try minimal Canvas fallback if requested
+  if (useMinimalFallback) {
+    console.log('🎮 Using minimal Canvas fallback approach...');
+    return (
+      <EmergencyWebGLFallback>
+        <Canvas
+          dpr={1}
+          gl={{
+            antialias: false,
+            alpha: false,
+            depth: false,
+            stencil: false,
+            powerPreference: 'default',
+            failIfMajorPerformanceCaveat: false,
+            preserveDrawingBuffer: false,
+            precision: 'lowp',
+          }}
+          onCreated={() => {
+            console.log('✅ Minimal Canvas fallback successful');
+            setUseMinimalFallback(false); // Success, so we can use this approach
+          }}
+          onError={(error) => {
+            console.error('❌ Minimal Canvas fallback failed:', error);
+            setTimeout(() => {
+              handleWebGLError(error);
+            }, 0);
+          }}
+          {...canvasProps}
+        >
+          {children}
+        </Canvas>
+      </EmergencyWebGLFallback>
+    );
+  }
+
   // Render the Canvas with comprehensive error handling
   return (
     <EmergencyWebGLFallback>
