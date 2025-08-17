@@ -24,14 +24,12 @@ class WebGLErrorHandler {
   }
 
   /**
-   * Check WebGL support and capabilities
+   * Check WebGL support and capabilities (cached)
    */
   checkWebGLSupport(): WebGLSupport {
     if (this.webglSupport) {
       return this.webglSupport;
     }
-
-    console.log('🔍 Starting comprehensive WebGL support check...');
 
     try {
       // Step 1: Check if WebGL is even available in the browser
