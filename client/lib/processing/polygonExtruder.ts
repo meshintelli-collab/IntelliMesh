@@ -69,7 +69,7 @@ export class PolygonExtruder {
     let frontTriangles: THREE.Vector3[][];
 
     console.log(`🔍 DEBUGGING WINDMILLING: Polygon has ${frontVertices.length} vertices`);
-    console.log(`🔍 originalTriangulation available:`, !!polygonAny.originalTriangulation);
+    console.log(`��� originalTriangulation available:`, !!polygonAny.originalTriangulation);
     console.log(`🔍 originalTriangulation length:`, polygonAny.originalTriangulation?.length || 0);
 
     if (polygonAny.originalTriangulation && polygonAny.originalTriangulation.length > 0) {
@@ -567,12 +567,12 @@ export class PolygonExtruder {
       }
     }
 
-    console.log(`✅ Generated ${triangleCount} wall triangles (${content.length} characters of STL content)`);
+    console.log(`✅ Generated ${triangleCount} ANGLED CHAMFER wall triangles (${content.length} characters of STL content)`);
     if (content.length === 0) {
       console.error(`❌ NO WALL CONTENT GENERATED! This is why STL is missing side faces.`);
     }
 
-    console.log(`✅ Created ${frontVertices.length} chamfered walls with proper plane intersections`);
+    console.log(`✅ Created ${frontVertices.length} angled chamfer walls connecting chamfered front to full back`);
     return content;
   }
 
