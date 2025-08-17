@@ -243,7 +243,7 @@ const ensureNormals = (geometry: THREE.BufferGeometry): void => {
 export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
   // Add safeguard for hot reload issues
   useEffect(() => {
-    console.log("🔧 STLProvider initialized/re-initialized");
+    // STLProvider initialized
   }, []);
   // Dual mesh system state
   const [originalMesh, setOriginalMesh] = useState<THREE.BufferGeometry | null>(
