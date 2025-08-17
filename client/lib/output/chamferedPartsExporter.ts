@@ -643,21 +643,15 @@ export class ChamferedPartsExporter {
     // Write vertices
     let vertexIndex = 1;
 
-    // Front face vertices (original polygon)
-    objContent += `# Front face vertices (original polygon)\n`;
-    frontVertices.forEach((v) => {
+    // Front face vertices (chamfered - smaller)
+    objContent += `# Front face vertices (chamfered - smaller)\n`;
+    actualFrontVertices.forEach((v) => {
       objContent += `v ${v.x.toFixed(6)} ${v.y.toFixed(6)} ${v.z.toFixed(6)}\n`;
     });
 
-    // Back face vertices (original polygon)
-    objContent += `\n# Back face vertices (original polygon)\n`;
-    backVertices.forEach((v) => {
-      objContent += `v ${v.x.toFixed(6)} ${v.y.toFixed(6)} ${v.z.toFixed(6)}\n`;
-    });
-
-    // Chamfered wall vertices
-    objContent += `\n# Chamfered wall vertices\n`;
-    chamferedBackVertices.forEach((v) => {
+    // Back face vertices (full size - original)
+    objContent += `\n# Back face vertices (full size - original)\n`;
+    actualBackVertices.forEach((v) => {
       objContent += `v ${v.x.toFixed(6)} ${v.y.toFixed(6)} ${v.z.toFixed(6)}\n`;
     });
 
