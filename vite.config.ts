@@ -18,11 +18,18 @@ export default defineConfig(({ mode }) => ({
       // Use the current hostname for WebSocket connections
       // This will automatically use the correct domain in cloud environments
       clientPort: 8080,
-      // Disable HMR overlay errors for WebSocket connection issues
+      // Fix websocket connection issues
       overlay: {
         errors: true,
         warnings: false,
       },
+      // Add websocket fallback options
+      skipSSR: false,
+    },
+    // Add websocket configuration
+    watch: {
+      usePolling: false,
+      interval: 100,
     },
   },
   build: {
