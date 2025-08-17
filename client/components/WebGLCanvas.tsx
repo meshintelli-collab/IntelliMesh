@@ -120,7 +120,7 @@ const WebGLCanvas: React.FC<WebGLCanvasProps> = ({
           gl={{
             antialias: false,
             alpha: false,
-            depth: false,
+            depth: true, // Enable depth for 3D rendering
             stencil: false,
             powerPreference: 'default',
             failIfMajorPerformanceCaveat: false,
