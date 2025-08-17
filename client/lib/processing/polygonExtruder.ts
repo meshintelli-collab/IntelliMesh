@@ -130,7 +130,7 @@ export class PolygonExtruder {
 
   /**
    * Create a chamfered extruded polygon with angled edges
-   * This builds upon the basic extrusion and adds chamfering
+   * CORRECT CHAMFERING: Keep original front/back faces, only chamfer the side walls
    */
   static createChamferedPolygon(
     polygon: PolygonFace,
@@ -155,28 +155,22 @@ export class PolygonExtruder {
       normal = this.calculatePolygonNormal(originalVertices);
     }
 
-    // Generate chamfered vertices by insetting
-    const chamferedVertices = this.generateChamferedVertices(
-      originalVertices,
-      chamferDepth,
-      edgeAngles || Array(originalVertices.length).fill(defaultChamferAngle),
-    );
-
-    // Create front and back face vertices
-    const frontVertices = chamferedVertices;
+    // CORRECT CHAMFERING: Keep original vertices for front/back faces
+    // Only chamfer the side walls - don't modify the cross-sectional area
+    const frontVertices = originalVertices; // Keep original polygon shape
     const offset = normal.clone().multiplyScalar(thickness);
-    const backVertices = chamferedVertices.map((v) => v.clone().add(offset));
+    const backVertices = originalVertices.map((v) => v.clone().add(offset)); // Keep original polygon shape
 
     let stlContent = `solid chamfered_polygon_${polygon.index || 0}\n`;
 
-    // Use original triangulation if available for chamfered polygons too
+    // Use original triangulation if available
     const polygonAny = polygon as any;
     let frontTriangles: THREE.Vector3[][];
 
     if (polygonAny.originalTriangulation && polygonAny.originalTriangulation.length > 0) {
       console.log(`   Using original triangulation for chamfered polygon (${polygonAny.originalTriangulation.length} triangles)`);
 
-      // Use original triangulation with chamfered vertices
+      // Use original triangulation with ORIGINAL vertices (not chamfered ones)
       frontTriangles = [];
       for (const triangle of polygonAny.originalTriangulation) {
         const v1 = frontVertices[triangle[0]];
@@ -193,7 +187,7 @@ export class PolygonExtruder {
       frontTriangles = this.triangulatePolygon(frontVertices, normal);
     }
 
-    // Front face
+    // Front face - ORIGINAL polygon (full cross-sectional area)
     for (const triangle of frontTriangles) {
       stlContent += this.addTriangleToSTL(
         triangle[0],
@@ -203,7 +197,7 @@ export class PolygonExtruder {
       );
     }
 
-    // Back face - same triangulation but reversed winding and offset
+    // Back face - ORIGINAL polygon (full cross-sectional area), reversed winding
     const backTriangles = frontTriangles.map((triangle) =>
       triangle.map((v) => v.clone().add(offset)).reverse(),
     );
@@ -216,7 +210,7 @@ export class PolygonExtruder {
       );
     }
 
-    // Chamfered side walls
+    // CHAMFERED side walls - this is where the chamfering happens
     stlContent += this.createChamferedSideWalls(
       frontVertices,
       backVertices,
