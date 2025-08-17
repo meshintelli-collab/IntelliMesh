@@ -73,7 +73,6 @@ class WebGLErrorHandler {
 
       // Step 2: Validate context methods are available
       if (typeof gl.getParameter !== 'function') {
-        console.error('❌ WebGL context missing getParameter method');
         this.webglSupport = {
           supported: false,
           error: 'WebGL context incomplete - missing core methods',
