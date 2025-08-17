@@ -510,14 +510,56 @@ export class ChamferedPartsExporter {
               // Step 4: Use u, v, a, b vector logic to determine interior/exterior chamfering
               const edgeDirection = new THREE.Vector3().subVectors(v2, v1).normalize();
 
-              // FIXED VECTOR CALCULATIONS:
-              // a = vector in face u, perpendicular to edge, pointing away from edge
-              // b = vector in face v, perpendicular to edge, pointing away from edge
+              // CORRECTED VECTOR CALCULATIONS:
+              // a = vector in face u, perpendicular to edge, pointing AWAY from edge into face
+              // b = vector in face v, perpendicular to edge, pointing AWAY from edge into face
 
-              // Method: Project a reference vector onto each face, then make it perpendicular to edge
-              // Use the cross product of edge with face normal to get perpendicular direction
-              const a = new THREE.Vector3().crossVectors(edgeDirection, u).normalize();
-              const b = new THREE.Vector3().crossVectors(edgeDirection, v).normalize();
+              // Step 1: Get vectors perpendicular to edge and face normal
+              let a = new THREE.Vector3().crossVectors(edgeDirection, u).normalize();
+              let b = new THREE.Vector3().crossVectors(edgeDirection, v).normalize();
+
+              // Step 2: Ensure vectors point AWAY from edge into face
+              // Use a reference point in each face to check direction
+              const edgeMidpoint = new THREE.Vector3().addVectors(v1, v2).multiplyScalar(0.5);
+
+              // For face u: find a vertex in the face that's not on this edge
+              let refPointU = null;
+              for (let k = 0; k < vertices.length; k++) {
+                const vertex = vertices[k];
+                if (!vertex.equals(v1) && !vertex.equals(v2)) {
+                  refPointU = vertex;
+                  break;
+                }
+              }
+
+              // For face v: find a vertex in the other face that's not on this edge
+              const otherVertices = polygonFaces[otherFaceIndex].vertices || (polygonFaces[otherFaceIndex] as any).originalVertices;
+              let refPointV = null;
+              if (otherVertices) {
+                for (let k = 0; k < otherVertices.length; k++) {
+                  const vertex = otherVertices[k];
+                  if (!vertex.equals(v1) && !vertex.equals(v2)) {
+                    refPointV = vertex;
+                    break;
+                  }
+                }
+              }
+
+              // Check if a points away from edge (toward reference point)
+              if (refPointU) {
+                const toRefU = new THREE.Vector3().subVectors(refPointU, edgeMidpoint).normalize();
+                if (a.dot(toRefU) < 0) {
+                  a.negate(); // Flip to point away from edge
+                }
+              }
+
+              // Check if b points away from edge (toward reference point)
+              if (refPointV) {
+                const toRefV = new THREE.Vector3().subVectors(refPointV, edgeMidpoint).normalize();
+                if (b.dot(toRefV) < 0) {
+                  b.negate(); // Flip to point away from edge
+                }
+              }
 
               const dotAV = a.dot(v);
               const dotBU = b.dot(u);
