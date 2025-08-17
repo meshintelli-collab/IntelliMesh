@@ -465,7 +465,6 @@ export class ChamferedPartsExporter {
               const exteriorAngle = 360 - interiorAngle;
 
               // Step 7: Determine chamfer angle and face based on interior angle
-              let chamferOnInteriorFace: boolean;
 
               if (interiorAngle < 180) {
                 // Interior angle < 180°: chamfer inside face
