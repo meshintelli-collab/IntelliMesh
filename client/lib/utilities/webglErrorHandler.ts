@@ -175,12 +175,8 @@ class WebGLErrorHandler {
         ...options
       };
 
-      console.log('🔧 Attempting WebGL context creation with conservative settings...');
       const renderer = new THREE.WebGLRenderer(conservativeOptions);
-      
-      // Test the context
       renderer.getContext();
-      console.log('✅ WebGL context created successfully');
       return renderer;
 
     } catch (error) {
