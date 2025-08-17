@@ -167,7 +167,7 @@ export class ChamferedPartsExporter {
     // Calculate edge angles for all faces first (referencing 3D model)
     console.log("🔧 Calculating edge angles from 3D model for chamfering...");
     const chamferedFaces = this.calculateEdgeAngles(polygonFaces, originalGeometry);
-    console.log(`�� Calculated edge angles for ${chamferedFaces.length} faces`);
+    console.log(`✅ Calculated edge angles for ${chamferedFaces.length} faces`);
 
     // Create individual chamfered files for each polygon face
     for (let i = 0; i < polygonFaces.length; i++) {
@@ -225,12 +225,22 @@ export class ChamferedPartsExporter {
         originalTriangulation: (polygonFace as any).originalTriangulation
       };
 
-      // Generate chamfered content
-      // STL: Use PolygonExtruder (creates triangulated STL)
-      // OBJ: Create proper OBJ with polygon faces (no triangulation)
-      const partContent = format === "obj"
-        ? this.createChamferedPolygonOBJ(polygonFaceForExtruder, extrusionOptions, chamferOptions)
-        : PolygonExtruder.createChamferedPolygon(polygonFaceForExtruder, extrusionOptions, chamferOptions);
+      // Generate chamfered content using consistent logic
+      let partContent: string;
+
+      if (format === "obj") {
+        // OBJ: Create proper OBJ with polygon faces (no triangulation)
+        partContent = this.createChamferedPolygonOBJ(polygonFaceForExtruder, extrusionOptions, chamferOptions);
+      } else {
+        // STL: Use PolygonExtruder (creates triangulated STL)
+        console.log(`🔧 Creating STL chamfered part ${i + 1} using PolygonExtruder`);
+        partContent = PolygonExtruder.createChamferedPolygon(polygonFaceForExtruder, extrusionOptions, chamferOptions);
+        console.log(`🔧 STL content length: ${partContent.length} characters`);
+
+        if (partContent.length < 100) {
+          console.error(`❌ STL content suspiciously short! Content: ${partContent.substring(0, 200)}...`);
+        }
+      }
 
       const partFilename = `part_${String(i + 1).padStart(4, "0")}_${polygonFace.type || "polygon"}_chamfered.${fileExtension}`;
 
