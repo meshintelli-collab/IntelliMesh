@@ -155,22 +155,24 @@ export class PolygonExtruder {
       normal = this.calculatePolygonNormal(originalVertices);
     }
 
-    // PROPER CHAMFERING: Create chamfered front face and full back face
-    // Front face should be chamfered (smaller), back face should be full size
+    // FULL-THROUGH CHAMFERING: Front face full size, back face chamfered
+    // This creates truncated pyramid for proper part mating
 
-    // Calculate chamfered front vertices (inset by chamfer amount)
-    const chamferedFrontVertices = this.generateChamferedVertices(
-      originalVertices,
+    const frontVertices = originalVertices; // FRONT: Full size (original polygon)
+    const offset = normal.clone().multiplyScalar(thickness);
+
+    // Calculate chamfered back vertices (inset by chamfer amount)
+    const chamferedBackVertices = this.generateChamferedVertices(
+      originalVertices.map((v) => v.clone().add(offset)), // Start with full back face
       chamferDepth,
       edgeAngles || Array(originalVertices.length).fill(defaultChamferAngle),
     );
 
-    const frontVertices = chamferedFrontVertices; // Chamfered front face
-    const offset = normal.clone().multiplyScalar(thickness);
-    const backVertices = originalVertices.map((v) => v.clone().add(offset)); // Full size back face
+    const backVertices = chamferedBackVertices; // BACK: Chamfered (smaller)
 
-    console.log(`🔧 PROPER CHAMFERING: Front face chamfered (${frontVertices.length} vertices), back face full size`);
-    console.log(`🔧 This creates angled side walls for true ${defaultChamferAngle}° chamfer effect`);
+    console.log(`🔧 FULL-THROUGH CHAMFERING: Front face FULL SIZE, back face CHAMFERED (smaller)`);
+    console.log(`🔧 Creates truncated pyramid - parts can mate together properly`);
+    console.log(`🔧 Chamfer goes ALL THE WAY THROUGH the ${thickness}mm thick part`);
 
     let stlContent = `solid chamfered_polygon_${polygon.index || 0}\n`;
 
