@@ -386,8 +386,19 @@ export class ChamferedPartsExporter {
           .replace(/^(.+?)(?:_chamfered_parts)?$/, "$1_chamfered_parts.zip");
     this.downloadBlob(zipBlob, zipFilename);
 
-    const endTime = Date.now();
-    console.log(`Chamfered parts export completed in ${endTime - startTime}ms`);
+    // CLEAN SUMMARY OUTPUT
+    console.log(`\n=== CHAMFER ANALYSIS ===`);
+    console.log(`Shape: ${summaryData.shapeName}`);
+    console.log(`Faces: ${summaryData.faceCount}`);
+    console.log(`\nInterior angles by face:`);
+    summaryData.allInteriorAngles.forEach((angles, i) => {
+      console.log(`Face ${i + 1}: [${angles.map(a => a.toFixed(1)).join(', ')}]°`);
+    });
+    console.log(`\nChamfer angles by face:`);
+    summaryData.allChamferAngles.forEach((angles, i) => {
+      console.log(`Face ${i + 1}: [${angles.map(a => a.toFixed(1)).join(', ')}]°`);
+    });
+    console.log(`========================\n`);
   }
 
   /**
