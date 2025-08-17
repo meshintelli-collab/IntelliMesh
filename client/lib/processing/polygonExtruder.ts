@@ -155,11 +155,22 @@ export class PolygonExtruder {
       normal = this.calculatePolygonNormal(originalVertices);
     }
 
-    // CORRECT CHAMFERING: Keep original vertices for front/back faces
-    // Only chamfer the side walls - don't modify the cross-sectional area
-    const frontVertices = originalVertices; // Keep original polygon shape
+    // PROPER CHAMFERING: Create chamfered front face and full back face
+    // Front face should be chamfered (smaller), back face should be full size
+
+    // Calculate chamfered front vertices (inset by chamfer amount)
+    const chamferedFrontVertices = this.generateChamferedVertices(
+      originalVertices,
+      chamferDepth,
+      edgeAngles || Array(originalVertices.length).fill(defaultChamferAngle),
+    );
+
+    const frontVertices = chamferedFrontVertices; // Chamfered front face
     const offset = normal.clone().multiplyScalar(thickness);
-    const backVertices = originalVertices.map((v) => v.clone().add(offset)); // Keep original polygon shape
+    const backVertices = originalVertices.map((v) => v.clone().add(offset)); // Full size back face
+
+    console.log(`🔧 PROPER CHAMFERING: Front face chamfered (${frontVertices.length} vertices), back face full size`);
+    console.log(`🔧 This creates angled side walls for true ${defaultChamferAngle}° chamfer effect`);
 
     let stlContent = `solid chamfered_polygon_${polygon.index || 0}\n`;
 
