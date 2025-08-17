@@ -996,16 +996,6 @@ function STLMesh() {
       mat.needsUpdate = true;
     }
 
-    console.log("🎭 MATERIAL DEBUG:", {
-      wireframe: viewerSettings.wireframe,
-      vertexColors: viewerSettings.randomColors,
-      flatShading: mat.flatShading,
-      materialType: "MeshStandardMaterial",
-      baseColor: baseColor.toString(16),
-      hasGeometry: !!geometry,
-      materialUuid: mat.uuid,
-    });
-
     return mat;
   }, [viewerSettings.wireframe, viewerSettings.randomColors, geometry?.uuid]);
 
@@ -1258,7 +1248,7 @@ function STLMesh() {
             if (i < 3) {
               // Log first few blended triangles for debugging
               console.log(
-                `      ⚠️ Triangle ${i} has blended normals: n1[${n1.map((n) => n.toFixed(3)).join(",")}] n2[${n2.map((n) => n.toFixed(3)).join(",")}] n3[${n3.map((n) => n.toFixed(3)).join(",")}]`,
+                `      ���️ Triangle ${i} has blended normals: n1[${n1.map((n) => n.toFixed(3)).join(",")}] n2[${n2.map((n) => n.toFixed(3)).join(",")}] n3[${n3.map((n) => n.toFixed(3)).join(",")}]`,
               );
             }
           }
