@@ -124,11 +124,7 @@ export class EdgeAdjacentMerger {
       }
     }
 
-    console.log(`📊 MERGE RESULTS:`);
-    console.log(`   Original triangles: ${faces.length}`);
-    console.log(`   Merged triangles: ${mergedTriangleCount} into polygons`);
-    console.log(`   Preserved triangles: ${preservedTriangleCount}`);
-    console.log(`   Final faces: ${mergedFaces.length}`);
+    // Merge complete
 
     return mergedFaces;
   }
