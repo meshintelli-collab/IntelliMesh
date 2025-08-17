@@ -507,6 +507,8 @@ export class PolygonExtruder {
 
     // Step 2: Create the angled wall faces
     let content = "";
+    let triangleCount = 0;
+
     for (let i = 0; i < frontVertices.length; i++) {
       const next = (i + 1) % frontVertices.length;
 
@@ -518,6 +520,12 @@ export class PolygonExtruder {
       const cb1 = chamferedBackVertices[i];
       const cb2 = chamferedBackVertices[next];
 
+      // Validate vertices before creating triangles
+      if (!f1 || !f2 || !cb1 || !cb2) {
+        console.error(`❌ Invalid vertices for wall ${i}: f1=${!!f1}, f2=${!!f2}, cb1=${!!cb1}, cb2=${!!cb2}`);
+        continue;
+      }
+
       // Calculate the angled wall normal
       const wallEdge1 = new THREE.Vector3().subVectors(f2, f1);
       const wallEdge2 = new THREE.Vector3().subVectors(cb1, f1);
@@ -525,13 +533,29 @@ export class PolygonExtruder {
         .crossVectors(wallEdge1, wallEdge2)
         .normalize();
 
+      // Validate normal
+      if (wallNormal.length() < 0.001) {
+        console.warn(`⚠️ Degenerate wall normal for wall ${i}, using fallback`);
+        wallNormal.set(0, 0, 1); // Fallback normal
+      }
+
       // Create angled chamfer wall: front edge to chamfered back edge
-      content += this.addTriangleToSTL(f1, f2, cb2, wallNormal);
-      content += this.addTriangleToSTL(f1, cb2, cb1, wallNormal);
+      const triangle1 = this.addTriangleToSTL(f1, f2, cb2, wallNormal);
+      const triangle2 = this.addTriangleToSTL(f1, cb2, cb1, wallNormal);
+
+      content += triangle1;
+      content += triangle2;
+      triangleCount += 2;
 
       if (i < 3) {
         console.log(`   Wall ${i}: front(${f1.x.toFixed(2)}, ${f1.y.toFixed(2)}) → chamfered_back(${cb1.x.toFixed(2)}, ${cb1.y.toFixed(2)})`);
+        console.log(`   Wall ${i}: Triangle 1 length=${triangle1.length}, Triangle 2 length=${triangle2.length}`);
       }
+    }
+
+    console.log(`✅ Generated ${triangleCount} wall triangles (${content.length} characters of STL content)`);
+    if (content.length === 0) {
+      console.error(`❌ NO WALL CONTENT GENERATED! This is why STL is missing side faces.`);
     }
 
     console.log(`✅ Created ${frontVertices.length} chamfered walls with proper plane intersections`);
