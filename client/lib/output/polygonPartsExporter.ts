@@ -155,7 +155,7 @@ export class PolygonPartsExporter {
       const fileExtension = format === "obj" ? "obj" : "stl";
 
       // Use clean face extrusion (preserves exact polygon structure)
-      console.log(`🔧 Creating part ${i + 1}: ${polygonFace.type} with ${polygonFace.vertices?.length || 0} vertices`);
+      // Creating part for polygon face
 
       // DEBUG: Log the actual face data to see what we're getting
       console.log(`   📊 Face vertices:`, polygonFace.vertices?.map((v, idx) =>
