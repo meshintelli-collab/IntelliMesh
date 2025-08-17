@@ -15,6 +15,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { STLProvider } from "./context/STLContext";
 import { STLErrorBoundary } from "./components/ErrorBoundary";
+
+// Import websocket error handler for development
+import "./lib/utilities/websocketErrorHandler";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
