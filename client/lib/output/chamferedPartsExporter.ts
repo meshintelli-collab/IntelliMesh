@@ -570,6 +570,7 @@ export class ChamferedPartsExporter {
           chamferAngle,
           isConvex,
           chamferOnInteriorFace,
+          dotProductSignature,
         });
       }
 
@@ -752,7 +753,7 @@ export class ChamferedPartsExporter {
       `🔧 OBJ: Generating PARAMETRIC chamfered vertices with edge-direction movements`,
     );
     console.log(
-      `🔧 OBJ: Vertices move along adjacent edge directions parametrically`,
+      `��� OBJ: Vertices move along adjacent edge directions parametrically`,
     );
 
     const partThickness = chamferDepth; // chamferDepth is actually the part thickness
