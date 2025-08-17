@@ -45,6 +45,7 @@ const WebGLCanvas: React.FC<WebGLCanvasProps> = ({
     console.error('WebGL Canvas Error:', error);
     setWebglSupported(false);
     setError(error.message);
+    setHasCriticalError(true);
     onWebGLError?.(error.message);
   };
 
