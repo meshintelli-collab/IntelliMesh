@@ -111,34 +111,57 @@ export class ChamferedPartsExporter {
 
     // Export mode processing
 
+    // UNIFORM PROCESSING: All shapes get identical treatment
+    console.log(`🔍 UNIFORM PROCESSING: Ensuring all shapes get same treatment as cube/octahedron`);
+
     if (useTriangulated) {
-      // Triangulated mode: use exact original triangulation (NO windmilling)
-      // Using triangulated mode
-      polygonFaces =
-        PolygonExtruder.extractPolygonsFromTriangulatedGeometry(geometry);
+      // Force triangulated mode (backup option)
+      polygonFaces = PolygonExtruder.extractPolygonsFromTriangulatedGeometry(geometry);
       polygonType = "triangulated_exact";
-      // Using exact triangulated mode
+      console.log(`📐 Using triangulated mode: ${polygonFaces.length} triangles`);
     } else {
-      // Normal mode: use merged polygon faces
-      const mergedFaces =
-        PolygonExtruder.extractPolygonsFromMergedGeometry(geometry);
+      // PREFERRED MODE: Always try merged polygon faces first (like cube/octahedron)
+      const mergedFaces = PolygonExtruder.extractPolygonsFromMergedGeometry(geometry);
+
       if (mergedFaces.length === 0) {
-        // No merged faces found, using triangulated mode
-        polygonFaces =
-          PolygonExtruder.extractPolygonsFromTriangulatedGeometry(geometry);
+        console.log(`⚠️ No merged faces found, falling back to triangulated`);
+        polygonFaces = PolygonExtruder.extractPolygonsFromTriangulatedGeometry(geometry);
         polygonType = "triangulated_fallback";
       } else {
-        // Using merged faces for chamfering
+        console.log(`✅ Using merged polygon mode: ${mergedFaces.length} polygon faces`);
 
-        // Log details about the merged faces
-        for (let i = 0; i < Math.min(3, mergedFaces.length); i++) {
-          const face = mergedFaces[i];
-          // Processing face data
-        }
+        // ENSURE ORIGINALtriangulation DATA: This is what makes cube/octahedron work!
+        polygonFaces = mergedFaces.map((face, index) => {
+          const enhancedFace = { ...face };
 
-        polygonFaces = mergedFaces;
+          // Ensure originalTriangulation exists for ALL faces (not just simple ones)
+          if (!(enhancedFace as any).originalTriangulation) {
+            console.log(`🔧 Face ${index}: Adding missing originalTriangulation data`);
+
+            // For complex shapes, create triangulation from vertices
+            if (face.vertices && face.vertices.length >= 3) {
+              if (face.vertices.length === 3) {
+                // Triangle: direct mapping
+                (enhancedFace as any).originalTriangulation = [[0, 1, 2]];
+              } else if (face.vertices.length === 4) {
+                // Quad: two triangles
+                (enhancedFace as any).originalTriangulation = [[0, 1, 2], [0, 2, 3]];
+              } else {
+                // Complex polygon: fan triangulation from first vertex
+                const triangulation = [];
+                for (let i = 1; i < face.vertices.length - 1; i++) {
+                  triangulation.push([0, i, i + 1]);
+                }
+                (enhancedFace as any).originalTriangulation = triangulation;
+              }
+            }
+          }
+
+          return enhancedFace;
+        });
+
         polygonType = (geometry as any).polygonType || "merged";
-        // Using merged polygon mode
+        console.log(`✅ Enhanced ${polygonFaces.length} faces with originalTriangulation data`);
       }
     }
 
