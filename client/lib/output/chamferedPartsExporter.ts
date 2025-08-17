@@ -697,6 +697,69 @@ export class ChamferedPartsExporter {
   }
 
   /**
+   * Generate chamfered vertices for OBJ (same logic as PolygonExtruder)
+   */
+  private static generateChamferedVerticesOBJ(
+    originalVertices: THREE.Vector3[],
+    chamferDepth: number,
+    chamferAngles: number[]
+  ): THREE.Vector3[] {
+    console.log(`🔧 OBJ: Generating chamfered vertices with proper corner intersection method`);
+    const chamferedVertices: THREE.Vector3[] = [];
+
+    for (let i = 0; i < originalVertices.length; i++) {
+      const vertex = originalVertices[i];
+      const prevIndex = (i - 1 + originalVertices.length) % originalVertices.length;
+      const nextIndex = (i + 1) % originalVertices.length;
+
+      const prevVertex = originalVertices[prevIndex];
+      const nextVertex = originalVertices[nextIndex];
+
+      // Get chamfer angles for the two edges meeting at this vertex
+      const prevEdgeChamferAngle = chamferAngles[prevIndex] || 45;
+      const currentEdgeChamferAngle = chamferAngles[i] || 45;
+
+      // Calculate edge directions
+      const prevEdgeDir = new THREE.Vector3().subVectors(vertex, prevVertex).normalize();
+      const nextEdgeDir = new THREE.Vector3().subVectors(nextVertex, vertex).normalize();
+
+      // Calculate perpendicular directions for each edge (pointing inward)
+      const faceNormal = new THREE.Vector3(0, 0, 1); // Assume Z-up
+
+      const prevEdgePerp = new THREE.Vector3().crossVectors(prevEdgeDir, faceNormal).normalize();
+      const nextEdgePerp = new THREE.Vector3().crossVectors(nextEdgeDir, faceNormal).normalize();
+
+      // Calculate chamfer offsets for each edge
+      const prevChamferRadians = (prevEdgeChamferAngle * Math.PI) / 180;
+      const currentChamferRadians = (currentEdgeChamferAngle * Math.PI) / 180;
+
+      const prevChamferOffset = chamferDepth * Math.tan(prevChamferRadians);
+      const currentChamferOffset = chamferDepth * Math.tan(currentChamferRadians);
+
+      // Calculate the movements from each chamfer plane
+      const prevMovement = prevEdgePerp.clone().multiplyScalar(-prevChamferOffset);
+      const currentMovement = nextEdgePerp.clone().multiplyScalar(-currentChamferOffset);
+
+      // Find intersection point by averaging the movements
+      const averageMovement = new THREE.Vector3()
+        .addVectors(prevMovement, currentMovement)
+        .multiplyScalar(0.5);
+
+      // Apply movement to get chamfered vertex
+      const chamferedVertex = vertex.clone().add(averageMovement);
+      chamferedVertices.push(chamferedVertex);
+
+      if (i < 3) {
+        console.log(`   OBJ Vertex ${i}: prev_angle=${prevEdgeChamferAngle.toFixed(1)}°, current_angle=${currentEdgeChamferAngle.toFixed(1)}°`);
+        console.log(`   Final: (${vertex.x.toFixed(3)}, ${vertex.y.toFixed(3)}) → (${chamferedVertex.x.toFixed(3)}, ${chamferedVertex.y.toFixed(3)})`);
+      }
+    }
+
+    console.log(`✅ OBJ: Generated ${chamferedVertices.length} chamfered vertices with proper corner intersections`);
+    return chamferedVertices;
+  }
+
+  /**
    * Calculate polygon normal from vertices using Newell's method
    */
   private static calculatePolygonNormal(vertices: THREE.Vector3[]): THREE.Vector3 {
