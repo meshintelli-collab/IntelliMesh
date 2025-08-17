@@ -526,17 +526,17 @@ export class PolygonExtruder {
   }
 
   /**
-   * Create chamfered side walls - connecting chamfered front to full back
-   * This creates the angled chamfer faces for proper 45° chamfer effect
+   * Create full-through chamfered side walls - connecting full front to chamfered back
+   * This creates truncated pyramid geometry for proper part mating
    */
   private static createChamferedSideWalls(
-    frontVertices: THREE.Vector3[], // These are already chamfered (smaller)
-    backVertices: THREE.Vector3[],  // These are full size
+    frontVertices: THREE.Vector3[], // These are FULL SIZE
+    backVertices: THREE.Vector3[],  // These are CHAMFERED (smaller)
     originalVertices: THREE.Vector3[],
     chamferDepth: number,
     chamferAngles: number[],
   ): string {
-    console.log(`🔧 Creating ANGLED chamfer walls: chamfered front → full back`);
+    console.log(`🔧 Creating FULL-THROUGH chamfer walls: FULL front → CHAMFERED back`);
 
     // Step 1: Create angled chamfer walls connecting chamfered front to full back
     let content = "";
