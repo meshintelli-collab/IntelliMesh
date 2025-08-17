@@ -409,20 +409,18 @@ export class ChamferedPartsExporter {
               const dot = faceNormal.dot(otherNormal);
               const clampedDot = Math.max(-1, Math.min(1, dot));
 
-              // Calculate exterior angle (what we need for chamfering)
+              // Calculate the angle between face normals (this gives us the interior angle)
               const angleRadians = Math.acos(Math.abs(clampedDot));
-              const exteriorAngle = (angleRadians * 180) / Math.PI;
+              const interiorAngle = (angleRadians * 180) / Math.PI;
 
               // Determine convexity based on angle
               // < 180° = convex edge (outside face), > 180° = concave edge (inside face)
-              isConvex = exteriorAngle < 180;
+              isConvex = interiorAngle < 180;
 
-              // For chamfering:
-              // - Use outside face if angle < 180° (convex)
-              // - Use inside face if angle > 180° (concave)
-              // - Chamfer angle = exterior_angle / 2
-              edgeAngle = exteriorAngle;
-              chamferAngle = exteriorAngle / 2;
+              // CORRECT CHAMFER FORMULA: chamfer angle = 90° - internal edge angle / 2
+              // For a 90° interior angle (like cube edges), this gives 90° - 90°/2 = 45°
+              edgeAngle = interiorAngle;
+              chamferAngle = 90 - (interiorAngle / 2);
 
               // Ensure reasonable chamfer angles (15° to 75°)
               chamferAngle = Math.max(15, Math.min(75, Math.abs(chamferAngle)));
