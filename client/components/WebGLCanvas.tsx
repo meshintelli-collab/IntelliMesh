@@ -111,73 +111,74 @@ const WebGLCanvas: React.FC<WebGLCanvasProps> = ({
         <Canvas
           ref={canvasRef}
           onCreated={(state) => {
-          console.log('✅ Canvas created successfully');
+            console.log('✅ Canvas created successfully');
 
-          // Comprehensive WebGL context validation
-          if (!state.gl) {
-            console.error('❌ No WebGL context in onCreated state');
-            handleWebGLError(new Error('No WebGL context provided by @react-three/fiber'));
-            return;
-          }
-
-          // Check if it's a proper WebGL context
-          if (typeof state.gl.getParameter !== 'function') {
-            console.error('❌ Invalid WebGL context - missing getParameter method:', {
-              gl: state.gl,
-              type: typeof state.gl,
-              constructor: state.gl.constructor?.name || 'Unknown',
-              hasCanvas: 'canvas' in state.gl,
-              isContextLost: 'isContextLost' in state.gl ? state.gl.isContextLost() : 'Not available'
-            });
-            handleWebGLError(new Error('Invalid WebGL context: getParameter method not available'));
-            return;
-          }
-
-          // Check if context is lost
-          if (state.gl.isContextLost && state.gl.isContextLost()) {
-            console.error('❌ WebGL context is lost in onCreated');
-            handleWebGLError(new Error('WebGL context was lost'));
-            return;
-          }
-
-          // Safe parameter retrieval with error handling
-          try {
-            const webglInfo = {
-              contextLost: state.gl.isContextLost ? state.gl.isContextLost() : 'Unknown'
-            };
-
-            // Safely get renderer info
-            try {
-              webglInfo.renderer = state.gl.getParameter(state.gl.RENDERER);
-            } catch (e) {
-              webglInfo.renderer = 'Failed to retrieve';
-              console.warn('Could not get RENDERER parameter:', e);
+            // Comprehensive WebGL context validation
+            if (!state.gl) {
+              console.error('❌ No WebGL context in onCreated state');
+              handleWebGLError(new Error('No WebGL context provided by @react-three/fiber'));
+              return;
             }
 
-            try {
-              webglInfo.vendor = state.gl.getParameter(state.gl.VENDOR);
-            } catch (e) {
-              webglInfo.vendor = 'Failed to retrieve';
-              console.warn('Could not get VENDOR parameter:', e);
+            // Check if it's a proper WebGL context
+            if (typeof state.gl.getParameter !== 'function') {
+              console.error('❌ Invalid WebGL context - missing getParameter method:', {
+                gl: state.gl,
+                type: typeof state.gl,
+                constructor: state.gl.constructor?.name || 'Unknown',
+                hasCanvas: 'canvas' in state.gl,
+                isContextLost: 'isContextLost' in state.gl ? state.gl.isContextLost() : 'Not available'
+              });
+              handleWebGLError(new Error('Invalid WebGL context: getParameter method not available'));
+              return;
             }
 
-            try {
-              webglInfo.version = state.gl.getParameter(state.gl.VERSION);
-            } catch (e) {
-              webglInfo.version = 'Failed to retrieve';
-              console.warn('Could not get VERSION parameter:', e);
+            // Check if context is lost
+            if (state.gl.isContextLost && state.gl.isContextLost()) {
+              console.error('❌ WebGL context is lost in onCreated');
+              handleWebGLError(new Error('WebGL context was lost'));
+              return;
             }
 
-            console.log('📊 WebGL Info:', webglInfo);
-          } catch (error) {
-            console.error('❌ Error getting WebGL parameters:', error);
-            handleWebGLError(error instanceof Error ? error : new Error('Failed to get WebGL parameters'));
-          }
-        }}
+            // Safe parameter retrieval with error handling
+            try {
+              const webglInfo = {
+                contextLost: state.gl.isContextLost ? state.gl.isContextLost() : 'Unknown'
+              };
+
+              // Safely get renderer info
+              try {
+                webglInfo.renderer = state.gl.getParameter(state.gl.RENDERER);
+              } catch (e) {
+                webglInfo.renderer = 'Failed to retrieve';
+                console.warn('Could not get RENDERER parameter:', e);
+              }
+
+              try {
+                webglInfo.vendor = state.gl.getParameter(state.gl.VENDOR);
+              } catch (e) {
+                webglInfo.vendor = 'Failed to retrieve';
+                console.warn('Could not get VENDOR parameter:', e);
+              }
+
+              try {
+                webglInfo.version = state.gl.getParameter(state.gl.VERSION);
+              } catch (e) {
+                webglInfo.version = 'Failed to retrieve';
+                console.warn('Could not get VERSION parameter:', e);
+              }
+
+              console.log('📊 WebGL Info:', webglInfo);
+            } catch (error) {
+              console.error('❌ Error getting WebGL parameters:', error);
+              handleWebGLError(error instanceof Error ? error : new Error('Failed to get WebGL parameters'));
+            }
+          }}
           onError={(error) => {
             console.error('❌ Canvas onError callback triggered:', error);
             handleWebGLError(error);
           }}
+          dpr={1} // Force device pixel ratio to 1 to reduce complexity
           gl={{
             antialias: false,
             alpha: false,
