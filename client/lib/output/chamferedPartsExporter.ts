@@ -205,27 +205,7 @@ export class ChamferedPartsExporter {
         avgChamferAngle =
           edgeAngles.reduce((a, b) => a + b, 0) / edgeAngles.length;
 
-        console.log(
-          `🔧 Part ${i + 1}: INDIVIDUAL edge chamfer angles:`,
-          edgeAngles.map((a) => `${a.toFixed(1)}°`).join(", "),
-        );
-        console.log(
-          `🔧 Part ${i + 1}: Each edge will be chamfered with its specific angle (NOT averaged!)`,
-        );
-
-        // Verify each edge has a unique angle calculated
-        const uniqueAngles = [
-          ...new Set(edgeAngles.map((a) => Math.round(a * 10) / 10)),
-        ];
-        if (uniqueAngles.length === 1) {
-          console.log(
-            `📊 Part ${i + 1}: All edges have same angle (${uniqueAngles[0]}°) - uniform geometry`,
-          );
-        } else {
-          console.log(
-            `📊 Part ${i + 1}: ${uniqueAngles.length} different angles - complex geometry with individual edge chamfering`,
-          );
-        }
+        // Chamfer angles calculated
       } else {
         // Create default chamfer angles for each edge
         edgeAngles = Array(face.vertices.length).fill(45);
