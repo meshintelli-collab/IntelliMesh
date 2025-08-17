@@ -467,7 +467,7 @@ export class ChamferedPartsExporter {
             if (otherFace && otherFace.normal) {
               const otherNormal = otherFace.normal.clone().normalize();
 
-              // CORRECT DIHEDRAL ANGLE CALCULATION:
+              // CORRECT DIHEDRAL ANGLE CALCULATION WITH INTERIOR/EXTERIOR LOGIC:
 
               // Step 1: Get face normals u and v (already calculated and normalized)
               const u = faceNormal; // Face normal for current face
@@ -476,16 +476,38 @@ export class ChamferedPartsExporter {
               // Step 2: Calculate dot product between normalized face normals
               const dotUV = u.dot(v);
 
-              // Step 3: Calculate angle between normals (0° to 180°)
+              // Step 3: Calculate angle between normals (0° to 180°) - this is ALWAYS correct
               const angleBetweenNormals = (Math.acos(Math.max(-1, Math.min(1, dotUV))) * 180) / Math.PI;
 
-              // Step 4: Convert to dihedral angle (interior angle between faces)
-              // For convex shapes: dihedral_angle = 180° - angle_between_normals
-              // For concave shapes: dihedral_angle = angle_between_normals
+              // Step 4: Use u, v, a, b vector logic to determine interior/exterior chamfering
+              const edgeDirection = new THREE.Vector3().subVectors(v2, v1).normalize();
 
-              // Determine if this is a convex or concave edge by checking if normals point "outward"
-              // For most 3D shapes, adjacent face normals point outward, so dihedral = 180° - angle_between_normals
-              const interiorAngle = 180 - angleBetweenNormals;
+              // Calculate vectors a and b (u and v rotated around edge by 90°)
+              const a = new THREE.Vector3().crossVectors(u, edgeDirection).normalize();
+              const b = new THREE.Vector3().crossVectors(v, edgeDirection).normalize();
+
+              const dotAV = a.dot(v);
+              const dotBU = b.dot(u);
+
+              // Step 5: Determine dihedral angle and chamfer face based on geometry
+              let interiorAngle: number;
+
+              if (dotAV <= 0 && dotBU <= 0) {
+                // Convex edge: dihedral = 180° - angle_between_normals
+                interiorAngle = 180 - angleBetweenNormals;
+                isConvex = true;
+                chamferOnInteriorFace = true;
+              } else if (dotAV > 0 && dotBU > 0) {
+                // Concave edge: dihedral = 180° + angle_between_normals
+                interiorAngle = 180 + angleBetweenNormals;
+                isConvex = false;
+                chamferOnInteriorFace = false;
+              } else {
+                // Mixed case - use standard convex calculation
+                interiorAngle = 180 - angleBetweenNormals;
+                isConvex = true;
+                chamferOnInteriorFace = true;
+              }
 
               const exteriorAngle = 360 - interiorAngle;
 
