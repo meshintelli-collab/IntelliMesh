@@ -30,7 +30,6 @@ export class FaceExtruder {
    * @returns ExtrudedFace with front, back, and side walls
    */
   static extrudeFace(face: Face, thickness: number): ExtrudedFace {
-    console.log(`🔧 Extruding ${face.type} with ${face.vertices.length} vertices, thickness ${thickness}mm`);
 
     // DEBUG: Log input face details
     console.log(`   📊 Input vertices:`, face.vertices.map((v, idx) =>
