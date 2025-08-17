@@ -108,50 +108,36 @@ export class ChamferedPartsExporter {
     let polygonFaces: PolygonFace[];
     let polygonType: string;
 
-    console.log(`🔍 CHAMFERED EXPORT MODE DEBUGGING:`);
-    console.log(`   useTriangulated parameter: ${useTriangulated}`);
-    console.log(`   Expected: false for Merged mode, true for Triangle mode`);
+    // Export mode processing
 
     if (useTriangulated) {
       // Triangulated mode: use exact original triangulation (NO windmilling)
-      console.log(
-        `🎯 USING TRIANGULATED MODE for chamfering (as requested by UI)`,
-      );
+      // Using triangulated mode
       polygonFaces =
         PolygonExtruder.extractPolygonsFromTriangulatedGeometry(geometry);
       polygonType = "triangulated_exact";
-      console.log(
-        `✅ Using EXACT triangulated mode for chamfering: ${polygonFaces.length} triangles (NO reconstruction)`,
-      );
+      // Using exact triangulated mode
     } else {
       // Normal mode: use merged polygon faces
       const mergedFaces =
         PolygonExtruder.extractPolygonsFromMergedGeometry(geometry);
       if (mergedFaces.length === 0) {
-        console.log(
-          "⚠️ No merged faces found for chamfering, falling back to triangulated mode",
-        );
+        // No merged faces found, using triangulated mode
         polygonFaces =
           PolygonExtruder.extractPolygonsFromTriangulatedGeometry(geometry);
         polygonType = "triangulated_fallback";
       } else {
-        console.log(
-          `📊 MERGED MODE for chamfering: Found ${mergedFaces.length} merged faces to chamfer`,
-        );
+        // Using merged faces for chamfering
 
         // Log details about the merged faces
         for (let i = 0; i < Math.min(3, mergedFaces.length); i++) {
           const face = mergedFaces[i];
-          console.log(
-            `   Face ${i}: ${face.type}, ${face.vertices?.length || 0} vertices, triangulation: ${(face as any).originalTriangulation?.length || 0} triangles`,
-          );
+          // Processing face data
         }
 
         polygonFaces = mergedFaces;
         polygonType = (geometry as any).polygonType || "merged";
-        console.log(
-          `✅ Using merged polygon mode for chamfering: ${polygonFaces.length} polygons (preserving structure)`,
-        );
+        // Using merged polygon mode
       }
     }
 
