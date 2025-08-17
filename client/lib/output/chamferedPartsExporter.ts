@@ -172,12 +172,10 @@ export class ChamferedPartsExporter {
     const partDatabase: any[] = [];
 
     // Calculate edge angles for all faces first (referencing 3D model)
-    console.log("🔧 Calculating edge angles from 3D model for chamfering...");
     const chamferedFaces = this.calculateEdgeAngles(
       polygonFaces,
       originalGeometry,
     );
-    console.log(`✅ Calculated edge angles for ${chamferedFaces.length} faces`);
 
     // Create individual chamfered files for each polygon face
     for (let i = 0; i < polygonFaces.length; i++) {
