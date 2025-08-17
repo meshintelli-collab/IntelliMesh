@@ -112,9 +112,7 @@ export class EdgeAdjacentMerger {
         if (mergedPolygon) {
           mergedFaces.push(mergedPolygon);
           mergedTriangleCount += component.length;
-          console.log(
-            `✅ Component ${i}: Merged ${component.length} triangles into ${mergedPolygon.type}`,
-          );
+          // Component merged successfully
         } else {
           // Fallback: keep as individual triangles
           for (const triIndex of component) {
