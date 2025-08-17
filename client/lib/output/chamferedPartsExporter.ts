@@ -480,6 +480,9 @@ export class ChamferedPartsExporter {
 
               edgeAngle = interiorAngle;
 
+              // Store calculated values for debugging before clamping
+              const originalChamferAngle = chamferAngle;
+
               // Ensure reasonable chamfer angles (15° to 75°)
               chamferAngle = Math.max(15, Math.min(75, Math.abs(chamferAngle)));
 
