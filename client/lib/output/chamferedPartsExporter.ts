@@ -575,9 +575,9 @@ export class ChamferedPartsExporter {
                 console.log(
                   `   🎯 Expected chamfer angle: ~35.265° for octahedron`);
                 console.log(
-                  `   ⚖️ Clamped chamfer angle: ${chamferAngle.toFixed(3)}° (clamped from ${originalChamferAngle.toFixed(3)}°)`);
+                  `   ✅ UNCLAMPED chamfer angle: ${chamferAngle.toFixed(3)}° (no artificial limits applied)`);
                 console.log(
-                  `   ${Math.abs(originalChamferAngle - 35.265) < 1 ? '✅ CORRECT' : '❌ INCORRECT'} angle calculation`);
+                  `   ${Math.abs(chamferAngle - 35.265) < 1 ? '✅ CORRECT' : '❌ INCORRECT'} angle calculation`);
               }
             }
           }
