@@ -93,8 +93,8 @@ const WebGLCanvas: React.FC<WebGLCanvasProps> = ({
     );
   }
 
-  // Show fallback if WebGL is not supported
-  if (!webglSupported) {
+  // Show fallback if WebGL is not supported or critical error occurred
+  if (!webglSupported || hasCriticalError) {
     return fallbackComponent || <WebGLFallback />;
   }
 
