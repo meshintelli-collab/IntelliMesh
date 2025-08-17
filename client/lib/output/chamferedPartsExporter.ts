@@ -340,9 +340,11 @@ export class ChamferedPartsExporter {
       if (chamferedFace && chamferedFace.edges) {
         summaryData.allInteriorAngles.push(chamferedFace.edges.map(e => e.edgeAngle));
         summaryData.allChamferTypes.push(chamferedFace.edges.map(e => e.chamferOnInteriorFace ?? true));
+        summaryData.allDotProductSigns.push(chamferedFace.edges.map(e => e.dotProductSignature || 'nn'));
       } else {
         summaryData.allInteriorAngles.push(Array(face.vertices.length).fill(90));
         summaryData.allChamferTypes.push(Array(face.vertices.length).fill(true)); // default to interior
+        summaryData.allDotProductSigns.push(Array(face.vertices.length).fill('nn')); // default to negative/negative
       }
     }
 
@@ -753,7 +755,7 @@ export class ChamferedPartsExporter {
       `🔧 OBJ: Generating PARAMETRIC chamfered vertices with edge-direction movements`,
     );
     console.log(
-      `��� OBJ: Vertices move along adjacent edge directions parametrically`,
+      `🔧 OBJ: Vertices move along adjacent edge directions parametrically`,
     );
 
     const partThickness = chamferDepth; // chamferDepth is actually the part thickness
