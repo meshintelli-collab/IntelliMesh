@@ -167,7 +167,7 @@ export class ChamferedPartsExporter {
     // Calculate edge angles for all faces first (referencing 3D model)
     console.log("🔧 Calculating edge angles from 3D model for chamfering...");
     const chamferedFaces = this.calculateEdgeAngles(polygonFaces, originalGeometry);
-    console.log(`✅ Calculated edge angles for ${chamferedFaces.length} faces`);
+    console.log(`�� Calculated edge angles for ${chamferedFaces.length} faces`);
 
     // Create individual chamfered files for each polygon face
     for (let i = 0; i < polygonFaces.length; i++) {
@@ -690,11 +690,17 @@ export class ChamferedPartsExporter {
       .normalize();
 
     // Calculate chamfer offsets for each edge
+    // Note: angles should already be calculated using correct formula in calculateEdgeAngles
     const prevChamferRadians = (prevChamferAngle * Math.PI) / 180;
     const currentChamferRadians = (currentChamferAngle * Math.PI) / 180;
 
     const prevChamferOffset = chamferDepth * Math.tan(prevChamferRadians);
     const currentChamferOffset = chamferDepth * Math.tan(currentChamferRadians);
+
+    if (vertexIndex < 3) {
+      console.log(`   OBJ Vertex ${vertexIndex}: prevAngle=${prevChamferAngle.toFixed(1)}°, currentAngle=${currentChamferAngle.toFixed(1)}°`);
+      console.log(`   OBJ Offsets: prev=${prevChamferOffset.toFixed(3)}, current=${currentChamferOffset.toFixed(3)}`);
+    }
 
     // Calculate the two chamfer plane movements
     const prevInwardDirection = prevOutwardNormal.clone().negate();
