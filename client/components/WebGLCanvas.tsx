@@ -20,6 +20,7 @@ const WebGLCanvas: React.FC<WebGLCanvasProps> = ({
   const [webglSupported, setWebglSupported] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasCriticalError, setHasCriticalError] = useState<boolean>(false);
+  const [useMinimalFallback, setUseMinimalFallback] = useState<boolean>(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
