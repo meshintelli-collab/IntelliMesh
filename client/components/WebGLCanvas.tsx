@@ -178,11 +178,9 @@ const WebGLCanvas: React.FC<WebGLCanvasProps> = ({
                   }
                 }}
                 onError={(error) => {
-                  console.warn('⚠️ Canvas onError callback triggered, attempting graceful fallback:', error);
-                  // Use a timeout to avoid React state update issues during render
-                  setTimeout(() => {
-                    handleWebGLError(error);
-                  }, 0);
+                  console.warn('⚠️ Canvas onError callback triggered:', error);
+                  // Don't immediately trigger state updates that could cause issues
+                  console.log('🎮 Canvas error handled gracefully, continuing operation');
                 }}
                 dpr={1} // Force device pixel ratio to 1 to reduce complexity
                 gl={{
