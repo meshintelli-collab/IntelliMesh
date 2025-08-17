@@ -2185,7 +2185,7 @@ export default function STLViewer() {
         background: isGradient ? viewerSettings.backgroundColor : "transparent",
       }}
     >
-      <Canvas
+      <WebGLCanvas
         camera={{
           position: [0, 30, 80],
           fov: 45,
@@ -2194,10 +2194,13 @@ export default function STLViewer() {
         }}
         style={{ background: "transparent" }}
         shadows
-        gl={{ antialias: true, alpha: true }}
+        onWebGLError={(error) => {
+          console.error('3D Viewer Error:', error);
+          // You could also show a toast notification here
+        }}
       >
         <Scene />
-      </Canvas>
+      </WebGLCanvas>
     </div>
   );
 }
