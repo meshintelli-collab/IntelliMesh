@@ -101,47 +101,55 @@ const WebGLCanvas: React.FC<WebGLCanvasProps> = ({
     console.log('🎮 Attempting to create Canvas with Three.js...');
 
     return (
-      <Canvas
-        ref={canvasRef}
-        onCreated={(state) => {
-          console.log('✅ Canvas created successfully');
-
-          // Validate WebGL context before using it
-          if (!state.gl || typeof state.gl.getParameter !== 'function') {
-            console.error('❌ Invalid WebGL context in onCreated:', state.gl);
-            handleWebGLError(new Error('Invalid WebGL context: getParameter method not available'));
-            return;
-          }
-
-          try {
-            console.log('📊 WebGL Info:', {
-              renderer: state.gl.getParameter(state.gl.RENDERER),
-              vendor: state.gl.getParameter(state.gl.VENDOR),
-              version: state.gl.getParameter(state.gl.VERSION),
-              contextLost: state.gl.isContextLost ? state.gl.isContextLost() : 'Unknown'
-            });
-          } catch (error) {
-            console.error('❌ Error getting WebGL parameters:', error);
-            handleWebGLError(error instanceof Error ? error : new Error('Failed to get WebGL parameters'));
-          }
-        }}
-        onError={(error) => {
-          console.error('❌ Canvas onError callback triggered:', error);
+      <WebGLErrorBoundary
+        onError={(error, errorInfo) => {
+          console.error('❌ WebGL Error Boundary caught error:', error, errorInfo);
           handleWebGLError(error);
         }}
-        gl={{
-          antialias: false,
-          alpha: false,
-          depth: true,
-          stencil: false,
-          powerPreference: 'default',
-          failIfMajorPerformanceCaveat: false,
-          preserveDrawingBuffer: false,
-        }}
-        {...canvasProps}
+        fallback={fallbackComponent || <WebGLFallback />}
       >
-        {children}
-      </Canvas>
+        <Canvas
+          ref={canvasRef}
+          onCreated={(state) => {
+            console.log('✅ Canvas created successfully');
+
+            // Validate WebGL context before using it
+            if (!state.gl || typeof state.gl.getParameter !== 'function') {
+              console.error('❌ Invalid WebGL context in onCreated:', state.gl);
+              handleWebGLError(new Error('Invalid WebGL context: getParameter method not available'));
+              return;
+            }
+
+            try {
+              console.log('📊 WebGL Info:', {
+                renderer: state.gl.getParameter(state.gl.RENDERER),
+                vendor: state.gl.getParameter(state.gl.VENDOR),
+                version: state.gl.getParameter(state.gl.VERSION),
+                contextLost: state.gl.isContextLost ? state.gl.isContextLost() : 'Unknown'
+              });
+            } catch (error) {
+              console.error('❌ Error getting WebGL parameters:', error);
+              handleWebGLError(error instanceof Error ? error : new Error('Failed to get WebGL parameters'));
+            }
+          }}
+          onError={(error) => {
+            console.error('❌ Canvas onError callback triggered:', error);
+            handleWebGLError(error);
+          }}
+          gl={{
+            antialias: false,
+            alpha: false,
+            depth: true,
+            stencil: false,
+            powerPreference: 'default',
+            failIfMajorPerformanceCaveat: false,
+            preserveDrawingBuffer: false,
+          }}
+          {...canvasProps}
+        >
+          {children}
+        </Canvas>
+      </WebGLErrorBoundary>
     );
   } catch (error) {
     console.error('❌ Canvas creation threw exception:', error);
