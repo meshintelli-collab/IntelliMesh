@@ -1053,7 +1053,7 @@ export default function STLWorkflowPanel({
                     className="w-full bg-blue-500 hover:bg-blue-600 text-white text-xs py-2 h-9"
                     disabled={isProcessing}
                   >
-                    🔵 Apply Vertex Clustering
+                    ��� Apply Vertex Clustering
                   </Button>
                 </div>
 
@@ -2363,9 +2363,6 @@ export default function STLWorkflowPanel({
                           if (currentExportType === "complete") {
                             exportSTL();
                           } else if (currentExportType === "parts") {
-                            console.log(`🔍 POLYGON PARTS STL EXPORT:`);
-                            console.log(`   triangleOptions.modelType: ${triangleOptions.modelType}`);
-                            console.log(`   useTriangulated will be: ${triangleOptions.modelType === "triangle"}`);
                             exportParts({
                               ...triangleOptions,
                               format: "stl",
