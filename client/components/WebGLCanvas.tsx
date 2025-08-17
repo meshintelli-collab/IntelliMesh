@@ -10,14 +10,15 @@ interface WebGLCanvasProps {
   [key: string]: any; // Allow passing through Canvas props
 }
 
-const WebGLCanvas: React.FC<WebGLCanvasProps> = ({ 
-  children, 
+const WebGLCanvas: React.FC<WebGLCanvasProps> = ({
+  children,
   onWebGLError,
   fallbackComponent,
-  ...canvasProps 
+  ...canvasProps
 }) => {
   const [webglSupported, setWebglSupported] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [hasCriticalError, setHasCriticalError] = useState<boolean>(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
