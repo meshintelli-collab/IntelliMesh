@@ -230,7 +230,7 @@ export class PolygonExtruder {
       frontVertices,
       backVertices,
       originalVertices,
-      chamferDepth,
+      thickness, // Pass actual thickness, not chamferDepth
       edgeAngles || Array(originalVertices.length).fill(defaultChamferAngle),
     );
 
