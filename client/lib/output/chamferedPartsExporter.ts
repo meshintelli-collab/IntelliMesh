@@ -226,21 +226,26 @@ export class ChamferedPartsExporter {
         originalTriangulation: (polygonFace as any).originalTriangulation
       };
 
-      // Generate chamfered content using consistent logic
+      // ALWAYS USE POLYGON EXTRUDER FOR CONSISTENCY
+      // Generate chamfered geometry using PolygonExtruder first
+      console.log(`🔧 Creating chamfered part ${i + 1} using PolygonExtruder (format: ${format})`);
+
+      // Create the chamfered STL content using PolygonExtruder
+      const stlContent = PolygonExtruder.createChamferedPolygon(polygonFaceForExtruder, extrusionOptions, chamferOptions);
+      console.log(`🔧 STL content length: ${stlContent.length} characters`);
+
+      if (stlContent.length < 100) {
+        console.error(`❌ STL content suspiciously short! Content: ${stlContent.substring(0, 200)}...`);
+      }
+
       let partContent: string;
-
       if (format === "obj") {
-        // OBJ: Create proper OBJ with polygon faces (no triangulation)
-        partContent = this.createChamferedPolygonOBJ(polygonFaceForExtruder, extrusionOptions, chamferOptions);
+        // For OBJ: Convert the triangulated STL logic to OBJ polygon format
+        // TODO: This is a temporary approach - ideally we'd have a unified geometry representation
+        partContent = this.convertSTLLogicToOBJ(polygonFaceForExtruder, extrusionOptions, chamferOptions, stlContent);
       } else {
-        // STL: Use PolygonExtruder (creates triangulated STL)
-        console.log(`🔧 Creating STL chamfered part ${i + 1} using PolygonExtruder`);
-        partContent = PolygonExtruder.createChamferedPolygon(polygonFaceForExtruder, extrusionOptions, chamferOptions);
-        console.log(`🔧 STL content length: ${partContent.length} characters`);
-
-        if (partContent.length < 100) {
-          console.error(`❌ STL content suspiciously short! Content: ${partContent.substring(0, 200)}...`);
-        }
+        // For STL: Use the STL content directly
+        partContent = stlContent;
       }
 
       const partFilename = `part_${String(i + 1).padStart(4, "0")}_${polygonFace.type || "polygon"}_chamfered.${fileExtension}`;
