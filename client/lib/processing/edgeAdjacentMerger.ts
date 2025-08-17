@@ -119,9 +119,7 @@ export class EdgeAdjacentMerger {
             mergedFaces.push(faces[triIndex]);
           }
           preservedTriangleCount += component.length;
-          console.log(
-            `⚠️ Component ${i}: Failed to merge, preserved ${component.length} triangles`,
-          );
+          // Component preserved as triangles
         }
       }
     }
