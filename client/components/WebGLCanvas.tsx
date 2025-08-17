@@ -45,6 +45,16 @@ const WebGLCanvas: React.FC<WebGLCanvasProps> = ({
   // Error boundary for WebGL context creation errors
   const handleWebGLError = (error: Error) => {
     console.error('WebGL Canvas Error:', error);
+
+    // Try minimal fallback first before giving up completely
+    if (!useMinimalFallback) {
+      console.log('🔄 Attempting minimal Canvas fallback...');
+      setUseMinimalFallback(true);
+      return;
+    }
+
+    // If minimal fallback also failed, show full error
+    console.error('❌ All Canvas fallbacks failed');
     setWebglSupported(false);
     setError(error.message);
     setHasCriticalError(true);
