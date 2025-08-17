@@ -20,7 +20,7 @@ export interface PolygonFace {
  */
 export class EdgeAdjacentMerger {
   private static readonly DISTANCE_TOLERANCE = 0.1;
-  private static readonly NORMAL_TOLERANCE = 0.99;
+  private static readonly NORMAL_TOLERANCE = 0.9999; // Perfectly parallel faces only
   private static readonly EDGE_TOLERANCE = 0.1;
 
   /**
