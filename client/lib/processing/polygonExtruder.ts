@@ -553,19 +553,19 @@ export class PolygonExtruder {
       const cb1 = backVertices[i];
       const cb2 = backVertices[next];
 
-      // Validate vertices before creating the chamfer quad
-      if (!cf1 || !cf2 || !bf1 || !bf2) {
-        console.error(`❌ Invalid vertices for wall ${i}: cf1=${!!cf1}, cf2=${!!cf2}, bf1=${!!bf1}, bf2=${!!bf2}`);
+      // Validate vertices before creating the full-through chamfer quad
+      if (!ff1 || !ff2 || !cb1 || !cb2) {
+        console.error(`❌ Invalid vertices for wall ${i}: ff1=${!!ff1}, ff2=${!!ff2}, cb1=${!!cb1}, cb2=${!!cb2}`);
         continue;
       }
 
-      // Create PROPER CHAMFER QUAD: unified angled face
-      // Order vertices to form a proper quad: chamfered front edge → full back edge
-      const chamferQuad = [cf1, cf2, bf2, bf1]; // Quad vertices in proper order
+      // Create FULL-THROUGH CHAMFER QUAD: unified angled face
+      // Order vertices: FULL front edge → CHAMFERED back edge (truncated pyramid)
+      const chamferQuad = [ff1, ff2, cb2, cb1]; // Quad vertices in proper order
 
       // Calculate consistent normal for the entire quad face
-      const edge1 = new THREE.Vector3().subVectors(cf2, cf1); // Chamfered front edge
-      const edge2 = new THREE.Vector3().subVectors(bf1, cf1); // Diagonal to back
+      const edge1 = new THREE.Vector3().subVectors(ff2, ff1); // Full front edge
+      const edge2 = new THREE.Vector3().subVectors(cb1, ff1); // Diagonal to chamfered back
       const quadNormal = new THREE.Vector3().crossVectors(edge1, edge2).normalize();
 
       // Validate normal
@@ -575,18 +575,18 @@ export class PolygonExtruder {
       }
 
       // Split quad into two triangles but with CONSISTENT normal
-      // This ensures the entire side face has unified chamfer angling
-      const triangle1 = this.addTriangleToSTL(cf1, cf2, bf2, quadNormal);
-      const triangle2 = this.addTriangleToSTL(cf1, bf2, bf1, quadNormal);
+      // This creates the angled wall that tapers from full front to chamfered back
+      const triangle1 = this.addTriangleToSTL(ff1, ff2, cb2, quadNormal);
+      const triangle2 = this.addTriangleToSTL(ff1, cb2, cb1, quadNormal);
 
       content += triangle1;
       content += triangle2;
       triangleCount += 2;
 
       if (i < 3) {
-        console.log(`   Chamfer Quad ${i}: unified ${chamferAngles[i] || 45}° angled face`);
-        console.log(`   Vertices: cf1(${cf1.x.toFixed(2)}, ${cf1.y.toFixed(2)}) → cf2(${cf2.x.toFixed(2)}, ${cf2.y.toFixed(2)}) → bf2(${bf2.x.toFixed(2)}, ${bf2.y.toFixed(2)}) → bf1(${bf1.x.toFixed(2)}, ${bf1.y.toFixed(2)})`);
-        console.log(`   Normal: (${quadNormal.x.toFixed(3)}, ${quadNormal.y.toFixed(3)}, ${quadNormal.z.toFixed(3)})`);
+        console.log(`   FULL-THROUGH Chamfer Wall ${i}: ${chamferAngles[i] || 45}° taper through entire part`);
+        console.log(`   FULL front(${ff1.x.toFixed(2)}, ${ff1.y.toFixed(2)}) → CHAMFERED back(${cb1.x.toFixed(2)}, ${cb1.y.toFixed(2)})`);
+        console.log(`   Creates truncated pyramid for part mating`);
       }
     }
 
