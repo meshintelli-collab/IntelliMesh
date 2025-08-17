@@ -510,29 +510,49 @@ export class ChamferedPartsExporter {
               // Step 4: Use u, v, a, b vector logic to determine interior/exterior chamfering
               const edgeDirection = new THREE.Vector3().subVectors(v2, v1).normalize();
 
-              // Calculate vectors a and b: from edge through face away from edge
-              // a should be perpendicular to edge and parallel to face u, pointing away from edge
-              // b should be perpendicular to edge and parallel to face v, pointing away from edge
+              // FIXED VECTOR CALCULATIONS:
+              // a = vector in face u, perpendicular to edge, pointing away from edge
+              // b = vector in face v, perpendicular to edge, pointing away from edge
 
-              // For face u: a = (edgeDirection × u) × edgeDirection (double cross product)
-              const temp1 = new THREE.Vector3().crossVectors(edgeDirection, u);
-              const a = new THREE.Vector3().crossVectors(temp1, edgeDirection).normalize();
-
-              // For face v: b = (edgeDirection × v) × edgeDirection (double cross product)
-              const temp2 = new THREE.Vector3().crossVectors(edgeDirection, v);
-              const b = new THREE.Vector3().crossVectors(temp2, edgeDirection).normalize();
+              // Method: Project a reference vector onto each face, then make it perpendicular to edge
+              // Use the cross product of edge with face normal to get perpendicular direction
+              const a = new THREE.Vector3().crossVectors(edgeDirection, u).normalize();
+              const b = new THREE.Vector3().crossVectors(edgeDirection, v).normalize();
 
               const dotAV = a.dot(v);
               const dotBU = b.dot(u);
 
-              // DEBUG: Log actual dot product values for complex shapes
-              if (faceIndex < 3) {
-                console.log(`DEBUG Face ${faceIndex}, Edge ${i}:`);
-                console.log(`  dotAV = ${dotAV.toFixed(6)}, dotBU = ${dotBU.toFixed(6)}`);
-                console.log(`  a = (${a.x.toFixed(3)}, ${a.y.toFixed(3)}, ${a.z.toFixed(3)})`);
-                console.log(`  v = (${v.x.toFixed(3)}, ${v.y.toFixed(3)}, ${v.z.toFixed(3)})`);
-                console.log(`  b = (${b.x.toFixed(3)}, ${b.y.toFixed(3)}, ${b.z.toFixed(3)})`);
-                console.log(`  u = (${u.x.toFixed(3)}, ${u.y.toFixed(3)}, ${u.z.toFixed(3)})`);
+              // VECTOR VALIDATION: Check our vectors are correct
+              if (faceIndex < 2) {
+                console.log(`\n=== VECTOR VALIDATION Face ${faceIndex}, Edge ${i} ===`);
+                console.log(`Edge: (${v1.x.toFixed(2)}, ${v1.y.toFixed(2)}, ${v1.z.toFixed(2)}) → (${v2.x.toFixed(2)}, ${v2.y.toFixed(2)}, ${v2.z.toFixed(2)})`);
+                console.log(`edgeDirection = (${edgeDirection.x.toFixed(3)}, ${edgeDirection.y.toFixed(3)}, ${edgeDirection.z.toFixed(3)})`);
+                console.log(`u (face normal) = (${u.x.toFixed(3)}, ${u.y.toFixed(3)}, ${u.z.toFixed(3)})`);
+                console.log(`v (other normal) = (${v.x.toFixed(3)}, ${v.y.toFixed(3)}, ${v.z.toFixed(3)})`);
+                console.log(`a = edgeDir × u = (${a.x.toFixed(3)}, ${a.y.toFixed(3)}, ${a.z.toFixed(3)})`);
+                console.log(`b = edgeDir × v = (${b.x.toFixed(3)}, ${b.y.toFixed(3)}, ${b.z.toFixed(3)})`);
+
+                // Validate perpendicularity
+                const aEdgeDot = a.dot(edgeDirection);
+                const bEdgeDot = b.dot(edgeDirection);
+                const aDotU = a.dot(u);
+                const bDotV = b.dot(v);
+
+                console.log(`PERPENDICULARITY CHECK:`);
+                console.log(`  a·edge = ${aEdgeDot.toFixed(6)} (should be ~0)`);
+                console.log(`  b·edge = ${bEdgeDot.toFixed(6)} (should be ~0)`);
+                console.log(`  a·u = ${aDotU.toFixed(6)} (should be ~0)`);
+                console.log(`  b·v = ${bDotV.toFixed(6)} (should be ~0)`);
+
+                console.log(`DOT PRODUCTS FOR CLASSIFICATION:`);
+                console.log(`  dotAV = a·v = ${dotAV.toFixed(6)}`);
+                console.log(`  dotBU = b·u = ${dotBU.toFixed(6)}`);
+
+                // Calculate actual dihedral angle correctly
+                const dotUV = u.dot(v);
+                console.log(`  dotUV = u·v = ${dotUV.toFixed(6)}`);
+                console.log(`  angle_between_normals = ${(Math.acos(dotUV) * 180 / Math.PI).toFixed(1)}°`);
+                console.log(`  dihedral_angle = ${(180 - Math.acos(dotUV) * 180 / Math.PI).toFixed(1)}°`);
               }
 
               // Step 5: Determine dihedral angle and chamfer face based on geometry
