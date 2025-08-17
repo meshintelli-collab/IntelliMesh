@@ -336,8 +336,10 @@ export class ChamferedPartsExporter {
       summaryData.allChamferAngles.push([...edgeAngles]);
       if (chamferedFace && chamferedFace.edges) {
         summaryData.allInteriorAngles.push(chamferedFace.edges.map(e => e.edgeAngle));
+        summaryData.allChamferTypes.push(chamferedFace.edges.map(e => e.chamferOnInteriorFace ?? true));
       } else {
         summaryData.allInteriorAngles.push(Array(face.vertices.length).fill(90));
+        summaryData.allChamferTypes.push(Array(face.vertices.length).fill(true)); // default to interior
       }
     }
 
