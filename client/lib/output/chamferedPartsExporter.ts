@@ -296,7 +296,7 @@ export class ChamferedPartsExporter {
         "Normal Vector Z": (
           polygonFace.normal || new THREE.Vector3(0, 0, 1)
         ).z.toFixed(6),
-        "Min Edge Angle (°)": useTriangulated ? "N/A" : minEdgeAngle.toFixed(1),
+        "Min Edge Angle (��)": useTriangulated ? "N/A" : minEdgeAngle.toFixed(1),
         "Max Edge Angle (°)": useTriangulated ? "N/A" : maxEdgeAngle.toFixed(1),
         "Avg Chamfer Angle (°)": avgChamferAngle.toFixed(1),
         "Surface Area (mm²)": partInfo.surfaceArea.toFixed(2),
@@ -532,9 +532,8 @@ export class ChamferedPartsExporter {
           edgeAngle,
           chamferAngle,
           isConvex,
-          // Store whether chamfer should be on interior or exterior face
-          chamferOnInteriorFace: chamferOnInteriorFace ?? true,
-        } as EdgeInfo & { chamferOnInteriorFace: boolean });
+          chamferOnInteriorFace,
+        });
       }
 
       chamferedFaces.push({
