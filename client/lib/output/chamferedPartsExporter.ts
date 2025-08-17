@@ -510,25 +510,13 @@ export class ChamferedPartsExporter {
     const offset = normal.clone().multiplyScalar(thickness);
     const backVertices = originalVertices.map((v) => v.clone().add(offset)); // Keep original polygon shape
 
-    // Calculate chamfered back vertices for the walls
-    const chamferedBackVertices: THREE.Vector3[] = [];
-    for (let i = 0; i < frontVertices.length; i++) {
-      const chamferAngle = (edgeAngles && edgeAngles[i]) || defaultChamferAngle;
-      const chamferRadians = (chamferAngle * Math.PI) / 180;
-
-      // Calculate edge direction and outward normal
-      const nextIndex = (i + 1) % frontVertices.length;
-      const edgeDirection = new THREE.Vector3().subVectors(frontVertices[nextIndex], frontVertices[i]).normalize();
-      const outwardNormal = new THREE.Vector3().crossVectors(edgeDirection, normal).normalize();
-
-      // Calculate chamfer offset
-      const chamferOffset = chamferDepth * Math.tan(chamferRadians);
-      const inwardDirection = outwardNormal.clone().negate();
-
-      // Create chamfered back vertex
-      const chamferedBackVertex = backVertices[i].clone().add(inwardDirection.multiplyScalar(chamferOffset));
-      chamferedBackVertices.push(chamferedBackVertex);
-    }
+    // Calculate chamfered back vertices using the same parametric method as PolygonExtruder
+    const chamferedBackVertices = this.calculateChamferedVerticesFromPlaneIntersections(
+      frontVertices,
+      backVertices,
+      chamferDepth,
+      edgeAngles || Array(frontVertices.length).fill(defaultChamferAngle)
+    );
 
     // Generate OBJ content
     let objContent = `# Chamfered OBJ Part ${polygon.index || 0} - ${polygon.type}\n`;
