@@ -37,8 +37,6 @@ class WebGLErrorHandler {
       canvas.width = 1;
       canvas.height = 1;
 
-      console.log('📋 Browser WebGL availability check...');
-
       let gl: WebGLRenderingContext | null = null;
 
       // Try different WebGL context types
@@ -56,16 +54,14 @@ class WebGLErrorHandler {
           }) as WebGLRenderingContext;
 
           if (gl) {
-            console.log(`✅ WebGL context '${contextType}' created successfully`);
             break;
           }
         } catch (contextError) {
-          console.warn(`⚠️ Failed to create '${contextType}' context:`, contextError);
+          // Silently continue to next context type
         }
       }
 
       if (!gl) {
-        console.error('❌ No WebGL context could be created');
         this.webglSupport = {
           supported: false,
           error: 'WebGL not available - no context could be created',
