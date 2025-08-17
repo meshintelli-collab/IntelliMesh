@@ -286,10 +286,12 @@ export class PolygonExtruder {
       const prevChamferRadians = (prevEdgeChamferAngle * Math.PI) / 180;
       const currentChamferRadians = (currentEdgeChamferAngle * Math.PI) / 180;
 
-      // For full-through chamfering: offset = thickness * tan(chamfer_angle)
-      // This creates a chamfer that goes all the way through the part
-      const prevChamferOffset = chamferDepth / Math.cos(prevChamferRadians);
-      const currentChamferOffset = chamferDepth / Math.cos(currentChamferRadians);
+      // For full-through chamfering: inward_offset = thickness * tan(chamfer_angle)
+      // This creates a truncated pyramid where the chamfer goes all the way through
+      // chamferDepth is actually the thickness for this calculation
+      const thickness = chamferDepth; // chamferDepth parameter is actually the part thickness
+      const prevChamferOffset = thickness * Math.tan(prevChamferRadians);
+      const currentChamferOffset = thickness * Math.tan(currentChamferRadians);
 
       // Calculate the movements from each chamfer plane
       const prevMovement = prevEdgePerp.clone().multiplyScalar(-prevChamferOffset);
