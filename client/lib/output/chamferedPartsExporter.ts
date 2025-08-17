@@ -392,9 +392,14 @@ export class ChamferedPartsExporter {
     summaryData.allInteriorAngles.forEach((angles, i) => {
       console.log(`Face ${i + 1}: [${angles.map(a => a.toFixed(1)).join(', ')}]°`);
     });
-    console.log(`\nChamfer angles by face:`);
+    console.log(`\nChamfer angles by face (i=interior, e=exterior):`);
     summaryData.allChamferAngles.forEach((angles, i) => {
-      console.log(`Face ${i + 1}: [${angles.map(a => a.toFixed(1)).join(', ')}]°`);
+      const types = summaryData.allChamferTypes[i] || [];
+      const angleStrings = angles.map((angle, j) => {
+        const indicator = types[j] ? 'i' : 'e';
+        return `${angle.toFixed(1)}${indicator}`;
+      });
+      console.log(`Face ${i + 1}: [${angleStrings.join(', ')}]°`);
     });
     console.log(`========================\n`);
   }
