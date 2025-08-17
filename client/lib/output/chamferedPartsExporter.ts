@@ -663,33 +663,33 @@ export class ChamferedPartsExporter {
     // Write faces (PRESERVE POLYGON STRUCTURE - NO TRIANGULATION)
     objContent += `\n# Faces (polygons preserved)\n`;
 
-    // Front face (chamfered - smaller polygon)
-    objContent += `# Front face (chamfered - smaller polygon)\nf`;
+    // Front face (FULL SIZE for mating surface)
+    objContent += `# Front face (FULL SIZE for mating surface)\nf`;
     for (let i = 1; i <= actualFrontVertices.length; i++) {
       objContent += ` ${i}//1`;
     }
     objContent += `\n`;
 
-    // Back face (full size polygon) - reversed winding
-    objContent += `# Back face (full size polygon)\nf`;
+    // Back face (CHAMFERED - smaller polygon) - reversed winding
+    objContent += `# Back face (CHAMFERED - smaller polygon)\nf`;
     for (let i = actualFrontVertices.length * 2; i > actualFrontVertices.length; i--) {
       objContent += ` ${i}//2`;
     }
     objContent += `\n`;
 
-    // Angled chamfer walls (quads) - these CREATE the chamfer
-    objContent += `# Angled chamfer walls (quads) - these are the chamfer faces\n`;
+    // FULL-THROUGH tapered walls (quads) - create truncated pyramid
+    objContent += `# FULL-THROUGH tapered walls (quads) - truncated pyramid for mating\n`;
     for (let i = 0; i < actualFrontVertices.length; i++) {
       const next = (i + 1) % actualFrontVertices.length;
 
-      // Indices for quad: chamfered front → full back
-      const chamferedFrontCurrent = i + 1;
-      const chamferedFrontNext = next + 1;
-      const fullBackNext = actualFrontVertices.length + next + 1;
-      const fullBackCurrent = actualFrontVertices.length + i + 1;
+      // Indices for quad: FULL front → CHAMFERED back
+      const fullFrontCurrent = i + 1;
+      const fullFrontNext = next + 1;
+      const chamferedBackNext = actualFrontVertices.length + next + 1;
+      const chamferedBackCurrent = actualFrontVertices.length + i + 1;
 
-      // Create angled chamfer wall quad: chamfered front edge to full back edge
-      objContent += `f ${chamferedFrontCurrent} ${chamferedFrontNext} ${fullBackNext} ${fullBackCurrent}\n`;
+      // Create tapered wall quad: full front edge to chamfered back edge
+      objContent += `f ${fullFrontCurrent} ${fullFrontNext} ${chamferedBackNext} ${chamferedBackCurrent}\n`;
     }
 
     console.log(`✅ Generated chamfered OBJ: ${frontVertices.length} vertices per face, polygons preserved (no triangulation)`);
