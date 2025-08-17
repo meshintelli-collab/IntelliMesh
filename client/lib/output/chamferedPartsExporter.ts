@@ -195,13 +195,17 @@ export class ChamferedPartsExporter {
       // Calculate chamfer data if available
       let edgeAngles: number[] = [];
       let avgChamferAngle = 45.0;
-      
+
       if (chamferedFace && chamferedFace.edges && chamferedFace.edges.length > 0) {
         edgeAngles = chamferedFace.edges.map(e => e.chamferAngle);
         avgChamferAngle = edgeAngles.reduce((a, b) => a + b, 0) / edgeAngles.length;
+
+        console.log(`🔧 Part ${i + 1}: Calculated edge angles:`, edgeAngles.map(a => `${a.toFixed(1)}°`).join(', '));
+        console.log(`🔧 Part ${i + 1}: Average chamfer angle: ${avgChamferAngle.toFixed(1)}°`);
       } else {
         // Create default chamfer angles for each edge
         edgeAngles = Array(face.vertices.length).fill(45);
+        console.log(`⚠️ Part ${i + 1}: No chamfer face data, using default 45° for all ${face.vertices.length} edges`);
       }
 
       // Create chamfered part using the PolygonExtruder with chamfering
