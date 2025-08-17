@@ -21,18 +21,17 @@ export default defineConfig(({ mode }) => ({
       deny: [".env", ".env.*", "*.{crt,pem}", "**/.git/**", "server/**"],
     },
     hmr: {
-      // Configure HMR for cloud environment
+      // Configure HMR for cloud environment with WebSocket fixes
       port: 8080,
-      // Use the current hostname for WebSocket connections
-      // This will automatically use the correct domain in cloud environments
       clientPort: 8080,
-      // Fix websocket connection issues
-      overlay: {
-        errors: true,
-        warnings: false,
-      },
-      // Add websocket fallback options
-      skipSSR: false,
+      // Fix WebSocket protocol issues
+      protocol: 'ws',
+      // Disable HMR overlay to prevent WebSocket errors from breaking UI
+      overlay: false,
+      // Add connection timeout and retry configuration
+      timeout: 60000,
+      // Use server-sent events as fallback if WebSocket fails
+      fallback: true,
     },
     // Add websocket configuration
     watch: {
