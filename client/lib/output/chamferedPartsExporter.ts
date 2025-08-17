@@ -697,68 +697,58 @@ export class ChamferedPartsExporter {
   }
 
   /**
-   * Generate chamfered vertices for OBJ (same logic as PolygonExtruder)
+   * Generate chamfered vertices for OBJ using edge-by-edge perpendicular movement
+   * Same logic as PolygonExtruder - each edge moves its vertices perpendicular to the edge
    */
   private static generateChamferedVerticesOBJ(
     originalVertices: THREE.Vector3[],
     chamferDepth: number,
     chamferAngles: number[]
   ): THREE.Vector3[] {
-    console.log(`🔧 OBJ: Generating chamfered vertices with proper corner intersection method`);
-    const chamferedVertices: THREE.Vector3[] = [];
+    console.log(`🔧 OBJ: Generating EDGE-BY-EDGE chamfered vertices with perpendicular movements`);
+    console.log(`🔧 OBJ: Each edge moves its vertices perpendicular to the edge`);
 
-    for (let i = 0; i < originalVertices.length; i++) {
-      const vertex = originalVertices[i];
-      const prevIndex = (i - 1 + originalVertices.length) % originalVertices.length;
-      const nextIndex = (i + 1) % originalVertices.length;
+    // Start with original vertices - we'll modify them edge by edge
+    const chamferedVertices = originalVertices.map(v => v.clone());
+    const faceNormal = new THREE.Vector3(0, 0, 1); // Assume Z-up for 2D polygon chamfering
+    const partThickness = chamferDepth; // chamferDepth is actually the part thickness
 
-      const prevVertex = originalVertices[prevIndex];
-      const nextVertex = originalVertices[nextIndex];
+    // Process each edge one by one
+    for (let edgeIndex = 0; edgeIndex < originalVertices.length; edgeIndex++) {
+      const nextIndex = (edgeIndex + 1) % originalVertices.length;
 
-      // Get chamfer angles for the two edges meeting at this vertex
-      const prevEdgeChamferAngle = chamferAngles[prevIndex] || 45;
-      const currentEdgeChamferAngle = chamferAngles[i] || 45;
+      // Get the two vertices of this edge
+      const vertex1 = chamferedVertices[edgeIndex];
+      const vertex2 = chamferedVertices[nextIndex];
 
-      // Calculate edge directions
-      const prevEdgeDir = new THREE.Vector3().subVectors(vertex, prevVertex).normalize();
-      const nextEdgeDir = new THREE.Vector3().subVectors(nextVertex, vertex).normalize();
+      // Get chamfer angle for this edge
+      const edgeChamferAngle = chamferAngles[edgeIndex] || 45;
+      const chamferRadians = (edgeChamferAngle * Math.PI) / 180;
 
-      // Calculate perpendicular directions for each edge (pointing inward)
-      const faceNormal = new THREE.Vector3(0, 0, 1); // Assume Z-up
+      // Calculate edge direction and perpendicular direction (pointing inward)
+      const edgeDirection = new THREE.Vector3().subVectors(vertex2, vertex1).normalize();
+      const perpDirection = new THREE.Vector3().crossVectors(edgeDirection, faceNormal).normalize();
 
-      const prevEdgePerp = new THREE.Vector3().crossVectors(prevEdgeDir, faceNormal).normalize();
-      const nextEdgePerp = new THREE.Vector3().crossVectors(nextEdgeDir, faceNormal).normalize();
+      // Calculate chamfer offset: thickness * tan(chamfer_angle)
+      const chamferOffset = partThickness * Math.tan(chamferRadians);
 
-      // Calculate chamfer offsets for each edge
-      // FOR FULL-THROUGH CHAMFERING: inward_offset = thickness * tan(chamfer_angle)
-      const prevChamferRadians = (prevEdgeChamferAngle * Math.PI) / 180;
-      const currentChamferRadians = (currentEdgeChamferAngle * Math.PI) / 180;
+      // Move both vertices of this edge inward perpendicular to the edge
+      const movement = perpDirection.clone().multiplyScalar(-chamferOffset); // Negative for inward
 
-      // chamferDepth parameter is now the part thickness for full-through chamfering
-      const partThickness = chamferDepth;
-      const prevChamferOffset = partThickness * Math.tan(prevChamferRadians);
-      const currentChamferOffset = partThickness * Math.tan(currentChamferRadians);
+      vertex1.add(movement);
+      vertex2.add(movement);
 
-      // Calculate the movements from each chamfer plane
-      const prevMovement = prevEdgePerp.clone().multiplyScalar(-prevChamferOffset);
-      const currentMovement = nextEdgePerp.clone().multiplyScalar(-currentChamferOffset);
-
-      // Find intersection point by averaging the movements
-      const averageMovement = new THREE.Vector3()
-        .addVectors(prevMovement, currentMovement)
-        .multiplyScalar(0.5);
-
-      // Apply movement to get chamfered vertex
-      const chamferedVertex = vertex.clone().add(averageMovement);
-      chamferedVertices.push(chamferedVertex);
-
-      if (i < 3) {
-        console.log(`   OBJ Vertex ${i}: prev_angle=${prevEdgeChamferAngle.toFixed(1)}°, current_angle=${currentEdgeChamferAngle.toFixed(1)}°`);
-        console.log(`   Final: (${vertex.x.toFixed(3)}, ${vertex.y.toFixed(3)}) → (${chamferedVertex.x.toFixed(3)}, ${chamferedVertex.y.toFixed(3)})`);
+      if (edgeIndex < 3) {
+        console.log(`🔢 OBJ EDGE-BY-EDGE CHAMFER Edge ${edgeIndex}:`);
+        console.log(`   📐 Edge chamfer angle: ${edgeChamferAngle.toFixed(1)}°`);
+        console.log(`   📏 Part thickness: ${partThickness.toFixed(3)}mm`);
+        console.log(`   🧮 Formula: offset = thickness × tan(angle) = ${partThickness.toFixed(3)} × tan(${edgeChamferAngle.toFixed(1)}°) = ${chamferOffset.toFixed(3)}`);
+        console.log(`   🎯 Both vertices of edge moved inward by ${chamferOffset.toFixed(3)}mm perpendicular to edge`);
       }
     }
 
-    console.log(`✅ OBJ: Generated ${chamferedVertices.length} chamfered vertices with proper corner intersections`);
+    console.log(`✅ OBJ: Generated ${chamferedVertices.length} chamfered vertices using edge-by-edge perpendicular movements`);
+    console.log(`✅ OBJ: Each vertex was moved twice (once per adjacent edge) for correct chamfering`);
     return chamferedVertices;
   }
 
