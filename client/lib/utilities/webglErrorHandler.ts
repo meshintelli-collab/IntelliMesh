@@ -101,7 +101,7 @@ class WebGLErrorHandler {
         return this.webglSupport;
       }
 
-      // Step 3: Test basic WebGL capabilities
+      // Step 4: Test basic WebGL capabilities
       console.log('🔧 Testing WebGL capabilities...');
       const maxTextures = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
       const maxVertexAttribs = gl.getParameter(gl.MAX_VERTEX_ATTRIBS);
@@ -115,7 +115,7 @@ class WebGLErrorHandler {
         maxVertexAttribs
       });
 
-      // Step 4: Test THREE.js WebGLRenderer creation with minimal settings
+      // Step 5: Test THREE.js WebGLRenderer creation with minimal settings
       console.log('🎮 Testing THREE.js WebGLRenderer creation...');
       let threeRenderer: THREE.WebGLRenderer | null = null;
 
