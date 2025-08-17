@@ -88,7 +88,7 @@ export class FaceExtruder {
       });
     }
     
-    console.log(`✅ Extruded face: 1 front + 1 back + ${sideWalls.length} side walls`);
+    // Face extrusion complete
     
     return {
       frontFace,
