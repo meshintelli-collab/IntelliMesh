@@ -141,13 +141,10 @@ class WebGLErrorHandler {
         recommendation: 'WebGL fully supported'
       };
 
-      console.log('✅ WebGL Support Check PASSED - fully supported');
       return this.webglSupport;
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown WebGL error';
-
-      console.error('❌ WebGL Support Check FAILED:', error);
 
       this.webglSupport = {
         supported: false,
