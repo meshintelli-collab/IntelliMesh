@@ -1,7 +1,8 @@
 import React, { useRef, useMemo, useEffect, useState } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
+import WebGLCanvas from "./WebGLCanvas";
 import { useSTL } from "../context/STLContext";
 import { STLManipulator, STLToolMode } from "../lib/processing/stlManipulator";
 import { computeFlatNormals } from "../lib/visualization/flatNormals";
