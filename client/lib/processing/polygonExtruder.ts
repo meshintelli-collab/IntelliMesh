@@ -545,13 +545,13 @@ export class PolygonExtruder {
     for (let i = 0; i < frontVertices.length; i++) {
       const next = (i + 1) % frontVertices.length;
 
-      // Chamfered front edge vertices (smaller)
-      const cf1 = frontVertices[i];
-      const cf2 = frontVertices[next];
+      // FULL front edge vertices (original size)
+      const ff1 = frontVertices[i];
+      const ff2 = frontVertices[next];
 
-      // Full back edge vertices (original size)
-      const bf1 = backVertices[i];
-      const bf2 = backVertices[next];
+      // CHAMFERED back edge vertices (smaller)
+      const cb1 = backVertices[i];
+      const cb2 = backVertices[next];
 
       // Validate vertices before creating the chamfer quad
       if (!cf1 || !cf2 || !bf1 || !bf2) {
