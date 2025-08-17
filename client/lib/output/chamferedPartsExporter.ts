@@ -239,7 +239,7 @@ export class ChamferedPartsExporter {
       console.log(`🔧 STL content length: ${stlContent.length} characters`);
 
       if (stlContent.length < 100) {
-        console.error(`❌ STL content suspiciously short! Content: ${stlContent.substring(0, 200)}...`);
+        console.error(`��� STL content suspiciously short! Content: ${stlContent.substring(0, 200)}...`);
       }
 
       let partContent: string;
@@ -519,7 +519,7 @@ export class ChamferedPartsExporter {
                   `   Chamfer on: ${chamferOnInteriorFace ? 'interior' : 'exterior'} face`
                 );
                 console.log(
-                  `   Chamfer angle: ${chamferAngle.toFixed(1)}°`
+                  `   Chamfer angle: ${originalChamferAngle.toFixed(1)}° → clamped to ${chamferAngle.toFixed(1)}°`
                 );
               }
             }
