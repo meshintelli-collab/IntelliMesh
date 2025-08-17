@@ -484,18 +484,33 @@ export class ChamferedPartsExporter {
               chamferAngle = Math.max(15, Math.min(75, Math.abs(chamferAngle)));
 
               if (faceIndex < 3) {
-                // Log detailed calculation for debugging
+                // Log detailed sophisticated calculation for debugging
                 console.log(
-                  `   Face ${faceIndex}, Edge ${i}:`
+                  `   Face ${faceIndex}, Edge ${i} - SOPHISTICATED CALCULATION:`
                 );
                 console.log(
-                  `   Dot product: ${dot.toFixed(3)} (${dot >= 0 ? 'positive' : 'negative'})`
+                  `   Face normals - u: (${u.x.toFixed(3)}, ${u.y.toFixed(3)}, ${u.z.toFixed(3)})`
                 );
                 console.log(
-                  `   Angle between normals: ${angleBetweenNormals.toFixed(1)}°`
+                  `   Face normals - v: (${v.x.toFixed(3)}, ${v.y.toFixed(3)}, ${v.z.toFixed(3)})`
                 );
                 console.log(
-                  `   Dihedral angle: ${dihedralAngle.toFixed(1)}° (${isConvex ? 'convex' : 'concave'} edge)`
+                  `   Edge direction: (${edgeDirection.x.toFixed(3)}, ${edgeDirection.y.toFixed(3)}, ${edgeDirection.z.toFixed(3)})`
+                );
+                console.log(
+                  `   Rotated vectors - a: (${a.x.toFixed(3)}, ${a.y.toFixed(3)}, ${a.z.toFixed(3)})`
+                );
+                console.log(
+                  `   Rotated vectors - b: (${b.x.toFixed(3)}, ${b.y.toFixed(3)}, ${b.z.toFixed(3)})`
+                );
+                console.log(
+                  `   Dot products: u·v=${dotUV.toFixed(3)}, a·v=${dotAV.toFixed(3)}, b·u=${dotBU.toFixed(3)}`
+                );
+                console.log(
+                  `   Interior angle: ${interiorAngle.toFixed(1)}° (${interiorAngle < 180 ? 'convex' : 'concave'} edge)`
+                );
+                console.log(
+                  `   Exterior angle: ${exteriorAngle.toFixed(1)}°`
                 );
                 console.log(
                   `   Chamfer on: ${chamferOnInteriorFace ? 'interior' : 'exterior'} face`
