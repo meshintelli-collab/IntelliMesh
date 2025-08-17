@@ -163,12 +163,14 @@ export class ChamferedPartsExporter {
       allInteriorAngles: number[][];
       allChamferAngles: number[][];
       allChamferTypes: boolean[][]; // true = interior, false = exterior
+      allDotProductSigns: string[][]; // "pp", "nn", "pn", "np" for dotAV/dotBU signs
       shapeName: string;
     } = {
       faceCount: polygonFaces.length,
       allInteriorAngles: [],
       allChamferAngles: [],
       allChamferTypes: [],
+      allDotProductSigns: [],
       shapeName: filename.replace(/\.[^/.]+$/, '') || 'shape'
     };
 
@@ -798,7 +800,7 @@ export class ChamferedPartsExporter {
           `   🎯 Vertex ${edgeIndex} moves: (${currentVertexMovement.x.toFixed(3)}, ${currentVertexMovement.y.toFixed(3)})`,
         );
         console.log(
-          `   🎯 Vertex ${nextVertexIndex} moves: (${nextVertexMovement.x.toFixed(3)}, ${nextVertexMovement.y.toFixed(3)})`,
+          `   ��� Vertex ${nextVertexIndex} moves: (${nextVertexMovement.x.toFixed(3)}, ${nextVertexMovement.y.toFixed(3)})`,
         );
       }
     }
