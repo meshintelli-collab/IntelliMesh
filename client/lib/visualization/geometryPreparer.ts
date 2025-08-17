@@ -54,7 +54,7 @@ export function prepareGeometryForViewing(
   // Force flat normals for solid face coloring (no vertex-based blending)
   computeFlatNormals(prepared);
 
-  console.log(`🔧 Applied flat normals for ${source} (solid face coloring)`);
+  // Applied flat normals
   if (hasNaNValues(prepared)) {
     validateAndFixGeometry(prepared, `${source} normals fix`);
   }
