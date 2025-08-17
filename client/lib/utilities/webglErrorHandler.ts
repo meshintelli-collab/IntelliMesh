@@ -31,65 +31,137 @@ class WebGLErrorHandler {
       return this.webglSupport;
     }
 
+    console.log('🔍 Starting comprehensive WebGL support check...');
+
     try {
-      // Test basic WebGL availability
+      // Step 1: Check if WebGL is even available in the browser
       const canvas = document.createElement('canvas');
-      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-      
+      canvas.width = 1;
+      canvas.height = 1;
+
+      console.log('📋 Browser WebGL availability check...');
+
+      let gl: WebGLRenderingContext | null = null;
+
+      // Try different WebGL context types
+      const contextTypes = ['webgl2', 'webgl', 'experimental-webgl'];
+      for (const contextType of contextTypes) {
+        try {
+          gl = canvas.getContext(contextType as any, {
+            failIfMajorPerformanceCaveat: false,
+            antialias: false,
+            alpha: false,
+            depth: false,
+            stencil: false,
+            preserveDrawingBuffer: false,
+            powerPreference: 'default'
+          }) as WebGLRenderingContext;
+
+          if (gl) {
+            console.log(`✅ WebGL context '${contextType}' created successfully`);
+            break;
+          }
+        } catch (contextError) {
+          console.warn(`⚠️ Failed to create '${contextType}' context:`, contextError);
+        }
+      }
+
       if (!gl) {
+        console.error('❌ No WebGL context could be created');
         this.webglSupport = {
           supported: false,
-          error: 'WebGL not available',
-          fallbackReason: 'Browser does not support WebGL',
-          recommendation: 'Please use a modern browser with WebGL support or enable hardware acceleration'
+          error: 'WebGL not available - no context could be created',
+          fallbackReason: 'Browser does not support WebGL or WebGL is disabled',
+          recommendation: 'Enable WebGL in browser settings or try a different browser'
         };
         return this.webglSupport;
       }
 
-      // Test WebGL2 support (preferred)
-      const gl2 = canvas.getContext('webgl2');
-      
-      // Test for common WebGL context issues
-      const renderer = new THREE.WebGLRenderer({ 
-        canvas,
-        antialias: false,
-        alpha: false,
-        powerPreference: 'default' // Use default instead of high-performance to avoid GPU issues
-      });
+      // Step 2: Check for context loss immediately
+      if (gl.isContextLost()) {
+        console.error('❌ WebGL context is lost immediately after creation');
+        this.webglSupport = {
+          supported: false,
+          error: 'WebGL context lost immediately',
+          fallbackReason: 'Graphics hardware or driver issue',
+          recommendation: 'Update graphics drivers or restart browser'
+        };
+        return this.webglSupport;
+      }
 
-      // Basic capability check
+      // Step 3: Test basic WebGL capabilities
+      console.log('🔧 Testing WebGL capabilities...');
       const maxTextures = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
       const maxVertexAttribs = gl.getParameter(gl.MAX_VERTEX_ATTRIBS);
+      const vendor = gl.getParameter(gl.VENDOR);
+      const renderer = gl.getParameter(gl.RENDERER);
 
-      renderer.dispose();
-      
-      this.webglSupport = {
-        supported: true,
-        error: undefined,
-        fallbackReason: undefined,
-        recommendation: gl2 ? 'WebGL2 supported' : 'WebGL1 supported (limited features)'
-      };
-
-      console.log('✅ WebGL Support Check:', {
-        webgl1: !!gl,
-        webgl2: !!gl2,
+      console.log('📊 WebGL Info:', {
+        vendor,
+        renderer,
         maxTextures,
         maxVertexAttribs
       });
 
+      // Step 4: Test THREE.js WebGLRenderer creation with minimal settings
+      console.log('🎮 Testing THREE.js WebGLRenderer creation...');
+      let threeRenderer: THREE.WebGLRenderer | null = null;
+
+      try {
+        threeRenderer = new THREE.WebGLRenderer({
+          canvas,
+          context: gl,
+          antialias: false,
+          alpha: false,
+          depth: false,
+          stencil: false,
+          powerPreference: 'default',
+          failIfMajorPerformanceCaveat: false,
+          preserveDrawingBuffer: false
+        });
+
+        console.log('✅ THREE.js WebGLRenderer created successfully');
+
+        // Test basic rendering capability
+        threeRenderer.setSize(1, 1);
+        threeRenderer.clear();
+
+        threeRenderer.dispose();
+
+      } catch (rendererError) {
+        console.error('❌ THREE.js WebGLRenderer creation failed:', rendererError);
+
+        this.webglSupport = {
+          supported: false,
+          error: `THREE.js WebGLRenderer failed: ${rendererError instanceof Error ? rendererError.message : 'Unknown error'}`,
+          fallbackReason: 'THREE.js cannot create WebGL renderer',
+          recommendation: this.getRecommendationForError(rendererError instanceof Error ? rendererError.message : 'Unknown error')
+        };
+        return this.webglSupport;
+      }
+
+      this.webglSupport = {
+        supported: true,
+        error: undefined,
+        fallbackReason: undefined,
+        recommendation: 'WebGL fully supported'
+      };
+
+      console.log('✅ WebGL Support Check PASSED - fully supported');
       return this.webglSupport;
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown WebGL error';
-      
+
+      console.error('❌ WebGL Support Check FAILED:', error);
+
       this.webglSupport = {
         supported: false,
         error: errorMessage,
-        fallbackReason: 'WebGL context creation failed',
+        fallbackReason: 'Unexpected error during WebGL testing',
         recommendation: this.getRecommendationForError(errorMessage)
       };
 
-      console.error('❌ WebGL Support Check Failed:', error);
       return this.webglSupport;
     }
   }
