@@ -962,9 +962,6 @@ function STLMesh() {
       new THREE.Float32BufferAttribute(wireframePositions, 3),
     );
 
-    console.log(
-      `�� Created polygon wireframe with ${wireframePositions.length / 6} edge segments`,
-    );
     return wireGeometry;
   }, [geometry, viewerSettings.wireframe]);
 
