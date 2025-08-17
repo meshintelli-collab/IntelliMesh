@@ -211,7 +211,8 @@ export class PolygonExtruder {
     }
 
     // CHAMFERED side walls - this is where the chamfering happens
-    stlContent += this.createChamferedSideWalls(
+    console.log(`🔧 About to create chamfered side walls...`);
+    const sideWallsContent = this.createChamferedSideWalls(
       frontVertices,
       backVertices,
       originalVertices,
@@ -219,7 +220,16 @@ export class PolygonExtruder {
       edgeAngles || Array(originalVertices.length).fill(defaultChamferAngle),
     );
 
+    console.log(`🔧 Chamfered side walls content length: ${sideWallsContent.length} characters`);
+    if (sideWallsContent.length === 0) {
+      console.error(`❌ CRITICAL: No side walls content generated! This is why STL has no side faces.`);
+    }
+
+    stlContent += sideWallsContent;
+
     stlContent += `endsolid chamfered_polygon_${polygon.index || 0}\n`;
+
+    console.log(`✅ Total STL content length: ${stlContent.length} characters`);
     return stlContent;
   }
 
