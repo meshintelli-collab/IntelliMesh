@@ -69,7 +69,7 @@ export class PolygonExtruder {
     let frontTriangles: THREE.Vector3[][];
 
     console.log(`🔍 DEBUGGING WINDMILLING: Polygon has ${frontVertices.length} vertices`);
-    console.log(`��� originalTriangulation available:`, !!polygonAny.originalTriangulation);
+    console.log(`🔍 originalTriangulation available:`, !!polygonAny.originalTriangulation);
     console.log(`🔍 originalTriangulation length:`, polygonAny.originalTriangulation?.length || 0);
 
     if (polygonAny.originalTriangulation && polygonAny.originalTriangulation.length > 0) {
@@ -533,37 +533,40 @@ export class PolygonExtruder {
       const bf1 = backVertices[i];
       const bf2 = backVertices[next];
 
-      // Validate vertices before creating triangles
+      // Validate vertices before creating the chamfer quad
       if (!cf1 || !cf2 || !bf1 || !bf2) {
         console.error(`❌ Invalid vertices for wall ${i}: cf1=${!!cf1}, cf2=${!!cf2}, bf1=${!!bf1}, bf2=${!!bf2}`);
         continue;
       }
 
-      // Calculate the chamfer wall normal (angled face)
-      const wallEdge1 = new THREE.Vector3().subVectors(cf2, cf1); // Chamfered front edge
-      const wallEdge2 = new THREE.Vector3().subVectors(bf1, cf1); // From chamfered front to full back
-      const wallNormal = new THREE.Vector3()
-        .crossVectors(wallEdge1, wallEdge2)
-        .normalize();
+      // Create PROPER CHAMFER QUAD: unified angled face
+      // Order vertices to form a proper quad: chamfered front edge → full back edge
+      const chamferQuad = [cf1, cf2, bf2, bf1]; // Quad vertices in proper order
+
+      // Calculate consistent normal for the entire quad face
+      const edge1 = new THREE.Vector3().subVectors(cf2, cf1); // Chamfered front edge
+      const edge2 = new THREE.Vector3().subVectors(bf1, cf1); // Diagonal to back
+      const quadNormal = new THREE.Vector3().crossVectors(edge1, edge2).normalize();
 
       // Validate normal
-      if (wallNormal.length() < 0.001) {
-        console.warn(`⚠️ Degenerate wall normal for wall ${i}, using fallback`);
-        wallNormal.set(0, 0, 1); // Fallback normal
+      if (quadNormal.length() < 0.001) {
+        console.warn(`⚠️ Degenerate quad normal for wall ${i}, using fallback`);
+        quadNormal.set(0, 0, 1); // Fallback normal
       }
 
-      // Create ANGLED CHAMFER WALL: chamfered front edge to full back edge
-      // This creates the 45° angled face that IS the chamfer
-      const triangle1 = this.addTriangleToSTL(cf1, cf2, bf2, wallNormal);
-      const triangle2 = this.addTriangleToSTL(cf1, bf2, bf1, wallNormal);
+      // Split quad into two triangles but with CONSISTENT normal
+      // This ensures the entire side face has unified chamfer angling
+      const triangle1 = this.addTriangleToSTL(cf1, cf2, bf2, quadNormal);
+      const triangle2 = this.addTriangleToSTL(cf1, bf2, bf1, quadNormal);
 
       content += triangle1;
       content += triangle2;
       triangleCount += 2;
 
       if (i < 3) {
-        console.log(`   Chamfer Wall ${i}: chamfered_front(${cf1.x.toFixed(2)}, ${cf1.y.toFixed(2)}) → full_back(${bf1.x.toFixed(2)}, ${bf1.y.toFixed(2)})`);
-        console.log(`   This creates the actual ${chamferAngles[i] || 45}° angled chamfer face`);
+        console.log(`   Chamfer Quad ${i}: unified ${chamferAngles[i] || 45}° angled face`);
+        console.log(`   Vertices: cf1(${cf1.x.toFixed(2)}, ${cf1.y.toFixed(2)}) → cf2(${cf2.x.toFixed(2)}, ${cf2.y.toFixed(2)}) → bf2(${bf2.x.toFixed(2)}, ${bf2.y.toFixed(2)}) → bf1(${bf1.x.toFixed(2)}, ${bf1.y.toFixed(2)})`);
+        console.log(`   Normal: (${quadNormal.x.toFixed(3)}, ${quadNormal.y.toFixed(3)}, ${quadNormal.z.toFixed(3)})`);
       }
     }
 
