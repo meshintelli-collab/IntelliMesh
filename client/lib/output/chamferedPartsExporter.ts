@@ -556,10 +556,10 @@ export class ChamferedPartsExporter {
               // Ensure reasonable chamfer angles (15° to 75°)
               chamferAngle = Math.max(15, Math.min(75, Math.abs(chamferAngle)));
 
-              if (faceIndex < 3) {
+              if (faceIndex < 8) { // Increased to capture more faces for octahedron debugging
                 // Log detailed sophisticated calculation for debugging
                 console.log(
-                  `   Face ${faceIndex}, Edge ${i} - SOPHISTICATED CALCULATION:`,
+                  `   🔬 OCTAHEDRON ANALYSIS Face ${faceIndex}, Edge ${i}:`,
                 );
                 console.log(
                   `   Face normals - u: (${u.x.toFixed(3)}, ${u.y.toFixed(3)}, ${u.z.toFixed(3)})`,
@@ -568,27 +568,20 @@ export class ChamferedPartsExporter {
                   `   Face normals - v: (${v.x.toFixed(3)}, ${v.y.toFixed(3)}, ${v.z.toFixed(3)})`,
                 );
                 console.log(
-                  `   Edge direction: (${edgeDirection.x.toFixed(3)}, ${edgeDirection.y.toFixed(3)}, ${edgeDirection.z.toFixed(3)})`,
+                  `   Dot products: u·v=${dotUV.toFixed(6)}, a·v=${dotAV.toFixed(3)}, b·u=${dotBU.toFixed(3)}`,
                 );
                 console.log(
-                  `   Rotated vectors - a: (${a.x.toFixed(3)}, ${a.y.toFixed(3)}, ${a.z.toFixed(3)})`,
+                  `   🎯 Interior angle: ${interiorAngle.toFixed(3)}° (Expected ~109.47° for octahedron)`,
                 );
                 console.log(
-                  `   Rotated vectors - b: (${b.x.toFixed(3)}, ${b.y.toFixed(3)}, ${b.z.toFixed(3)})`,
+                  `   🧮 Chamfer calculation: 90° - ${interiorAngle.toFixed(3)}°/2 = 90° - ${(interiorAngle/2).toFixed(3)}° = ${originalChamferAngle.toFixed(3)}°`,
                 );
                 console.log(
-                  `   Dot products: u·v=${dotUV.toFixed(3)}, a·v=${dotAV.toFixed(3)}, b·u=${dotBU.toFixed(3)}`,
-                );
+                  `   🎯 Expected chamfer angle: ~35.265° for octahedron`);
                 console.log(
-                  `   Interior angle: ${interiorAngle.toFixed(1)}° (${interiorAngle < 180 ? "convex" : "concave"} edge)`,
-                );
-                console.log(`   Exterior angle: ${exteriorAngle.toFixed(1)}°`);
+                  `   ⚖️ Clamped chamfer angle: ${chamferAngle.toFixed(3)}° (clamped from ${originalChamferAngle.toFixed(3)}°)`);
                 console.log(
-                  `   Chamfer on: ${chamferOnInteriorFace ? "interior" : "exterior"} face`,
-                );
-                console.log(
-                  `   Chamfer angle: ${originalChamferAngle.toFixed(1)}° → clamped to ${chamferAngle.toFixed(1)}°`,
-                );
+                  `   ${Math.abs(originalChamferAngle - 35.265) < 1 ? '✅ CORRECT' : '❌ INCORRECT'} angle calculation`);
               }
             }
           }
