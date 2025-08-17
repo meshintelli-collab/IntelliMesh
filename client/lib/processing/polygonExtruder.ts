@@ -534,14 +534,14 @@ export class PolygonExtruder {
       const bf2 = backVertices[next];
 
       // Validate vertices before creating triangles
-      if (!f1 || !f2 || !cb1 || !cb2) {
-        console.error(`❌ Invalid vertices for wall ${i}: f1=${!!f1}, f2=${!!f2}, cb1=${!!cb1}, cb2=${!!cb2}`);
+      if (!cf1 || !cf2 || !bf1 || !bf2) {
+        console.error(`❌ Invalid vertices for wall ${i}: cf1=${!!cf1}, cf2=${!!cf2}, bf1=${!!bf1}, bf2=${!!bf2}`);
         continue;
       }
 
-      // Calculate the angled wall normal
-      const wallEdge1 = new THREE.Vector3().subVectors(f2, f1);
-      const wallEdge2 = new THREE.Vector3().subVectors(cb1, f1);
+      // Calculate the chamfer wall normal (angled face)
+      const wallEdge1 = new THREE.Vector3().subVectors(cf2, cf1); // Chamfered front edge
+      const wallEdge2 = new THREE.Vector3().subVectors(bf1, cf1); // From chamfered front to full back
       const wallNormal = new THREE.Vector3()
         .crossVectors(wallEdge1, wallEdge2)
         .normalize();
@@ -552,17 +552,18 @@ export class PolygonExtruder {
         wallNormal.set(0, 0, 1); // Fallback normal
       }
 
-      // Create angled chamfer wall: front edge to chamfered back edge
-      const triangle1 = this.addTriangleToSTL(f1, f2, cb2, wallNormal);
-      const triangle2 = this.addTriangleToSTL(f1, cb2, cb1, wallNormal);
+      // Create ANGLED CHAMFER WALL: chamfered front edge to full back edge
+      // This creates the 45° angled face that IS the chamfer
+      const triangle1 = this.addTriangleToSTL(cf1, cf2, bf2, wallNormal);
+      const triangle2 = this.addTriangleToSTL(cf1, bf2, bf1, wallNormal);
 
       content += triangle1;
       content += triangle2;
       triangleCount += 2;
 
       if (i < 3) {
-        console.log(`   Wall ${i}: front(${f1.x.toFixed(2)}, ${f1.y.toFixed(2)}) → chamfered_back(${cb1.x.toFixed(2)}, ${cb1.y.toFixed(2)})`);
-        console.log(`   Wall ${i}: Triangle 1 length=${triangle1.length}, Triangle 2 length=${triangle2.length}`);
+        console.log(`   Chamfer Wall ${i}: chamfered_front(${cf1.x.toFixed(2)}, ${cf1.y.toFixed(2)}) → full_back(${bf1.x.toFixed(2)}, ${bf1.y.toFixed(2)})`);
+        console.log(`   This creates the actual ${chamferAngles[i] || 45}° angled chamfer face`);
       }
     }
 
