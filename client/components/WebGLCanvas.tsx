@@ -24,20 +24,14 @@ const WebGLCanvas: React.FC<WebGLCanvasProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    console.log('🚀 WebGLCanvas: Starting WebGL support check...');
-
-    // Check WebGL support on mount
+    // Quick WebGL support check
     const support = webglErrorHandler.checkWebGLSupport();
 
-    console.log('📋 WebGL Support Result:', support);
-
     if (!support.supported) {
-      console.error('❌ WebGL not supported, showing fallback UI');
       setWebglSupported(false);
       setError(support.error || 'WebGL not supported');
       onWebGLError?.(support.error || 'WebGL not supported');
     } else {
-      console.log('✅ WebGL supported, proceeding with Canvas creation');
       setWebglSupported(true);
     }
   }, [onWebGLError]);
