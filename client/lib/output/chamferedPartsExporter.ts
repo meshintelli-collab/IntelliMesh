@@ -557,7 +557,7 @@ export class ChamferedPartsExporter {
               }
             } else {
               console.warn(
-                `⚠️ Face ${faceIndex}: adjacent face ${otherFaceIndex} missing normal, using default angles`,
+                `⚠�� Face ${faceIndex}: adjacent face ${otherFaceIndex} missing normal, using default angles`,
               );
             }
           }
@@ -907,6 +907,7 @@ export class ChamferedPartsExporter {
 
   /**
    * Apply chamfer transformations to parametric vertices
+   * Uses proper plane intersection method - calculating where chamfer planes meet
    */
   private static applyChamferTransformations(
     geometry: ParametricGeometry,
@@ -914,50 +915,165 @@ export class ChamferedPartsExporter {
     normal: THREE.Vector3,
     thickness: number,
   ): void {
-    console.log(`🔧 Applying chamfer transformations to parametric geometry`);
+    console.log(`🔧 Applying chamfer transformations using parametric vertex intersection method`);
 
-    // Apply chamfering to back vertices based on adjacent edges
+    // Apply chamfering to each vertex by finding intersection of adjacent chamfer planes
     for (let i = 0; i < edges.length; i++) {
-      const edge = edges[i] || { chamferAngle: 45, isConvex: true };
-      const next = (i + 1) % edges.length;
+      const prevEdgeIndex = (i - 1 + edges.length) % edges.length;
+      const currentEdgeIndex = i;
 
-      // Get vertex IDs for this edge
-      const backV1Id = `back_${i}`;
-      const backV2Id = `back_${next}`;
+      const prevEdge = edges[prevEdgeIndex] || { chamferAngle: 45, isConvex: true };
+      const currentEdge = edges[currentEdgeIndex] || { chamferAngle: 45, isConvex: true };
 
-      const backV1 = geometry.vertices.get(backV1Id);
-      const backV2 = geometry.vertices.get(backV2Id);
+      // Get vertex at this corner (where two edges meet)
+      const backVertexId = `back_${i}`;
+      const backVertex = geometry.vertices.get(backVertexId);
+      const frontVertex = geometry.vertices.get(`front_${i}`);
 
-      if (backV1 && backV2) {
-        // Calculate edge direction and perpendicular
-        const frontV1 = geometry.vertices.get(`front_${i}`)!;
-        const frontV2 = geometry.vertices.get(`front_${next}`)!;
+      if (!backVertex || !frontVertex) continue;
 
-        const edgeDir = new THREE.Vector3()
-          .subVectors(frontV2.position, frontV1.position)
-          .normalize();
-        const edgePerp = new THREE.Vector3()
-          .crossVectors(edgeDir, normal)
-          .normalize();
+      // Get adjacent vertices to calculate edge directions
+      const prevVertexIndex = (i - 1 + edges.length) % edges.length;
+      const nextVertexIndex = (i + 1) % edges.length;
 
-        // Calculate chamfer offset
-        const chamferRadians = (edge.chamferAngle * Math.PI) / 180;
-        const chamferOffset = thickness * Math.tan(chamferRadians);
+      const frontPrevVertex = geometry.vertices.get(`front_${prevVertexIndex}`);
+      const frontNextVertex = geometry.vertices.get(`front_${nextVertexIndex}`);
 
-        // Move back vertices inward for chamfering
-        const inwardOffset = edgePerp.clone().multiplyScalar(-chamferOffset);
-        backV1.position.add(inwardOffset);
-        backV2.position.add(inwardOffset);
+      if (!frontPrevVertex || !frontNextVertex) continue;
 
-        if (i < 2) {
+      // Calculate the two edge directions at this vertex
+      const prevEdgeDir = new THREE.Vector3()
+        .subVectors(frontVertex.position, frontPrevVertex.position)
+        .normalize();
+      const nextEdgeDir = new THREE.Vector3()
+        .subVectors(frontNextVertex.position, frontVertex.position)
+        .normalize();
+
+      // Calculate edge perpendiculars (pointing inward toward face center)
+      const prevEdgePerp = new THREE.Vector3()
+        .crossVectors(prevEdgeDir, normal)
+        .normalize();
+      const nextEdgePerp = new THREE.Vector3()
+        .crossVectors(nextEdgeDir, normal)
+        .normalize();
+
+      // Determine if we should chamfer on the outside or inside face
+      // Calculate the interior angle between the two edges
+      const edgeAngleCos = prevEdgeDir.dot(nextEdgeDir.clone().negate());
+      const edgeAngleDeg = (Math.acos(Math.max(-1, Math.min(1, edgeAngleCos))) * 180) / Math.PI;
+
+      // Use outside face if angle < 180°, inside face if angle > 180°
+      const useOutsideFace = edgeAngleDeg < 180;
+
+      console.log(`   Vertex ${i}: edge angle ${edgeAngleDeg.toFixed(1)}°, using ${useOutsideFace ? 'outside' : 'inside'} face`);
+
+      // Calculate chamfer offsets for each adjacent edge
+      const prevChamferRadians = (prevEdge.chamferAngle * Math.PI) / 180;
+      const nextChamferRadians = (currentEdge.chamferAngle * Math.PI) / 180;
+
+      const prevChamferOffset = thickness * Math.tan(prevChamferRadians);
+      const nextChamferOffset = thickness * Math.tan(nextChamferRadians);
+
+      // Create chamfer planes by moving edges inward
+      const prevChamferDirection = useOutsideFace ? prevEdgePerp : prevEdgePerp.clone().negate();
+      const nextChamferDirection = useOutsideFace ? nextEdgePerp : nextEdgePerp.clone().negate();
+
+      // Calculate intersection point of the two chamfer planes
+      const newPosition = this.calculateChamferPlaneIntersection(
+        backVertex.originalPosition,
+        prevEdgeDir,
+        nextEdgeDir,
+        prevChamferDirection,
+        nextChamferDirection,
+        prevChamferOffset,
+        nextChamferOffset,
+        normal
+      );
+
+      if (newPosition) {
+        backVertex.position.copy(newPosition);
+
+        if (i < 3) {
           console.log(
-            `   Edge ${i}: chamfer ${edge.chamferAngle.toFixed(1)}°, offset ${chamferOffset.toFixed(3)}mm`,
+            `   Vertex ${i}: moved from (${backVertex.originalPosition.x.toFixed(3)}, ${backVertex.originalPosition.y.toFixed(3)}, ${backVertex.originalPosition.z.toFixed(3)}) to (${newPosition.x.toFixed(3)}, ${newPosition.y.toFixed(3)}, ${newPosition.z.toFixed(3)})`
           );
         }
+      } else {
+        console.warn(`   Vertex ${i}: Failed to calculate chamfer intersection, keeping original position`);
       }
     }
 
-    console.log(`✅ Applied chamfer transformations to ${edges.length} edges`);
+    console.log(`✅ Applied parametric chamfer transformations to ${edges.length} vertices`);
+  }
+
+  /**
+   * Calculate intersection point of two chamfer planes
+   * This finds where the two angled chamfer surfaces meet at a vertex
+   */
+  private static calculateChamferPlaneIntersection(
+    originalPosition: THREE.Vector3,
+    prevEdgeDir: THREE.Vector3,
+    nextEdgeDir: THREE.Vector3,
+    prevChamferDir: THREE.Vector3,
+    nextChamferDir: THREE.Vector3,
+    prevChamferOffset: number,
+    nextChamferOffset: number,
+    faceNormal: THREE.Vector3
+  ): THREE.Vector3 | null {
+    try {
+      // Create two chamfer planes:
+      // Plane 1: Previous edge chamfer plane
+      // Plane 2: Next edge chamfer plane
+
+      // Plane 1 normal: perpendicular to prev edge, angled for chamfer
+      const plane1Normal = new THREE.Vector3()
+        .crossVectors(prevEdgeDir, faceNormal)
+        .normalize();
+
+      // Plane 2 normal: perpendicular to next edge, angled for chamfer
+      const plane2Normal = new THREE.Vector3()
+        .crossVectors(nextEdgeDir, faceNormal)
+        .normalize();
+
+      // Plane 1 point: original position moved by chamfer offset
+      const plane1Point = originalPosition.clone()
+        .add(prevChamferDir.clone().multiplyScalar(prevChamferOffset));
+
+      // Plane 2 point: original position moved by chamfer offset
+      const plane2Point = originalPosition.clone()
+        .add(nextChamferDir.clone().multiplyScalar(nextChamferOffset));
+
+      // Find intersection line of the two planes
+      const intersectionDir = new THREE.Vector3()
+        .crossVectors(plane1Normal, plane2Normal)
+        .normalize();
+
+      // If planes are parallel, use midpoint approach
+      if (intersectionDir.length() < 0.001) {
+        console.log(`   Planes nearly parallel, using midpoint approach`);
+        return originalPosition.clone()
+          .add(prevChamferDir.clone().multiplyScalar(prevChamferOffset * 0.5))
+          .add(nextChamferDir.clone().multiplyScalar(nextChamferOffset * 0.5));
+      }
+
+      // Find a point on the intersection line
+      // Use the midpoint between the two plane points projected onto the intersection line
+      const midpoint = new THREE.Vector3()
+        .addVectors(plane1Point, plane2Point)
+        .multiplyScalar(0.5);
+
+      // Project original position onto the intersection line to find final position
+      const toMidpoint = new THREE.Vector3().subVectors(midpoint, originalPosition);
+      const projectionLength = toMidpoint.dot(intersectionDir);
+      const finalPosition = originalPosition.clone()
+        .add(intersectionDir.clone().multiplyScalar(projectionLength));
+
+      return finalPosition;
+
+    } catch (error) {
+      console.warn(`   Error calculating chamfer intersection: ${error}`);
+      return null;
+    }
   }
 
   /**
