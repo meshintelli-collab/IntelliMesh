@@ -134,9 +134,22 @@ class WebGLErrorHandler {
 
         console.log('✅ THREE.js WebGLRenderer created successfully');
 
-        // Test basic rendering capability
+        // Test basic rendering capability and context validity
         threeRenderer.setSize(1, 1);
-        threeRenderer.clear();
+
+        // Test if the renderer context is valid
+        const rendererGL = threeRenderer.getContext();
+        if (!rendererGL || typeof rendererGL.getParameter !== 'function') {
+          throw new Error('THREE.js WebGLRenderer created invalid context');
+        }
+
+        // Test basic GL operations
+        try {
+          rendererGL.getParameter(rendererGL.VERSION);
+          threeRenderer.clear();
+        } catch (glError) {
+          throw new Error(`WebGL context operations failed: ${glError instanceof Error ? glError.message : 'Unknown GL error'}`);
+        }
 
         threeRenderer.dispose();
 
