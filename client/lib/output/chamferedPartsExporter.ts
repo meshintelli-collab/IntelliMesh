@@ -532,6 +532,20 @@ export class ChamferedPartsExporter {
   }
 
   /**
+   * Convert STL logic to OBJ format (temporary bridge for consistency)
+   */
+  private static convertSTLLogicToOBJ(
+    polygon: PolygonFace,
+    extrusionOptions: ExtrusionOptions,
+    chamferOptions: ChamferOptions,
+    stlContent: string
+  ): string {
+    // For now, use the original OBJ method but note that it should match STL logic
+    console.log(`🔧 Converting STL logic to OBJ format (temporary bridge)`);
+    return this.createChamferedPolygonOBJ(polygon, extrusionOptions, chamferOptions);
+  }
+
+  /**
    * Create chamfered OBJ that preserves polygon faces (no triangulation)
    */
   private static createChamferedPolygonOBJ(
