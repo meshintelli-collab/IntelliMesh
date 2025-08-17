@@ -213,7 +213,7 @@ export class ChamferedPartsExporter {
       } else {
         // Create default chamfer angles for each edge
         edgeAngles = Array(face.vertices.length).fill(45);
-        console.log(`⚠️ Part ${i + 1}: No chamfer face data, using default 45° for all ${face.vertices.length} edges`);
+        console.log(`⚠��� Part ${i + 1}: No chamfer face data, using default 45° for all ${face.vertices.length} edges`);
       }
 
       // Create chamfered part using the PolygonExtruder with chamfering
@@ -697,58 +697,73 @@ export class ChamferedPartsExporter {
   }
 
   /**
-   * Generate chamfered vertices for OBJ using edge-by-edge perpendicular movement
-   * Same logic as PolygonExtruder - each edge moves its vertices perpendicular to the edge
+   * Generate chamfered vertices for OBJ using parametric edge-direction movement
+   * Same logic as PolygonExtruder - vertices move along adjacent edge directions parametrically
    */
   private static generateChamferedVerticesOBJ(
     originalVertices: THREE.Vector3[],
     chamferDepth: number,
     chamferAngles: number[]
   ): THREE.Vector3[] {
-    console.log(`🔧 OBJ: Generating EDGE-BY-EDGE chamfered vertices with perpendicular movements`);
-    console.log(`🔧 OBJ: Each edge moves its vertices perpendicular to the edge`);
+    console.log(`🔧 OBJ: Generating PARAMETRIC chamfered vertices with edge-direction movements`);
+    console.log(`🔧 OBJ: Vertices move along adjacent edge directions parametrically`);
 
-    // Start with original vertices - we'll modify them edge by edge
-    const chamferedVertices = originalVertices.map(v => v.clone());
-    const faceNormal = new THREE.Vector3(0, 0, 1); // Assume Z-up for 2D polygon chamfering
     const partThickness = chamferDepth; // chamferDepth is actually the part thickness
+    const numVertices = originalVertices.length;
 
-    // Process each edge one by one
-    for (let edgeIndex = 0; edgeIndex < originalVertices.length; edgeIndex++) {
-      const nextIndex = (edgeIndex + 1) % originalVertices.length;
+    // Calculate parametric movements for each vertex
+    const vertexMovements = new Array(numVertices).fill(null).map(() => new THREE.Vector3());
 
-      // Get the two vertices of this edge
-      const vertex1 = chamferedVertices[edgeIndex];
-      const vertex2 = chamferedVertices[nextIndex];
+    // For each edge, calculate how it affects its vertices
+    for (let edgeIndex = 0; edgeIndex < numVertices; edgeIndex++) {
+      const nextVertexIndex = (edgeIndex + 1) % numVertices;
 
       // Get chamfer angle for this edge
       const edgeChamferAngle = chamferAngles[edgeIndex] || 45;
       const chamferRadians = (edgeChamferAngle * Math.PI) / 180;
 
-      // Calculate edge direction and perpendicular direction (pointing inward)
-      const edgeDirection = new THREE.Vector3().subVectors(vertex2, vertex1).normalize();
-      const perpDirection = new THREE.Vector3().crossVectors(edgeDirection, faceNormal).normalize();
-
       // Calculate chamfer offset: thickness * tan(chamfer_angle)
       const chamferOffset = partThickness * Math.tan(chamferRadians);
 
-      // Move both vertices of this edge inward perpendicular to the edge
-      const movement = perpDirection.clone().multiplyScalar(-chamferOffset); // Negative for inward
+      // Get the edge direction (from current vertex to next vertex)
+      const currentVertex = originalVertices[edgeIndex];
+      const nextVertex = originalVertices[nextVertexIndex];
+      const edgeDirection = new THREE.Vector3().subVectors(nextVertex, currentVertex).normalize();
 
-      vertex1.add(movement);
-      vertex2.add(movement);
+      // For the current vertex: move along the direction TO the next vertex
+      const currentVertexMovement = edgeDirection.clone().multiplyScalar(chamferOffset);
+      vertexMovements[edgeIndex].add(currentVertexMovement);
+
+      // For the next vertex: move along the direction FROM the current vertex (opposite)
+      const nextVertexMovement = edgeDirection.clone().multiplyScalar(-chamferOffset);
+      vertexMovements[nextVertexIndex].add(nextVertexMovement);
 
       if (edgeIndex < 3) {
-        console.log(`🔢 OBJ EDGE-BY-EDGE CHAMFER Edge ${edgeIndex}:`);
+        console.log(`🔢 OBJ PARAMETRIC CHAMFER Edge ${edgeIndex}:`);
         console.log(`   📐 Edge chamfer angle: ${edgeChamferAngle.toFixed(1)}°`);
         console.log(`   📏 Part thickness: ${partThickness.toFixed(3)}mm`);
         console.log(`   🧮 Formula: offset = thickness × tan(angle) = ${partThickness.toFixed(3)} × tan(${edgeChamferAngle.toFixed(1)}°) = ${chamferOffset.toFixed(3)}`);
-        console.log(`   🎯 Both vertices of edge moved inward by ${chamferOffset.toFixed(3)}mm perpendicular to edge`);
+        console.log(`   🎯 Vertex ${edgeIndex} moves: (${currentVertexMovement.x.toFixed(3)}, ${currentVertexMovement.y.toFixed(3)})`);
+        console.log(`   🎯 Vertex ${nextVertexIndex} moves: (${nextVertexMovement.x.toFixed(3)}, ${nextVertexMovement.y.toFixed(3)})`);
       }
     }
 
-    console.log(`✅ OBJ: Generated ${chamferedVertices.length} chamfered vertices using edge-by-edge perpendicular movements`);
-    console.log(`✅ OBJ: Each vertex was moved twice (once per adjacent edge) for correct chamfering`);
+    // Apply all parametric movements simultaneously to create chamfered vertices
+    const chamferedVertices: THREE.Vector3[] = [];
+    for (let i = 0; i < numVertices; i++) {
+      const chamferedVertex = originalVertices[i].clone().add(vertexMovements[i]);
+      chamferedVertices.push(chamferedVertex);
+
+      if (i < 3) {
+        console.log(`📊 OBJ FINAL Vertex ${i}:`);
+        console.log(`   Original: (${originalVertices[i].x.toFixed(3)}, ${originalVertices[i].y.toFixed(3)})`);
+        console.log(`   Total movement: (${vertexMovements[i].x.toFixed(3)}, ${vertexMovements[i].y.toFixed(3)})`);
+        console.log(`   Final: (${chamferedVertex.x.toFixed(3)}, ${chamferedVertex.y.toFixed(3)})`);
+      }
+    }
+
+    console.log(`✅ OBJ: Generated ${chamferedVertices.length} chamfered vertices using parametric edge-direction movements`);
+    console.log(`✅ OBJ: All movements applied simultaneously - maintains quad structure`);
     return chamferedVertices;
   }
 
