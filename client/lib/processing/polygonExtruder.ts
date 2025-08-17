@@ -535,19 +535,20 @@ export class PolygonExtruder {
   }
 
   /**
-   * Create full-through chamfered side walls - connecting full front to chamfered back
-   * This creates truncated pyramid geometry for proper part mating
+   * Create parametric chamfered side walls - maintaining quad structure
+   * Connects full front face to parametrically chamfered back face
+   * Each side wall remains a quad for proper geometric consistency
    */
   private static createChamferedSideWalls(
     frontVertices: THREE.Vector3[], // These are FULL SIZE
-    backVertices: THREE.Vector3[],  // These are CHAMFERED (smaller)
+    backVertices: THREE.Vector3[],  // These are PARAMETRICALLY CHAMFERED
     originalVertices: THREE.Vector3[],
     chamferDepth: number,
     chamferAngles: number[],
   ): string {
-    console.log(`🔧 Creating FULL-THROUGH chamfer walls: FULL front → CHAMFERED back`);
+    console.log(`🔧 Creating PARAMETRIC chamfer walls: FULL front → PARAMETRICALLY CHAMFERED back`);
+    console.log(`🔧 Maintaining QUAD structure for geometric consistency`);
 
-    // Step 1: Create angled chamfer walls connecting chamfered front to full back
     let content = "";
     let triangleCount = 0;
 
@@ -558,23 +559,23 @@ export class PolygonExtruder {
       const ff1 = frontVertices[i];
       const ff2 = frontVertices[next];
 
-      // CHAMFERED back edge vertices (smaller)
+      // PARAMETRICALLY CHAMFERED back edge vertices
       const cb1 = backVertices[i];
       const cb2 = backVertices[next];
 
-      // Validate vertices before creating the full-through chamfer quad
+      // Validate vertices before creating the parametric chamfer quad
       if (!ff1 || !ff2 || !cb1 || !cb2) {
         console.error(`❌ Invalid vertices for wall ${i}: ff1=${!!ff1}, ff2=${!!ff2}, cb1=${!!cb1}, cb2=${!!cb2}`);
         continue;
       }
 
-      // Create FULL-THROUGH CHAMFER QUAD: unified angled face
-      // Order vertices: FULL front edge → CHAMFERED back edge (truncated pyramid)
+      // Create PARAMETRIC CHAMFER QUAD: maintains geometric consistency
+      // Order vertices: FULL front edge → PARAMETRICALLY CHAMFERED back edge
       const chamferQuad = [ff1, ff2, cb2, cb1]; // Quad vertices in proper order
 
       // Calculate consistent normal for the entire quad face
       const edge1 = new THREE.Vector3().subVectors(ff2, ff1); // Full front edge
-      const edge2 = new THREE.Vector3().subVectors(cb1, ff1); // Diagonal to chamfered back
+      const edge2 = new THREE.Vector3().subVectors(cb1, ff1); // Diagonal to parametric back
       const quadNormal = new THREE.Vector3().crossVectors(edge1, edge2).normalize();
 
       // Validate normal
@@ -584,7 +585,7 @@ export class PolygonExtruder {
       }
 
       // Split quad into two triangles but with CONSISTENT normal
-      // This creates the angled wall that tapers from full front to chamfered back
+      // This creates the parametric wall connecting full front to chamfered back
       const triangle1 = this.addTriangleToSTL(ff1, ff2, cb2, quadNormal);
       const triangle2 = this.addTriangleToSTL(ff1, cb2, cb1, quadNormal);
 
@@ -593,18 +594,18 @@ export class PolygonExtruder {
       triangleCount += 2;
 
       if (i < 3) {
-        console.log(`   FULL-THROUGH Chamfer Wall ${i}: ${chamferAngles[i] || 45}° taper through entire part`);
-        console.log(`   FULL front(${ff1.x.toFixed(2)}, ${ff1.y.toFixed(2)}) → CHAMFERED back(${cb1.x.toFixed(2)}, ${cb1.y.toFixed(2)})`);
-        console.log(`   Creates truncated pyramid for part mating`);
+        console.log(`   PARAMETRIC Chamfer Wall ${i}: ${chamferAngles[i] || 45}° parametric movement`);
+        console.log(`   FULL front(${ff1.x.toFixed(2)}, ${ff1.y.toFixed(2)}) → PARAMETRIC back(${cb1.x.toFixed(2)}, ${cb1.y.toFixed(2)})`);
+        console.log(`   Maintains quad structure for geometric consistency`);
       }
     }
 
-    console.log(`✅ Generated ${triangleCount} ANGLED CHAMFER wall triangles (${content.length} characters of STL content)`);
+    console.log(`✅ Generated ${triangleCount} PARAMETRIC CHAMFER wall triangles (${content.length} characters of STL content)`);
     if (content.length === 0) {
       console.error(`❌ NO WALL CONTENT GENERATED! This is why STL is missing side faces.`);
     }
 
-    console.log(`✅ Created ${frontVertices.length} angled chamfer walls connecting chamfered front to full back`);
+    console.log(`✅ Created ${frontVertices.length} parametric chamfer walls with quad structure maintained`);
     return content;
   }
 
