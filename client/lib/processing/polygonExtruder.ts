@@ -506,40 +506,32 @@ export class PolygonExtruder {
   }
 
   /**
-   * Create chamfered side walls with angled edges
-   * Uses parametric vertex approach - calculates plane intersections properly
+   * Create chamfered side walls - connecting chamfered front to full back
+   * This creates the angled chamfer faces for proper 45° chamfer effect
    */
   private static createChamferedSideWalls(
-    frontVertices: THREE.Vector3[],
-    backVertices: THREE.Vector3[],
+    frontVertices: THREE.Vector3[], // These are already chamfered (smaller)
+    backVertices: THREE.Vector3[],  // These are full size
     originalVertices: THREE.Vector3[],
     chamferDepth: number,
     chamferAngles: number[],
   ): string {
-    console.log(`🔧 Creating chamfered walls with parametric vertex intersection method`);
+    console.log(`🔧 Creating ANGLED chamfer walls: chamfered front → full back`);
 
-    // Step 1: Calculate chamfered back vertices using plane intersections
-    const chamferedBackVertices = this.calculateChamferedVerticesFromPlaneIntersections(
-      frontVertices,
-      backVertices,
-      chamferDepth,
-      chamferAngles
-    );
-
-    // Step 2: Create the angled wall faces
+    // Step 1: Create angled chamfer walls connecting chamfered front to full back
     let content = "";
     let triangleCount = 0;
 
     for (let i = 0; i < frontVertices.length; i++) {
       const next = (i + 1) % frontVertices.length;
 
-      // Front edge vertices (original positions)
-      const f1 = frontVertices[i];
-      const f2 = frontVertices[next];
+      // Chamfered front edge vertices (smaller)
+      const cf1 = frontVertices[i];
+      const cf2 = frontVertices[next];
 
-      // Chamfered back edge vertices (calculated from plane intersections)
-      const cb1 = chamferedBackVertices[i];
-      const cb2 = chamferedBackVertices[next];
+      // Full back edge vertices (original size)
+      const bf1 = backVertices[i];
+      const bf2 = backVertices[next];
 
       // Validate vertices before creating triangles
       if (!f1 || !f2 || !cb1 || !cb2) {
