@@ -162,11 +162,13 @@ export class ChamferedPartsExporter {
       faceCount: number;
       allInteriorAngles: number[][];
       allChamferAngles: number[][];
+      allChamferTypes: boolean[][]; // true = interior, false = exterior
       shapeName: string;
     } = {
       faceCount: polygonFaces.length,
       allInteriorAngles: [],
       allChamferAngles: [],
+      allChamferTypes: [],
       shapeName: filename.replace(/\.[^/.]+$/, '') || 'shape'
     };
 
