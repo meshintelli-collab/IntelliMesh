@@ -344,8 +344,13 @@ export class ChamferedPartsExporter {
       // Add to zip
       zip.file(partFilename, partContent);
 
-      // Clean console output for chamfer angles
-      console.log(`Face ${i + 1}: ${face.vertices.length} edges, chamfer angles: [${edgeAngles.map(a => a.toFixed(1)).join(', ')}]°`);
+      // Store data for clean summary output
+      summaryData.allChamferAngles.push([...edgeAngles]);
+      if (chamferedFace && chamferedFace.edges) {
+        summaryData.allInteriorAngles.push(chamferedFace.edges.map(e => e.edgeAngle));
+      } else {
+        summaryData.allInteriorAngles.push(Array(face.vertices.length).fill(90));
+      }
     }
 
     // Generate Excel file with parts database
