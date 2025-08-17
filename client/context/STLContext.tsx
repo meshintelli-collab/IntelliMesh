@@ -379,15 +379,18 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     }
 
     // Choose strategy: preserve original polygons for procedural models, or apply merging for loaded files
-    const hasOriginalPolygons = (loadedGeometry as any).polygonFaces &&
-                                (loadedGeometry as any).isProcedurallyGenerated;
+    const hasOriginalPolygons =
+      (loadedGeometry as any).polygonFaces &&
+      (loadedGeometry as any).isProcedurallyGenerated;
 
     try {
       let mergedFaces: any[];
 
       if (hasOriginalPolygons) {
         // For procedural models: preserve original polygon structure
-        console.log(`🎯 PRESERVING original polygon structure for procedural model`);
+        console.log(
+          `🎯 PRESERVING original polygon structure for procedural model`,
+        );
         mergedFaces = (loadedGeometry as any).polygonFaces;
       } else {
         // For loaded files: apply coplanar merging
@@ -402,7 +405,9 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         // Apply the merged faces to the preview geometry
         PolygonFaceReconstructor.applyReconstructedFaces(preview, mergedFaces);
         (preview as any).polygonFaces = mergedFaces;
-        (preview as any).polygonType = hasOriginalPolygons ? "preserved_procedural" : "edge_adjacent_merged";
+        (preview as any).polygonType = hasOriginalPolygons
+          ? "preserved_procedural"
+          : "edge_adjacent_merged";
 
         // Detailed logging for merged faces
         const faceTypeCounts = mergedFaces.reduce((counts: any, face: any) => {
@@ -411,7 +416,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         }, {});
 
         console.log(
-          `✅ ${hasOriginalPolygons ? 'Preserved original' : 'Created merged'} preview with ${mergedFaces.length} polygon faces:`,
+          `✅ ${hasOriginalPolygons ? "Preserved original" : "Created merged"} preview with ${mergedFaces.length} polygon faces:`,
           faceTypeCounts,
         );
       } else {
@@ -1500,9 +1505,21 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     let stlContent = "solid merged_mesh\n";
 
     for (let i = 0; i < positions.count; i += 3) {
-      const v1 = new THREE.Vector3(positions.getX(i), positions.getY(i), positions.getZ(i));
-      const v2 = new THREE.Vector3(positions.getX(i + 1), positions.getY(i + 1), positions.getZ(i + 1));
-      const v3 = new THREE.Vector3(positions.getX(i + 2), positions.getY(i + 2), positions.getZ(i + 2));
+      const v1 = new THREE.Vector3(
+        positions.getX(i),
+        positions.getY(i),
+        positions.getZ(i),
+      );
+      const v2 = new THREE.Vector3(
+        positions.getX(i + 1),
+        positions.getY(i + 1),
+        positions.getZ(i + 1),
+      );
+      const v3 = new THREE.Vector3(
+        positions.getX(i + 2),
+        positions.getY(i + 2),
+        positions.getZ(i + 2),
+      );
 
       // Calculate normal
       const edge1 = new THREE.Vector3().subVectors(v2, v1);
@@ -1547,30 +1564,46 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         try {
           // Skip Python service for now to avoid AbortController issues in deployed environment
           // TODO: Re-enable when AbortController timeout issues are resolved
-          console.log(`⚠️ Python service temporarily disabled to prevent errors`);
-          throw new Error('Python service disabled - using JavaScript fallback');
-
+          console.log(
+            `⚠️ Python service temporarily disabled to prevent errors`,
+          );
+          throw new Error(
+            "Python service disabled - using JavaScript fallback",
+          );
         } catch (pythonError) {
           // Handle different types of errors
           let errorMessage = "Unknown error";
           if (pythonError instanceof Error) {
-            if (pythonError.name === 'AbortError' || pythonError.message.includes('aborted')) {
-              errorMessage = "Request timed out - service may be slow or unavailable";
-            } else if (pythonError.message.includes('fetch') || pythonError.message.includes('Failed to fetch')) {
+            if (
+              pythonError.name === "AbortError" ||
+              pythonError.message.includes("aborted")
+            ) {
+              errorMessage =
+                "Request timed out - service may be slow or unavailable";
+            } else if (
+              pythonError.message.includes("fetch") ||
+              pythonError.message.includes("Failed to fetch")
+            ) {
               errorMessage = "Network error - service not accessible";
-            } else if (pythonError.message.includes('TypeError')) {
+            } else if (pythonError.message.includes("TypeError")) {
               errorMessage = "Network connection failed";
             } else {
               errorMessage = pythonError.message;
             }
           }
 
-          console.warn(`⚠️ Python service failed (${errorMessage}), falling back to JavaScript merger`);
+          console.warn(
+            `⚠️ Python service failed (${errorMessage}), falling back to JavaScript merger`,
+          );
 
           // Fallback to JavaScript EdgeAdjacentMerger
-          console.log(`🔧 FALLBACK: Using JavaScript EdgeAdjacentMerger with ${originalStats?.triangles || 0} triangles`);
+          console.log(
+            `🔧 FALLBACK: Using JavaScript EdgeAdjacentMerger with ${originalStats?.triangles || 0} triangles`,
+          );
 
-          const { EdgeAdjacentMerger } = await import("../lib/processing/edgeAdjacentMerger");
+          const { EdgeAdjacentMerger } = await import(
+            "../lib/processing/edgeAdjacentMerger"
+          );
 
           // Create merged mesh from current triangle mesh
           mergedMesh = workingMeshTri.clone();
@@ -1584,9 +1617,15 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
 
           // Calculate stats based on polygon faces
           const polygonCount = polygonFaces.length;
-          const triangleCount = polygonFaces.filter(f => f.type === "triangle").length;
-          const quadCount = polygonFaces.filter(f => f.type === "quad").length;
-          const polygonCountHigher = polygonFaces.filter(f => !["triangle", "quad"].includes(f.type)).length;
+          const triangleCount = polygonFaces.filter(
+            (f) => f.type === "triangle",
+          ).length;
+          const quadCount = polygonFaces.filter(
+            (f) => f.type === "quad",
+          ).length;
+          const polygonCountHigher = polygonFaces.filter(
+            (f) => !["triangle", "quad"].includes(f.type),
+          ).length;
 
           newStats = {
             vertices: mergedMesh.attributes.position.count / 3,
@@ -1602,14 +1641,25 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
             : 0;
 
           console.log(`📊 JAVASCRIPT FALLBACK STATS:`);
-          console.log(`   Original triangles: ${originalStats?.triangles || 0}`);
+          console.log(
+            `   Original triangles: ${originalStats?.triangles || 0}`,
+          );
           console.log(`   Final polygons: ${polygonCount}`);
-          console.log(`   Breakdown: ${triangleCount} triangles, ${quadCount} quads, ${polygonCountHigher} higher polygons`);
-          console.log(`   Reduction: ${(reductionFromPython * 100).toFixed(1)}%`);
+          console.log(
+            `   Breakdown: ${triangleCount} triangles, ${quadCount} quads, ${polygonCountHigher} higher polygons`,
+          );
+          console.log(
+            `   Reduction: ${(reductionFromPython * 100).toFixed(1)}%`,
+          );
 
           // Apply polygon faces to the merged mesh geometry
-          const { PolygonFaceReconstructor } = await import("../lib/processing/polygonFaceReconstructor");
-          PolygonFaceReconstructor.applyReconstructedFaces(mergedMesh, polygonFaces);
+          const { PolygonFaceReconstructor } = await import(
+            "../lib/processing/polygonFaceReconstructor"
+          );
+          PolygonFaceReconstructor.applyReconstructedFaces(
+            mergedMesh,
+            polygonFaces,
+          );
         }
 
         const processingTime = Math.round(performance.now() - startTime);
@@ -1622,7 +1672,10 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         // Force viewer update if currently in merged mode
         if (viewerSettings.meshType === "merged") {
           console.log("���� Forcing viewer update with new merged mesh");
-          const displayGeometry = prepareGeometryForViewing(mergedMesh, "merged_display");
+          const displayGeometry = prepareGeometryForViewing(
+            mergedMesh,
+            "merged_display",
+          );
           setGeometry(displayGeometry);
         }
 
