@@ -772,13 +772,19 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
 
       updateProgress(50, "Converting", "Converting to BufferGeometry...");
 
-      // Convert to BufferGeometry using normal triangulation for all shapes
-      // This ensures triangles share edges and can be merged by EdgeAdjacentMerger
+      // Convert to BufferGeometry
+      const isGearStarCross = ["gear", "star", "cross"].includes(modelName);
       let bufferGeometry: THREE.BufferGeometry;
 
-      bufferGeometry = PolygonGeometryBuilder.toBufferGeometry(polygonGeometry);
-
-      console.log(`✅ Using normal triangulation for ${modelName} to enable edge sharing`);
+      if (isGearStarCross) {
+        bufferGeometry =
+          PolygonGeometryBuilder.toBufferGeometryWithCenterTriangulation(
+            polygonGeometry,
+          );
+      } else {
+        bufferGeometry =
+          PolygonGeometryBuilder.toBufferGeometry(polygonGeometry);
+      }
 
       updateProgress(80, "Processing", "Setting up mesh system...");
 
@@ -1615,7 +1621,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
 
         // Force viewer update if currently in merged mode
         if (viewerSettings.meshType === "merged") {
-          console.log("🔄 Forcing viewer update with new merged mesh");
+          console.log("���� Forcing viewer update with new merged mesh");
           const displayGeometry = prepareGeometryForViewing(mergedMesh, "merged_display");
           setGeometry(displayGeometry);
         }
