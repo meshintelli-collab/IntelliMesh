@@ -563,21 +563,31 @@ export class ChamferedPartsExporter {
               const dotBUSign = dotBU > 0 ? 'p' : 'n';
               const dotProductSignature = dotAVSign + dotBUSign;
 
+              // SIMPLIFIED DIHEDRAL ANGLE CALCULATION:
+              // For most 3D shapes with outward-pointing normals: dihedral = 180° - angle_between_normals
+              interiorAngle = 180 - angleBetweenNormals;
+
+              // Determine convex/concave based on dot products
               if (dotAV <= 0 && dotBU <= 0) {
-                // Convex edge: dihedral = 180° - angle_between_normals
-                interiorAngle = 180 - angleBetweenNormals;
+                // Both negative: convex edge (normal case for external edges)
                 isConvex = true;
-                chamferOnInteriorFace = true;
+                chamferOnInteriorFace = false; // Apply chamfer to exterior edge
               } else if (dotAV > 0 && dotBU > 0) {
-                // Concave edge: dihedral = 180° + angle_between_normals
-                interiorAngle = 180 + angleBetweenNormals;
+                // Both positive: concave edge (internal corners)
                 isConvex = false;
-                chamferOnInteriorFace = false;
+                chamferOnInteriorFace = true; // Apply chamfer to interior edge
               } else {
-                // Mixed case - use standard convex calculation
-                interiorAngle = 180 - angleBetweenNormals;
+                // Mixed case - treat as convex
                 isConvex = true;
-                chamferOnInteriorFace = true;
+                chamferOnInteriorFace = false; // Apply chamfer to exterior edge
+              }
+
+              if (faceIndex < 2) {
+                console.log(`CLASSIFICATION RESULT:`);
+                console.log(`  Interior angle: ${interiorAngle.toFixed(1)}°`);
+                console.log(`  Edge type: ${isConvex ? 'CONVEX' : 'CONCAVE'}`);
+                console.log(`  Chamfer on: ${chamferOnInteriorFace ? 'INTERIOR' : 'EXTERIOR'} face`);
+                console.log(`  Dot signature: ${dotProductSignature}`);
               }
 
               const exteriorAngle = 360 - interiorAngle;
