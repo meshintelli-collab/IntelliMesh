@@ -415,33 +415,62 @@ export class ChamferedPartsExporter {
             if (otherFace && otherFace.normal) {
               const otherNormal = otherFace.normal.clone().normalize();
 
-              // Calculate the angle between face normals
+              // STEP-BY-STEP DIHEDRAL ANGLE CALCULATION:
+
+              // Step 1: Face normals are already calculated and normalized
+              // Step 2: Calculate the dot product
               const dot = faceNormal.dot(otherNormal);
               const clampedDot = Math.max(-1, Math.min(1, dot));
 
-              // Calculate the angle between face normals (this gives us the interior angle)
+              // Step 3: Find the angle between the normals
               const angleRadians = Math.acos(Math.abs(clampedDot));
-              const interiorAngle = (angleRadians * 180) / Math.PI;
+              const angleBetweenNormals = (angleRadians * 180) / Math.PI;
 
-              // Determine convexity based on angle
-              // < 180° = convex edge (outside face), > 180° = concave edge (inside face)
-              isConvex = interiorAngle < 180;
+              // Step 4: Calculate the dihedral angle based on dot product sign
+              let dihedralAngle: number;
+              let chamferOnInteriorFace: boolean;
 
-              // CORRECT CHAMFER FORMULA: chamfer angle = 90° - internal edge angle / 2
-              // For a 90° interior angle (like cube edges), this gives 90° - 90°/2 = 45°
-              edgeAngle = interiorAngle;
-              const calculatedChamferAngle = 90 - (interiorAngle / 2);
+              if (dot >= 0) {
+                // Positive dot product: angle between normals IS the dihedral angle
+                dihedralAngle = angleBetweenNormals;
+                isConvex = true; // Convex edge
+                chamferOnInteriorFace = true; // Chamfer occurs on interior face
+                // Chamfer angle = 90° - interior angle
+                chamferAngle = 90 - dihedralAngle;
+              } else {
+                // Negative dot product: dihedral angle = 180° - angle between normals
+                dihedralAngle = 180 - angleBetweenNormals;
+                isConvex = false; // Concave edge
+                chamferOnInteriorFace = false; // Chamfer occurs on exterior face
+                // Chamfer angle = 90° - exterior angle
+                const exteriorAngle = 360 - dihedralAngle;
+                chamferAngle = 90 - exteriorAngle;
+              }
+
+              edgeAngle = dihedralAngle;
 
               // Ensure reasonable chamfer angles (15° to 75°)
-              chamferAngle = Math.max(15, Math.min(75, Math.abs(calculatedChamferAngle)));
+              chamferAngle = Math.max(15, Math.min(75, Math.abs(chamferAngle)));
 
               if (faceIndex < 3) {
-                // Log first few faces for debugging
+                // Log detailed calculation for debugging
                 console.log(
-                  `   Face ${faceIndex}, Edge ${i}: ${isConvex ? 'convex' : 'concave'} interior angle ${edgeAngle.toFixed(1)}°`
+                  `   Face ${faceIndex}, Edge ${i}:`
                 );
                 console.log(
-                  `   Calculated chamfer: 90° - ${edgeAngle.toFixed(1)}°/2 = ${calculatedChamferAngle.toFixed(1)}° → clamped to ${chamferAngle.toFixed(1)}°`
+                  `   Dot product: ${dot.toFixed(3)} (${dot >= 0 ? 'positive' : 'negative'})`
+                );
+                console.log(
+                  `   Angle between normals: ${angleBetweenNormals.toFixed(1)}°`
+                );
+                console.log(
+                  `   Dihedral angle: ${dihedralAngle.toFixed(1)}° (${isConvex ? 'convex' : 'concave'} edge)`
+                );
+                console.log(
+                  `   Chamfer on: ${chamferOnInteriorFace ? 'interior' : 'exterior'} face`
+                );
+                console.log(
+                  `   Chamfer angle: ${chamferAngle.toFixed(1)}°`
                 );
               }
             }
