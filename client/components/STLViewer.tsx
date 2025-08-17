@@ -1191,13 +1191,6 @@ function STLMesh() {
   // POLYGON-AWARE coloring with enforced flat shading per polygon face
   useEffect(() => {
     if (geometry && viewerSettings.randomColors && !viewerSettings.wireframe) {
-      console.log("🔍 COLORING DEBUG: Starting comprehensive analysis");
-      console.log(`   📊 Geometry info:`);
-      console.log(`      Vertices: ${geometry.attributes.position.count}`);
-      console.log(`      Triangles: ${geometry.attributes.position.count / 3}`);
-      console.log(`      Has index: ${!!geometry.index}`);
-      console.log(`      Has normals: ${!!geometry.attributes.normal}`);
-      console.log(`      UUID: ${geometry.uuid}`);
 
       // Analyze normals for flatness
       if (geometry.attributes.normal) {
