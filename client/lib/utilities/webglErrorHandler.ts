@@ -84,7 +84,6 @@ class WebGLErrorHandler {
 
       // Step 3: Check for context loss immediately
       if (gl.isContextLost && gl.isContextLost()) {
-        console.error('❌ WebGL context is lost immediately after creation');
         this.webglSupport = {
           supported: false,
           error: 'WebGL context lost immediately',
