@@ -467,49 +467,26 @@ export class ChamferedPartsExporter {
             if (otherFace && otherFace.normal) {
               const otherNormal = otherFace.normal.clone().normalize();
 
-              // SOPHISTICATED INTERIOR/EXTERIOR ANGLE CALCULATION:
+              // CORRECT DIHEDRAL ANGLE CALCULATION:
 
               // Step 1: Get face normals u and v (already calculated and normalized)
               const u = faceNormal; // Face normal for current face
               const v = otherNormal; // Face normal for adjacent face
 
-              // Step 2: Calculate edge direction vector
-              const edgeDirection = new THREE.Vector3()
-                .subVectors(v2, v1)
-                .normalize();
-
-              // Step 3: Calculate vectors a and b (u and v rotated around edge by 90°)
-              // These are parallel to their respective faces, perpendicular to edge, pointing away from edge
-              const a = new THREE.Vector3()
-                .crossVectors(u, edgeDirection)
-                .normalize();
-              const b = new THREE.Vector3()
-                .crossVectors(v, edgeDirection)
-                .normalize();
-
-              // Step 4: Calculate required dot products (no clamping - trust normalized vectors)
+              // Step 2: Calculate dot product between normalized face normals
               const dotUV = u.dot(v);
-              const dotAV = a.dot(v);
-              const dotBU = b.dot(u);
 
-              // Step 5: Calculate interior angle based on the sign of dot(a,v) and dot(b,u)
-              let interiorAngle: number;
+              // Step 3: Calculate angle between normals (0° to 180°)
+              const angleBetweenNormals = (Math.acos(Math.max(-1, Math.min(1, dotUV))) * 180) / Math.PI;
 
-              if (dotAV <= 0 && dotBU <= 0) {
-                // Both dot products negative or zero
-                interiorAngle = 180 - (Math.acos(dotUV) * 180) / Math.PI;
-              } else if (dotAV > 0 && dotBU > 0) {
-                // Both dot products positive
-                interiorAngle = 180 + (Math.acos(-dotUV) * 180) / Math.PI;
-              } else {
-                // Mixed signs - use fallback calculation
-                console.warn(
-                  `Mixed dot product signs: dotAV=${dotAV.toFixed(3)}, dotBU=${dotBU.toFixed(3)}`,
-                );
-                interiorAngle = (Math.acos(dotUV) * 180) / Math.PI;
-              }
+              // Step 4: Convert to dihedral angle (interior angle between faces)
+              // For convex shapes: dihedral_angle = 180° - angle_between_normals
+              // For concave shapes: dihedral_angle = angle_between_normals
 
-              // Step 6: Calculate exterior angle
+              // Determine if this is a convex or concave edge by checking if normals point "outward"
+              // For most 3D shapes, adjacent face normals point outward, so dihedral = 180° - angle_between_normals
+              const interiorAngle = 180 - angleBetweenNormals;
+
               const exteriorAngle = 360 - interiorAngle;
 
               // Step 7: Determine chamfer angle and face based on interior angle
