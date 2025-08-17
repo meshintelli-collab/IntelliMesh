@@ -183,8 +183,11 @@ const WebGLCanvas: React.FC<WebGLCanvasProps> = ({
                   }
                 }}
                 onError={(error) => {
-                  console.error('❌ Canvas onError callback triggered:', error);
-                  handleWebGLError(error);
+                  console.warn('⚠️ Canvas onError callback triggered, attempting graceful fallback:', error);
+                  // Use a timeout to avoid React state update issues during render
+                  setTimeout(() => {
+                    handleWebGLError(error);
+                  }, 0);
                 }}
                 dpr={1} // Force device pixel ratio to 1 to reduce complexity
                 gl={{
@@ -195,6 +198,9 @@ const WebGLCanvas: React.FC<WebGLCanvasProps> = ({
                   powerPreference: 'default',
                   failIfMajorPerformanceCaveat: false,
                   preserveDrawingBuffer: false,
+                  // Add more permissive settings
+                  logarithmicDepthBuffer: false,
+                  precision: 'lowp', // Use lower precision to increase compatibility
                 }}
                 {...canvasProps}
               >
