@@ -677,14 +677,20 @@ export class PolygonExtruder {
     const plane1Point = currentVertex.clone().add(prevInwardDirection.clone().multiplyScalar(prevChamferOffset));
     const plane2Point = currentVertex.clone().add(currentInwardDirection.clone().multiplyScalar(currentChamferOffset));
 
-    // For simple cases, average the two movements
-    // This works well for most polygon shapes where chamfer planes intersect reasonably
+    // VERTEX INTERSECTION: Average the two movements to find where chamfer planes meet
+    // NOTE: This is VERTEX positioning, not chamfer angle averaging!
+    // Each edge keeps its individual chamfer angle, but shared vertices move to intersection point
     const averageMovement = new THREE.Vector3()
       .addVectors(
         prevInwardDirection.clone().multiplyScalar(prevChamferOffset),
         currentInwardDirection.clone().multiplyScalar(currentChamferOffset)
       )
       .multiplyScalar(0.5);
+
+    if (vertexIndex < 3) {
+      console.log(`   VERTEX ${vertexIndex}: Using individual angles prev=${prevChamferAngle.toFixed(1)}°, current=${currentChamferAngle.toFixed(1)}°`);
+      console.log(`   VERTEX ${vertexIndex}: Averaging MOVEMENTS (not angles) to find intersection point`);
+    }
 
     // Apply the movement to get the final chamfered vertex position
     const chamferedVertex = currentVertex.clone().add(averageMovement);
