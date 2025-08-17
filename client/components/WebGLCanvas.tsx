@@ -191,9 +191,8 @@ const WebGLCanvas: React.FC<WebGLCanvasProps> = ({
                   powerPreference: 'default',
                   failIfMajorPerformanceCaveat: false,
                   preserveDrawingBuffer: false,
-                  // Add more permissive settings
                   logarithmicDepthBuffer: false,
-                  precision: 'lowp', // Use lower precision to increase compatibility
+                  precision: 'lowp',
                 }}
                 {...canvasProps}
               >
