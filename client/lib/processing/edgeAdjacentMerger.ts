@@ -28,7 +28,7 @@ export class EdgeAdjacentMerger {
    */
   static mergeCoplanarTriangles(geometry: THREE.BufferGeometry): PolygonFace[] {
     const faces = this.extractTrianglesFromGeometry(geometry);
-    console.log(`🔧 SYSTEMATIC MERGING: Processing ${faces.length} triangles`);
+    console.log(`🔧 PERFECTLY PARALLEL MERGING: Processing ${faces.length} triangles (strict parallelism only)`);
     
     return this.systematicMergeProcess(faces);
   }
