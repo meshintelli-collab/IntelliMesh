@@ -372,10 +372,18 @@ export class ChamferedPartsExporter {
           .replace(/^(.+?)(?:_chamfered_parts)?$/, "$1_chamfered_parts.zip");
     this.downloadBlob(zipBlob, zipFilename);
 
-    // CLEAN SUMMARY OUTPUT
+    // CLEAN SUMMARY OUTPUT WITH DEBUG INFO FOR COMPLEX SHAPES
     console.log(`\n=== CHAMFER ANALYSIS ===`);
     console.log(`Shape: ${summaryData.shapeName}`);
     console.log(`Faces: ${summaryData.faceCount}`);
+
+    // Debug info for complex shapes
+    if (summaryData.shapeName.toLowerCase().includes('cross') || summaryData.faceCount > 6) {
+      console.log(`\nDEBUG - Complex shape detected:`);
+      console.log(`  Total faces: ${summaryData.faceCount}`);
+      console.log(`  Interior/exterior edge analysis needed`);
+    }
+
     console.log(`\nInterior angles by face:`);
     summaryData.allInteriorAngles.forEach((angles, i) => {
       console.log(`Face ${i + 1}: [${angles.map(a => a.toFixed(1)).join(', ')}]°`);
