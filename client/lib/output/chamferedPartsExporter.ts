@@ -172,7 +172,7 @@ export class ChamferedPartsExporter {
       allChamferAngles: [],
       allChamferTypes: [],
       allDotProductSigns: [],
-      shapeName: filename.replace(/\.[^/.]+$/, '') || 'shape'
+      shapeName: filename.replace(/\.[^/.]+$/, "") || "shape",
     };
 
     // Calculate edge angles for all faces first (referencing 3D model)
@@ -338,13 +338,25 @@ export class ChamferedPartsExporter {
       // Store data for clean summary output
       summaryData.allChamferAngles.push([...edgeAngles]);
       if (chamferedFace && chamferedFace.edges) {
-        summaryData.allInteriorAngles.push(chamferedFace.edges.map(e => e.edgeAngle));
-        summaryData.allChamferTypes.push(chamferedFace.edges.map(e => e.chamferOnInteriorFace ?? true));
-        summaryData.allDotProductSigns.push(chamferedFace.edges.map(e => e.dotProductSignature || 'nn'));
+        summaryData.allInteriorAngles.push(
+          chamferedFace.edges.map((e) => e.edgeAngle),
+        );
+        summaryData.allChamferTypes.push(
+          chamferedFace.edges.map((e) => e.chamferOnInteriorFace ?? true),
+        );
+        summaryData.allDotProductSigns.push(
+          chamferedFace.edges.map((e) => e.dotProductSignature || "nn"),
+        );
       } else {
-        summaryData.allInteriorAngles.push(Array(face.vertices.length).fill(90));
-        summaryData.allChamferTypes.push(Array(face.vertices.length).fill(true)); // default to interior
-        summaryData.allDotProductSigns.push(Array(face.vertices.length).fill('nn')); // default to negative/negative
+        summaryData.allInteriorAngles.push(
+          Array(face.vertices.length).fill(90),
+        );
+        summaryData.allChamferTypes.push(
+          Array(face.vertices.length).fill(true),
+        ); // default to interior
+        summaryData.allDotProductSigns.push(
+          Array(face.vertices.length).fill("nn"),
+        ); // default to negative/negative
       }
     }
 
@@ -387,29 +399,34 @@ export class ChamferedPartsExporter {
     console.log(`Faces: ${summaryData.faceCount}`);
 
     // Debug info for complex shapes
-    if (summaryData.shapeName.toLowerCase().includes('cross') || summaryData.faceCount > 6) {
+    if (
+      summaryData.shapeName.toLowerCase().includes("cross") ||
+      summaryData.faceCount > 6
+    ) {
       console.log(`\nDEBUG - Complex shape detected:`);
       console.log(`  Total faces: ${summaryData.faceCount}`);
       console.log(`  Interior/exterior edge analysis needed`);
     }
 
-    console.log(`\nInterior angles by face (dotAV/dotBU signs: p=positive, n=negative):`);
+    console.log(
+      `\nInterior angles by face (dotAV/dotBU signs: p=positive, n=negative):`,
+    );
     summaryData.allInteriorAngles.forEach((angles, i) => {
       const signs = summaryData.allDotProductSigns[i] || [];
       const angleStrings = angles.map((angle, j) => {
-        const dotSigns = signs[j] || 'nn';
+        const dotSigns = signs[j] || "nn";
         return `${angle.toFixed(1)}${dotSigns}`;
       });
-      console.log(`Face ${i + 1}: [${angleStrings.join(', ')}]°`);
+      console.log(`Face ${i + 1}: [${angleStrings.join(", ")}]°`);
     });
     console.log(`\nChamfer angles by face (i=interior, e=exterior):`);
     summaryData.allChamferAngles.forEach((angles, i) => {
       const types = summaryData.allChamferTypes[i] || [];
       const angleStrings = angles.map((angle, j) => {
-        const indicator = types[j] ? 'i' : 'e';
+        const indicator = types[j] ? "i" : "e";
         return `${angle.toFixed(1)}${indicator}`;
       });
-      console.log(`Face ${i + 1}: [${angleStrings.join(', ')}]°`);
+      console.log(`Face ${i + 1}: [${angleStrings.join(", ")}]°`);
     });
     console.log(`========================\n`);
   }
@@ -485,7 +502,7 @@ export class ChamferedPartsExporter {
         let chamferAngle = 45; // Default chamfer
         let isConvex = true; // Default for boundary edges (assume convex)
         let chamferOnInteriorFace = true; // Default for boundary edges
-        let dotProductSignature = 'nn'; // Default for boundary edges (negative/negative)
+        let dotProductSignature = "nn"; // Default for boundary edges (negative/negative)
 
         if (adjacentFaces.length === 2) {
           // Find the other face that shares this edge
@@ -508,19 +525,27 @@ export class ChamferedPartsExporter {
               const angleBetweenNormals = (Math.acos(dotUV) * 180) / Math.PI;
 
               // Step 4: Use u, v, a, b vector logic to determine interior/exterior chamfering
-              const edgeDirection = new THREE.Vector3().subVectors(v2, v1).normalize();
+              const edgeDirection = new THREE.Vector3()
+                .subVectors(v2, v1)
+                .normalize();
 
               // CORRECTED VECTOR CALCULATIONS:
               // a = vector in face u, perpendicular to edge, pointing AWAY from edge into face
               // b = vector in face v, perpendicular to edge, pointing AWAY from edge into face
 
               // Step 1: Get vectors perpendicular to edge and face normal
-              let a = new THREE.Vector3().crossVectors(edgeDirection, u).normalize();
-              let b = new THREE.Vector3().crossVectors(edgeDirection, v).normalize();
+              let a = new THREE.Vector3()
+                .crossVectors(edgeDirection, u)
+                .normalize();
+              let b = new THREE.Vector3()
+                .crossVectors(edgeDirection, v)
+                .normalize();
 
               // Step 2: Ensure vectors point AWAY from edge into face
               // Use a reference point in each face to check direction
-              const edgeMidpoint = new THREE.Vector3().addVectors(v1, v2).multiplyScalar(0.5);
+              const edgeMidpoint = new THREE.Vector3()
+                .addVectors(v1, v2)
+                .multiplyScalar(0.5);
 
               // For face u: find a vertex in the face that's not on this edge
               let refPointU = null;
@@ -533,7 +558,9 @@ export class ChamferedPartsExporter {
               }
 
               // For face v: find a vertex in the other face that's not on this edge
-              const otherVertices = polygonFaces[otherFaceIndex].vertices || (polygonFaces[otherFaceIndex] as any).originalVertices;
+              const otherVertices =
+                polygonFaces[otherFaceIndex].vertices ||
+                (polygonFaces[otherFaceIndex] as any).originalVertices;
               let refPointV = null;
               if (otherVertices) {
                 for (let k = 0; k < otherVertices.length; k++) {
@@ -547,7 +574,9 @@ export class ChamferedPartsExporter {
 
               // Check if a points away from edge (toward reference point)
               if (refPointU) {
-                const toRefU = new THREE.Vector3().subVectors(refPointU, edgeMidpoint).normalize();
+                const toRefU = new THREE.Vector3()
+                  .subVectors(refPointU, edgeMidpoint)
+                  .normalize();
                 if (a.dot(toRefU) < 0) {
                   a.negate(); // Flip to point away from edge
                 }
@@ -555,7 +584,9 @@ export class ChamferedPartsExporter {
 
               // Check if b points away from edge (toward reference point)
               if (refPointV) {
-                const toRefV = new THREE.Vector3().subVectors(refPointV, edgeMidpoint).normalize();
+                const toRefV = new THREE.Vector3()
+                  .subVectors(refPointV, edgeMidpoint)
+                  .normalize();
                 if (b.dot(toRefV) < 0) {
                   b.negate(); // Flip to point away from edge
                 }
@@ -566,13 +597,27 @@ export class ChamferedPartsExporter {
 
               // VECTOR VALIDATION: Check our vectors are correct
               if (faceIndex < 2) {
-                console.log(`\n=== VECTOR VALIDATION Face ${faceIndex}, Edge ${i} ===`);
-                console.log(`Edge: (${v1.x.toFixed(2)}, ${v1.y.toFixed(2)}, ${v1.z.toFixed(2)}) → (${v2.x.toFixed(2)}, ${v2.y.toFixed(2)}, ${v2.z.toFixed(2)})`);
-                console.log(`edgeDirection = (${edgeDirection.x.toFixed(3)}, ${edgeDirection.y.toFixed(3)}, ${edgeDirection.z.toFixed(3)})`);
-                console.log(`u (face normal) = (${u.x.toFixed(3)}, ${u.y.toFixed(3)}, ${u.z.toFixed(3)})`);
-                console.log(`v (other normal) = (${v.x.toFixed(3)}, ${v.y.toFixed(3)}, ${v.z.toFixed(3)})`);
-                console.log(`a = AWAY FROM EDGE = (${a.x.toFixed(3)}, ${a.y.toFixed(3)}, ${a.z.toFixed(3)})`);
-                console.log(`b = AWAY FROM EDGE = (${b.x.toFixed(3)}, ${b.y.toFixed(3)}, ${b.z.toFixed(3)})`);
+                console.log(
+                  `\n=== VECTOR VALIDATION Face ${faceIndex}, Edge ${i} ===`,
+                );
+                console.log(
+                  `Edge: (${v1.x.toFixed(2)}, ${v1.y.toFixed(2)}, ${v1.z.toFixed(2)}) → (${v2.x.toFixed(2)}, ${v2.y.toFixed(2)}, ${v2.z.toFixed(2)})`,
+                );
+                console.log(
+                  `edgeDirection = (${edgeDirection.x.toFixed(3)}, ${edgeDirection.y.toFixed(3)}, ${edgeDirection.z.toFixed(3)})`,
+                );
+                console.log(
+                  `u (face normal) = (${u.x.toFixed(3)}, ${u.y.toFixed(3)}, ${u.z.toFixed(3)})`,
+                );
+                console.log(
+                  `v (other normal) = (${v.x.toFixed(3)}, ${v.y.toFixed(3)}, ${v.z.toFixed(3)})`,
+                );
+                console.log(
+                  `a = AWAY FROM EDGE = (${a.x.toFixed(3)}, ${a.y.toFixed(3)}, ${a.z.toFixed(3)})`,
+                );
+                console.log(
+                  `b = AWAY FROM EDGE = (${b.x.toFixed(3)}, ${b.y.toFixed(3)}, ${b.z.toFixed(3)})`,
+                );
 
                 // Validate perpendicularity
                 const aEdgeDot = a.dot(edgeDirection);
@@ -588,14 +633,22 @@ export class ChamferedPartsExporter {
 
                 // Validate direction away from edge
                 if (refPointU) {
-                  const toRefU = new THREE.Vector3().subVectors(refPointU, edgeMidpoint).normalize();
+                  const toRefU = new THREE.Vector3()
+                    .subVectors(refPointU, edgeMidpoint)
+                    .normalize();
                   const awayCheckU = a.dot(toRefU);
-                  console.log(`DIRECTION CHECK U: a·(refPoint-edge) = ${awayCheckU.toFixed(6)} (should be >0 for away)`);
+                  console.log(
+                    `DIRECTION CHECK U: a·(refPoint-edge) = ${awayCheckU.toFixed(6)} (should be >0 for away)`,
+                  );
                 }
                 if (refPointV) {
-                  const toRefV = new THREE.Vector3().subVectors(refPointV, edgeMidpoint).normalize();
+                  const toRefV = new THREE.Vector3()
+                    .subVectors(refPointV, edgeMidpoint)
+                    .normalize();
                   const awayCheckV = b.dot(toRefV);
-                  console.log(`DIRECTION CHECK V: b·(refPoint-edge) = ${awayCheckV.toFixed(6)} (should be >0 for away)`);
+                  console.log(
+                    `DIRECTION CHECK V: b·(refPoint-edge) = ${awayCheckV.toFixed(6)} (should be >0 for away)`,
+                  );
                 }
 
                 console.log(`DOT PRODUCTS FOR CLASSIFICATION:`);
@@ -605,16 +658,20 @@ export class ChamferedPartsExporter {
                 // Calculate actual dihedral angle correctly
                 const dotUV = u.dot(v);
                 console.log(`  dotUV = u·v = ${dotUV.toFixed(6)}`);
-                console.log(`  angle_between_normals = ${(Math.acos(dotUV) * 180 / Math.PI).toFixed(1)}°`);
-                console.log(`  dihedral_angle = ${(180 - Math.acos(dotUV) * 180 / Math.PI).toFixed(1)}°`);
+                console.log(
+                  `  angle_between_normals = ${((Math.acos(dotUV) * 180) / Math.PI).toFixed(1)}°`,
+                );
+                console.log(
+                  `  dihedral_angle = ${(180 - (Math.acos(dotUV) * 180) / Math.PI).toFixed(1)}°`,
+                );
               }
 
               // Step 5: Determine dihedral angle and chamfer face based on geometry
               let interiorAngle: number;
 
               // Store dot product signs for debugging
-              const dotAVSign = dotAV > 0 ? 'p' : 'n';
-              const dotBUSign = dotBU > 0 ? 'p' : 'n';
+              const dotAVSign = dotAV > 0 ? "p" : "n";
+              const dotBUSign = dotBU > 0 ? "p" : "n";
               const dotProductSignature = dotAVSign + dotBUSign;
 
               // SIMPLIFIED DIHEDRAL ANGLE CALCULATION:
@@ -639,8 +696,10 @@ export class ChamferedPartsExporter {
               if (faceIndex < 2) {
                 console.log(`CLASSIFICATION RESULT:`);
                 console.log(`  Interior angle: ${interiorAngle.toFixed(1)}°`);
-                console.log(`  Edge type: ${isConvex ? 'CONVEX' : 'CONCAVE'}`);
-                console.log(`  Chamfer on: ${chamferOnInteriorFace ? 'INTERIOR' : 'EXTERIOR'} face`);
+                console.log(`  Edge type: ${isConvex ? "CONVEX" : "CONCAVE"}`);
+                console.log(
+                  `  Chamfer on: ${chamferOnInteriorFace ? "INTERIOR" : "EXTERIOR"} face`,
+                );
                 console.log(`  Dot signature: ${dotProductSignature}`);
               }
 
