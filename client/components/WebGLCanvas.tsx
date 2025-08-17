@@ -104,11 +104,25 @@ const WebGLCanvas: React.FC<WebGLCanvasProps> = ({
         ref={canvasRef}
         onCreated={(state) => {
           console.log('✅ Canvas created successfully');
-          console.log('📊 WebGL Info:', {
-            renderer: state.gl.getParameter(state.gl.RENDERER),
-            vendor: state.gl.getParameter(state.gl.VENDOR),
-            version: state.gl.getParameter(state.gl.VERSION)
-          });
+
+          // Validate WebGL context before using it
+          if (!state.gl || typeof state.gl.getParameter !== 'function') {
+            console.error('❌ Invalid WebGL context in onCreated:', state.gl);
+            handleWebGLError(new Error('Invalid WebGL context: getParameter method not available'));
+            return;
+          }
+
+          try {
+            console.log('📊 WebGL Info:', {
+              renderer: state.gl.getParameter(state.gl.RENDERER),
+              vendor: state.gl.getParameter(state.gl.VENDOR),
+              version: state.gl.getParameter(state.gl.VERSION),
+              contextLost: state.gl.isContextLost ? state.gl.isContextLost() : 'Unknown'
+            });
+          } catch (error) {
+            console.error('❌ Error getting WebGL parameters:', error);
+            handleWebGLError(error instanceof Error ? error : new Error('Failed to get WebGL parameters'));
+          }
         }}
         onError={(error) => {
           console.error('❌ Canvas onError callback triggered:', error);
