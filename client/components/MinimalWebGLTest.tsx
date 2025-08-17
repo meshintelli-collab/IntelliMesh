@@ -1,5 +1,5 @@
-import React from 'react';
-import { Canvas } from '@react-three/fiber';
+import React from "react";
+import { Canvas } from "@react-three/fiber";
 
 /**
  * Minimal WebGL test component that bypasses complex validation
@@ -15,17 +15,17 @@ export const MinimalWebGLTest: React.FC = () => {
           alpha: false,
           depth: false,
           stencil: false,
-          powerPreference: 'default',
+          powerPreference: "default",
           failIfMajorPerformanceCaveat: false,
           preserveDrawingBuffer: false,
-          precision: 'lowp',
+          precision: "lowp",
         }}
         camera={{ position: [0, 0, 5] }}
         onCreated={() => {
-          console.log('✅ Minimal Canvas test successful');
+          console.log("✅ Minimal Canvas test successful");
         }}
         onError={(error) => {
-          console.error('❌ Minimal Canvas test failed:', error);
+          console.error("❌ Minimal Canvas test failed:", error);
         }}
       >
         <mesh>

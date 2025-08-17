@@ -3,7 +3,7 @@
  * Handles WebGL context creation failures gracefully
  */
 
-import * as THREE from 'three';
+import * as THREE from "three";
 
 export interface WebGLSupport {
   supported: boolean;
@@ -33,14 +33,14 @@ class WebGLErrorHandler {
 
     try {
       // Step 1: Check if WebGL is even available in the browser
-      const canvas = document.createElement('canvas');
+      const canvas = document.createElement("canvas");
       canvas.width = 1;
       canvas.height = 1;
 
       let gl: WebGLRenderingContext | null = null;
 
       // Try different WebGL context types
-      const contextTypes = ['webgl2', 'webgl', 'experimental-webgl'];
+      const contextTypes = ["webgl2", "webgl", "experimental-webgl"];
       for (const contextType of contextTypes) {
         try {
           gl = canvas.getContext(contextType as any, {
@@ -50,7 +50,7 @@ class WebGLErrorHandler {
             depth: false,
             stencil: false,
             preserveDrawingBuffer: false,
-            powerPreference: 'default'
+            powerPreference: "default",
           }) as WebGLRenderingContext;
 
           if (gl) {
@@ -64,20 +64,22 @@ class WebGLErrorHandler {
       if (!gl) {
         this.webglSupport = {
           supported: false,
-          error: 'WebGL not available - no context could be created',
-          fallbackReason: 'Browser does not support WebGL or WebGL is disabled',
-          recommendation: 'Enable WebGL in browser settings or try a different browser'
+          error: "WebGL not available - no context could be created",
+          fallbackReason: "Browser does not support WebGL or WebGL is disabled",
+          recommendation:
+            "Enable WebGL in browser settings or try a different browser",
         };
         return this.webglSupport;
       }
 
       // Step 2: Validate context methods are available
-      if (typeof gl.getParameter !== 'function') {
+      if (typeof gl.getParameter !== "function") {
         this.webglSupport = {
           supported: false,
-          error: 'WebGL context incomplete - missing core methods',
-          fallbackReason: 'WebGL implementation is incomplete or corrupted',
-          recommendation: 'Try refreshing the page or using a different browser'
+          error: "WebGL context incomplete - missing core methods",
+          fallbackReason: "WebGL implementation is incomplete or corrupted",
+          recommendation:
+            "Try refreshing the page or using a different browser",
         };
         return this.webglSupport;
       }
@@ -86,9 +88,9 @@ class WebGLErrorHandler {
       if (gl.isContextLost && gl.isContextLost()) {
         this.webglSupport = {
           supported: false,
-          error: 'WebGL context lost immediately',
-          fallbackReason: 'Graphics hardware or driver issue',
-          recommendation: 'Update graphics drivers or restart browser'
+          error: "WebGL context lost immediately",
+          fallbackReason: "Graphics hardware or driver issue",
+          recommendation: "Update graphics drivers or restart browser",
         };
         return this.webglSupport;
       }
@@ -99,9 +101,10 @@ class WebGLErrorHandler {
       } catch (e) {
         this.webglSupport = {
           supported: false,
-          error: 'WebGL parameter access failed',
-          fallbackReason: 'WebGL context not fully functional',
-          recommendation: 'Try refreshing the page or updating graphics drivers'
+          error: "WebGL parameter access failed",
+          fallbackReason: "WebGL context not fully functional",
+          recommendation:
+            "Try refreshing the page or updating graphics drivers",
         };
         return this.webglSupport;
       }
@@ -115,21 +118,23 @@ class WebGLErrorHandler {
           alpha: false,
           depth: false,
           stencil: false,
-          powerPreference: 'default',
+          powerPreference: "default",
           failIfMajorPerformanceCaveat: false,
-          preserveDrawingBuffer: false
+          preserveDrawingBuffer: false,
         });
 
         threeRenderer.setSize(1, 1);
         threeRenderer.dispose();
-
       } catch (rendererError) {
-
         this.webglSupport = {
           supported: false,
-          error: `THREE.js WebGLRenderer failed: ${rendererError instanceof Error ? rendererError.message : 'Unknown error'}`,
-          fallbackReason: 'THREE.js cannot create WebGL renderer',
-          recommendation: this.getRecommendationForError(rendererError instanceof Error ? rendererError.message : 'Unknown error')
+          error: `THREE.js WebGLRenderer failed: ${rendererError instanceof Error ? rendererError.message : "Unknown error"}`,
+          fallbackReason: "THREE.js cannot create WebGL renderer",
+          recommendation: this.getRecommendationForError(
+            rendererError instanceof Error
+              ? rendererError.message
+              : "Unknown error",
+          ),
         };
         return this.webglSupport;
       }
@@ -138,19 +143,19 @@ class WebGLErrorHandler {
         supported: true,
         error: undefined,
         fallbackReason: undefined,
-        recommendation: 'WebGL fully supported'
+        recommendation: "WebGL fully supported",
       };
 
       return this.webglSupport;
-
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown WebGL error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown WebGL error";
 
       this.webglSupport = {
         supported: false,
         error: errorMessage,
-        fallbackReason: 'Unexpected error during WebGL testing',
-        recommendation: this.getRecommendationForError(errorMessage)
+        fallbackReason: "Unexpected error during WebGL testing",
+        recommendation: this.getRecommendationForError(errorMessage),
       };
 
       return this.webglSupport;
@@ -160,7 +165,10 @@ class WebGLErrorHandler {
   /**
    * Create a WebGL context with fallback options
    */
-  createWebGLContext(canvas: HTMLCanvasElement, options: any = {}): THREE.WebGLRenderer | null {
+  createWebGLContext(
+    canvas: HTMLCanvasElement,
+    options: any = {},
+  ): THREE.WebGLRenderer | null {
     try {
       // Try with conservative settings first
       const conservativeOptions = {
@@ -169,16 +177,15 @@ class WebGLErrorHandler {
         alpha: false,
         depth: true,
         stencil: false,
-        powerPreference: 'default',
+        powerPreference: "default",
         failIfMajorPerformanceCaveat: false,
         preserveDrawingBuffer: false,
-        ...options
+        ...options,
       };
 
       const renderer = new THREE.WebGLRenderer(conservativeOptions);
       renderer.getContext();
       return renderer;
-
     } catch (error) {
       try {
         // Try with minimal settings
@@ -188,15 +195,14 @@ class WebGLErrorHandler {
           alpha: false,
           depth: false,
           stencil: false,
-          powerPreference: 'low-power',
+          powerPreference: "low-power",
           failIfMajorPerformanceCaveat: true,
-          preserveDrawingBuffer: false
+          preserveDrawingBuffer: false,
         };
 
         const fallbackRenderer = new THREE.WebGLRenderer(minimalOptions);
         fallbackRenderer.getContext();
         return fallbackRenderer;
-
       } catch (fallbackError) {
         return null;
       }
@@ -207,33 +213,33 @@ class WebGLErrorHandler {
    * Get specific recommendations based on error type
    */
   private getRecommendationForError(errorMessage: string): string {
-    if (errorMessage.includes('closed without opened')) {
-      return 'WebSocket connection issue. Try refreshing the page.';
+    if (errorMessage.includes("closed without opened")) {
+      return "WebSocket connection issue. Try refreshing the page.";
     }
-    if (errorMessage.includes('context lost')) {
-      return 'Graphics context was lost. Try refreshing the page or restarting your browser.';
+    if (errorMessage.includes("context lost")) {
+      return "Graphics context was lost. Try refreshing the page or restarting your browser.";
     }
-    if (errorMessage.includes('insufficient resources')) {
-      return 'Not enough GPU memory. Try closing other browser tabs or applications.';
+    if (errorMessage.includes("insufficient resources")) {
+      return "Not enough GPU memory. Try closing other browser tabs or applications.";
     }
-    if (errorMessage.includes('blacklisted')) {
-      return 'Graphics driver is blacklisted. Try updating your graphics drivers.';
+    if (errorMessage.includes("blacklisted")) {
+      return "Graphics driver is blacklisted. Try updating your graphics drivers.";
     }
-    
-    return 'WebGL is not available. Please ensure hardware acceleration is enabled and your graphics drivers are up to date.';
+
+    return "WebGL is not available. Please ensure hardware acceleration is enabled and your graphics drivers are up to date.";
   }
 
   /**
    * Handle renderer cleanup on context loss
    */
   handleContextLoss(renderer: THREE.WebGLRenderer) {
-    console.warn('🔄 Handling WebGL context loss...');
-    
+    console.warn("🔄 Handling WebGL context loss...");
+
     try {
       renderer.dispose();
       renderer.forceContextLoss();
     } catch (error) {
-      console.error('Error during context loss cleanup:', error);
+      console.error("Error during context loss cleanup:", error);
     }
   }
 

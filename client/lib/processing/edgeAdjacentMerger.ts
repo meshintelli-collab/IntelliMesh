@@ -82,7 +82,6 @@ export class EdgeAdjacentMerger {
    * Systematic merge process - find and merge ALL coplanar groups
    */
   private static systematicMergeProcess(faces: PolygonFace[]): PolygonFace[] {
-
     // Step 1: Build comprehensive adjacency map
     const adjacencyMap = this.buildComprehensiveAdjacencyMap(faces);
 

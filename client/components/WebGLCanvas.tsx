@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { webglErrorHandler } from '../lib/utilities/webglErrorHandler';
-import WebGLErrorBoundary from './WebGLErrorBoundary';
+import React, { useState, useEffect, useRef } from "react";
+import { Canvas } from "@react-three/fiber";
+import { webglErrorHandler } from "../lib/utilities/webglErrorHandler";
+import WebGLErrorBoundary from "./WebGLErrorBoundary";
 
 interface WebGLCanvasProps {
   children: React.ReactNode;
@@ -26,8 +26,8 @@ const WebGLCanvas: React.FC<WebGLCanvasProps> = ({
 
     if (!support.supported) {
       setWebglSupported(false);
-      setError(support.error || 'WebGL not supported');
-      onWebGLError?.(support.error || 'WebGL not supported');
+      setError(support.error || "WebGL not supported");
+      onWebGLError?.(support.error || "WebGL not supported");
     } else {
       setWebglSupported(true);
     }
@@ -49,11 +49,14 @@ const WebGLCanvas: React.FC<WebGLCanvasProps> = ({
           3D Viewer Not Available
         </h3>
         <p className="text-gray-600 mb-4">
-          WebGL is required for 3D visualization but is not available on this device.
+          WebGL is required for 3D visualization but is not available on this
+          device.
         </p>
         {error && (
           <details className="text-sm text-gray-500 mb-4">
-            <summary className="cursor-pointer font-medium">Technical Details</summary>
+            <summary className="cursor-pointer font-medium">
+              Technical Details
+            </summary>
             <p className="mt-2 p-2 bg-gray-50 rounded text-left break-words">
               {error}
             </p>
@@ -113,7 +116,7 @@ const WebGLCanvas: React.FC<WebGLCanvasProps> = ({
             alpha: false,
             depth: true,
             stencil: false,
-            powerPreference: 'default',
+            powerPreference: "default",
             failIfMajorPerformanceCaveat: false,
             preserveDrawingBuffer: false,
           }}

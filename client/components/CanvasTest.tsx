@@ -1,5 +1,5 @@
-import React from 'react';
-import WebGLCanvas from './WebGLCanvas';
+import React from "react";
+import WebGLCanvas from "./WebGLCanvas";
 
 /**
  * Simple test component to verify Canvas functionality
@@ -10,7 +10,7 @@ const CanvasTest: React.FC = () => {
       <WebGLCanvas
         camera={{ position: [0, 0, 5], fov: 45 }}
         onWebGLError={(error) => {
-          console.error('Canvas Test Error:', error);
+          console.error("Canvas Test Error:", error);
         }}
       >
         <mesh>

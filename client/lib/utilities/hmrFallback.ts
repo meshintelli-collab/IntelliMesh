@@ -6,7 +6,7 @@
 class HMRFallback {
   private pollingInterval: number | null = null;
   private lastModified: number = Date.now();
-  
+
   constructor() {
     this.setupFallback();
   }
@@ -15,7 +15,7 @@ class HMRFallback {
     if (import.meta.env.DEV) {
       // Monitor for HMR availability
       this.checkHMRStatus();
-      
+
       // Set up polling fallback if needed
       setTimeout(() => {
         if (!this.isHMRWorking()) {
@@ -40,13 +40,15 @@ class HMRFallback {
 
   private checkHMRStatus() {
     if (import.meta.hot) {
-      import.meta.hot.on('vite:ws:disconnect', () => {
-        console.warn('HMR WebSocket disconnected, switching to polling fallback...');
+      import.meta.hot.on("vite:ws:disconnect", () => {
+        console.warn(
+          "HMR WebSocket disconnected, switching to polling fallback...",
+        );
         this.startPollingFallback();
       });
 
-      import.meta.hot.on('vite:ws:connect', () => {
-        console.info('HMR WebSocket reconnected, stopping polling fallback.');
+      import.meta.hot.on("vite:ws:connect", () => {
+        console.info("HMR WebSocket reconnected, stopping polling fallback.");
         this.stopPollingFallback();
       });
     }
@@ -54,9 +56,9 @@ class HMRFallback {
 
   private startPollingFallback() {
     if (this.pollingInterval) return;
-    
-    console.info('Starting HMR polling fallback...');
-    
+
+    console.info("Starting HMR polling fallback...");
+
     this.pollingInterval = window.setInterval(() => {
       this.checkForUpdates();
     }, 2000); // Poll every 2 seconds
@@ -66,23 +68,24 @@ class HMRFallback {
     if (this.pollingInterval) {
       clearInterval(this.pollingInterval);
       this.pollingInterval = null;
-      console.info('HMR polling fallback stopped.');
+      console.info("HMR polling fallback stopped.");
     }
   }
 
   private async checkForUpdates() {
     try {
       // Check if the page has been updated by checking a simple endpoint
-      const response = await fetch('/__vite_ping', { 
-        method: 'HEAD',
-        cache: 'no-cache' 
+      const response = await fetch("/__vite_ping", {
+        method: "HEAD",
+        cache: "no-cache",
       });
-      
-      const serverTime = response.headers.get('date');
+
+      const serverTime = response.headers.get("date");
       if (serverTime) {
         const serverTimestamp = new Date(serverTime).getTime();
-        if (serverTimestamp > this.lastModified + 10000) { // 10 second buffer
-          console.info('Updates detected, reloading page...');
+        if (serverTimestamp > this.lastModified + 10000) {
+          // 10 second buffer
+          console.info("Updates detected, reloading page...");
           window.location.reload();
         }
       }

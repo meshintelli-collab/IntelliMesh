@@ -1191,7 +1191,6 @@ function STLMesh() {
   // POLYGON-AWARE coloring with enforced flat shading per polygon face
   useEffect(() => {
     if (geometry && viewerSettings.randomColors && !viewerSettings.wireframe) {
-
       // Analyze normals for flatness
       if (geometry.attributes.normal) {
         const normals = geometry.attributes.normal.array;
@@ -2165,7 +2164,7 @@ export default function STLViewer() {
         style={{ background: "transparent" }}
         shadows
         onWebGLError={(error) => {
-          console.error('3D Viewer Error:', error);
+          console.error("3D Viewer Error:", error);
           // You could also show a toast notification here
         }}
       >

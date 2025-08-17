@@ -12,9 +12,9 @@ export default defineConfig(({ mode }) => ({
     cors: true,
     // Add headers for websocket compatibility
     headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
     },
     fs: {
       allow: ["./client", "./shared"],
@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => ({
       port: 8080,
       clientPort: 8080,
       // Fix WebSocket protocol issues
-      protocol: 'ws',
+      protocol: "ws",
       // Disable HMR overlay to prevent WebSocket errors from breaking UI
       overlay: false,
       // Add connection timeout and retry configuration
@@ -38,7 +38,7 @@ export default defineConfig(({ mode }) => ({
       usePolling: false,
       interval: 100,
       // Ignore certain files that might cause connection issues
-      ignored: ['**/node_modules/**', '**/.git/**'],
+      ignored: ["**/node_modules/**", "**/.git/**"],
     },
     // Add WebSocket keepalive and connection options
     ws: {

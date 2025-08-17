@@ -1,4 +1,4 @@
-import React, { Component, ReactNode, ErrorInfo } from 'react';
+import React, { Component, ReactNode, ErrorInfo } from "react";
 
 interface Props {
   children: ReactNode;
@@ -16,27 +16,27 @@ interface State {
 class EmergencyWebGLFallback extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { 
+    this.state = {
       hasError: false,
-      errorMessage: ''
+      errorMessage: "",
     };
   }
 
   static getDerivedStateFromError(error: Error): State {
-    console.error('🚨 EMERGENCY: WebGL fallback caught critical error:', error);
-    
+    console.error("🚨 EMERGENCY: WebGL fallback caught critical error:", error);
+
     return {
       hasError: true,
-      errorMessage: error.message
+      errorMessage: error.message,
     };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('🚨 EMERGENCY: Full error details:', {
+    console.error("🚨 EMERGENCY: Full error details:", {
       error: error.message,
       stack: error.stack,
       componentStack: errorInfo.componentStack,
-      errorBoundary: 'EmergencyWebGLFallback'
+      errorBoundary: "EmergencyWebGLFallback",
     });
 
     // Try to capture additional context
@@ -44,16 +44,16 @@ class EmergencyWebGLFallback extends Component<Props, State> {
       const userAgent = navigator.userAgent;
       const webglSupport = !!window.WebGLRenderingContext;
       const webgl2Support = !!window.WebGL2RenderingContext;
-      
-      console.error('🚨 EMERGENCY: Browser context:', {
+
+      console.error("🚨 EMERGENCY: Browser context:", {
         userAgent,
         webglSupport,
         webgl2Support,
         hardwareConcurrency: navigator.hardwareConcurrency,
-        platform: navigator.platform
+        platform: navigator.platform,
       });
     } catch (e) {
-      console.error('Could not capture browser context:', e);
+      console.error("Could not capture browser context:", e);
     }
   }
 
@@ -67,11 +67,14 @@ class EmergencyWebGLFallback extends Component<Props, State> {
               Critical 3D Viewer Error
             </h3>
             <p className="text-orange-600 mb-4">
-              A critical error occurred that prevented the 3D viewer from starting. 
-              This is likely due to graphics driver or hardware compatibility issues.
+              A critical error occurred that prevented the 3D viewer from
+              starting. This is likely due to graphics driver or hardware
+              compatibility issues.
             </p>
             <details className="text-sm text-orange-500 mb-4">
-              <summary className="cursor-pointer font-medium">Technical Error</summary>
+              <summary className="cursor-pointer font-medium">
+                Technical Error
+              </summary>
               <div className="mt-2 p-2 bg-orange-100 rounded text-left">
                 <p className="font-medium mb-1">Error:</p>
                 <p className="break-words">{this.state.errorMessage}</p>
@@ -90,8 +93,8 @@ class EmergencyWebGLFallback extends Component<Props, State> {
             </div>
             <button
               onClick={() => {
-                console.log('🔄 Emergency fallback: Attempting recovery...');
-                this.setState({ hasError: false, errorMessage: '' });
+                console.log("🔄 Emergency fallback: Attempting recovery...");
+                this.setState({ hasError: false, errorMessage: "" });
               }}
               className="mt-4 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors"
             >

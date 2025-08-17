@@ -1,4 +1,4 @@
-import React, { Component, ReactNode, ErrorInfo } from 'react';
+import React, { Component, ReactNode, ErrorInfo } from "react";
 
 interface Props {
   children: ReactNode;
@@ -19,23 +19,23 @@ class WebGLErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): State {
-    console.error('🚨 WebGL Error Boundary caught error:', error);
+    console.error("🚨 WebGL Error Boundary caught error:", error);
     return {
       hasError: true,
-      error
+      error,
     };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('🚨 WebGL Error Boundary componentDidCatch:', {
+    console.error("🚨 WebGL Error Boundary componentDidCatch:", {
       error: error.message,
       componentStack: errorInfo.componentStack,
-      errorBoundary: 'WebGLErrorBoundary'
+      errorBoundary: "WebGLErrorBoundary",
     });
 
     this.setState({
       error,
-      errorInfo
+      errorInfo,
     });
 
     // Call the onError callback if provided
@@ -61,7 +61,9 @@ class WebGLErrorBoundary extends Component<Props, State> {
             </p>
             {this.state.error && (
               <details className="text-sm text-red-500 mb-4">
-                <summary className="cursor-pointer font-medium">Error Details</summary>
+                <summary className="cursor-pointer font-medium">
+                  Error Details
+                </summary>
                 <div className="mt-2 p-2 bg-red-100 rounded text-left">
                   <p className="font-medium mb-1">Error:</p>
                   <p className="break-words mb-2">{this.state.error.message}</p>
@@ -78,7 +80,11 @@ class WebGLErrorBoundary extends Component<Props, State> {
             )}
             <button
               onClick={() => {
-                this.setState({ hasError: false, error: undefined, errorInfo: undefined });
+                this.setState({
+                  hasError: false,
+                  error: undefined,
+                  errorInfo: undefined,
+                });
               }}
               className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
             >

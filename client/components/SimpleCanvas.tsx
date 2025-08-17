@@ -1,5 +1,5 @@
-import React from 'react';
-import { Canvas } from '@react-three/fiber';
+import React from "react";
+import { Canvas } from "@react-three/fiber";
 
 interface SimpleCanvasProps {
   children: React.ReactNode;
@@ -15,12 +15,12 @@ const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ children, ...props }) => {
     return (
       <Canvas
         dpr={1}
-        gl={{ 
+        gl={{
           antialias: false,
-          powerPreference: 'default'
+          powerPreference: "default",
         }}
         onCreated={() => {
-          console.log('Simple Canvas created');
+          console.log("Simple Canvas created");
         }}
         {...props}
       >
@@ -28,7 +28,7 @@ const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ children, ...props }) => {
       </Canvas>
     );
   } catch (error) {
-    console.error('Simple Canvas failed:', error);
+    console.error("Simple Canvas failed:", error);
     return (
       <div className="flex items-center justify-center h-full bg-gray-100 rounded-lg">
         <p className="text-gray-600">3D viewer unavailable</p>
