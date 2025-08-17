@@ -162,9 +162,10 @@ export class PolygonExtruder {
     const offset = normal.clone().multiplyScalar(thickness);
 
     // Calculate chamfered back vertices (inset by chamfer amount)
+    // For FULL-THROUGH chamfering, pass the thickness so vertices move correctly
     const chamferedBackVertices = this.generateChamferedVertices(
       originalVertices.map((v) => v.clone().add(offset)), // Start with full back face
-      chamferDepth,
+      thickness, // Use thickness for full-through chamfering calculation
       edgeAngles || Array(originalVertices.length).fill(defaultChamferAngle),
     );
 
