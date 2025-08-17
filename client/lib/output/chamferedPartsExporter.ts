@@ -425,39 +425,60 @@ export class ChamferedPartsExporter {
             if (otherFace && otherFace.normal) {
               const otherNormal = otherFace.normal.clone().normalize();
 
-              // STEP-BY-STEP DIHEDRAL ANGLE CALCULATION:
+              // SOPHISTICATED INTERIOR/EXTERIOR ANGLE CALCULATION:
 
-              // Step 1: Face normals are already calculated and normalized
-              // Step 2: Calculate the dot product
-              const dot = faceNormal.dot(otherNormal);
-              const clampedDot = Math.max(-1, Math.min(1, dot));
+              // Step 1: Get face normals u and v (already calculated and normalized)
+              const u = faceNormal; // Face normal for current face
+              const v = otherNormal; // Face normal for adjacent face
 
-              // Step 3: Find the angle between the normals
-              const angleRadians = Math.acos(Math.abs(clampedDot));
-              const angleBetweenNormals = (angleRadians * 180) / Math.PI;
+              // Step 2: Calculate edge direction vector
+              const edgeDirection = new THREE.Vector3().subVectors(v2, v1).normalize();
 
-              // Step 4: Calculate the dihedral angle based on dot product sign
-              let dihedralAngle: number;
-              let chamferOnInteriorFace: boolean;
+              // Step 3: Calculate vectors a and b (u and v rotated around edge by 90°)
+              // These are parallel to their respective faces, perpendicular to edge, pointing away from edge
+              const a = new THREE.Vector3().crossVectors(u, edgeDirection).normalize();
+              const b = new THREE.Vector3().crossVectors(v, edgeDirection).normalize();
 
-              if (dot >= 0) {
-                // Positive dot product: angle between normals IS the dihedral angle
-                dihedralAngle = angleBetweenNormals;
-                isConvex = true; // Convex edge
-                chamferOnInteriorFace = true; // Chamfer occurs on interior face
-                // Chamfer angle = 90° - interior angle
-                chamferAngle = 90 - dihedralAngle;
+              // Step 4: Calculate required dot products
+              const dotUV = u.dot(v);
+              const clampedDotUV = Math.max(-1, Math.min(1, dotUV));
+              const dotAV = a.dot(v);
+              const dotBU = b.dot(u);
+
+              // Step 5: Calculate interior angle based on the sign of dot(a,v) and dot(b,u)
+              let interiorAngle: number;
+
+              if (dotAV <= 0 && dotBU <= 0) {
+                // Both dot products negative or zero
+                interiorAngle = 180 - (Math.acos(Math.abs(clampedDotUV)) * 180 / Math.PI);
+              } else if (dotAV > 0 && dotBU > 0) {
+                // Both dot products positive
+                interiorAngle = 180 + (Math.acos(Math.abs(clampedDotUV)) * 180 / Math.PI);
               } else {
-                // Negative dot product: dihedral angle = 180° - angle between normals
-                dihedralAngle = 180 - angleBetweenNormals;
-                isConvex = false; // Concave edge
-                chamferOnInteriorFace = false; // Chamfer occurs on exterior face
-                // Chamfer angle = 90° - exterior angle
-                const exteriorAngle = 360 - dihedralAngle;
-                chamferAngle = 90 - exteriorAngle;
+                // Mixed signs - use fallback calculation
+                console.warn(`Mixed dot product signs: dotAV=${dotAV.toFixed(3)}, dotBU=${dotBU.toFixed(3)}`);
+                interiorAngle = Math.acos(Math.abs(clampedDotUV)) * 180 / Math.PI;
               }
 
-              edgeAngle = dihedralAngle;
+              // Step 6: Calculate exterior angle
+              const exteriorAngle = 360 - interiorAngle;
+
+              // Step 7: Determine chamfer angle and face based on interior angle
+              let chamferOnInteriorFace: boolean;
+
+              if (interiorAngle < 180) {
+                // Interior angle < 180°: chamfer inside face
+                isConvex = true;
+                chamferOnInteriorFace = true;
+                chamferAngle = 90 - (interiorAngle / 2);
+              } else {
+                // Interior angle > 180°: chamfer outside face
+                isConvex = false;
+                chamferOnInteriorFace = false;
+                chamferAngle = 90 - (exteriorAngle / 2);
+              }
+
+              edgeAngle = interiorAngle;
 
               // Ensure reasonable chamfer angles (15° to 75°)
               chamferAngle = Math.max(15, Math.min(75, Math.abs(chamferAngle)));
