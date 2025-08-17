@@ -180,8 +180,6 @@ class WebGLErrorHandler {
       return renderer;
 
     } catch (error) {
-      console.warn('⚠️ Conservative WebGL context failed, trying minimal fallback...', error);
-      
       try {
         // Try with minimal settings
         const minimalOptions = {
@@ -197,11 +195,9 @@ class WebGLErrorHandler {
 
         const fallbackRenderer = new THREE.WebGLRenderer(minimalOptions);
         fallbackRenderer.getContext();
-        console.log('✅ Minimal WebGL context created as fallback');
         return fallbackRenderer;
 
       } catch (fallbackError) {
-        console.error('❌ All WebGL context creation attempts failed:', fallbackError);
         return null;
       }
     }
