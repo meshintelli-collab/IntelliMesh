@@ -420,15 +420,18 @@ export class ChamferedPartsExporter {
               // CORRECT CHAMFER FORMULA: chamfer angle = 90° - internal edge angle / 2
               // For a 90° interior angle (like cube edges), this gives 90° - 90°/2 = 45°
               edgeAngle = interiorAngle;
-              chamferAngle = 90 - (interiorAngle / 2);
+              const calculatedChamferAngle = 90 - (interiorAngle / 2);
 
               // Ensure reasonable chamfer angles (15° to 75°)
-              chamferAngle = Math.max(15, Math.min(75, Math.abs(chamferAngle)));
+              chamferAngle = Math.max(15, Math.min(75, Math.abs(calculatedChamferAngle)));
 
               if (faceIndex < 3) {
                 // Log first few faces for debugging
                 console.log(
-                  `   Face ${faceIndex}, Edge ${i}: ${isConvex ? 'convex' : 'concave'} edge ${edgeAngle.toFixed(1)}° → chamfer ${chamferAngle.toFixed(1)}°`,
+                  `   Face ${faceIndex}, Edge ${i}: ${isConvex ? 'convex' : 'concave'} interior angle ${edgeAngle.toFixed(1)}°`
+                );
+                console.log(
+                  `   Calculated chamfer: 90° - ${edgeAngle.toFixed(1)}°/2 = ${calculatedChamferAngle.toFixed(1)}° → clamped to ${chamferAngle.toFixed(1)}°`
                 );
               }
             }
