@@ -485,6 +485,7 @@ export class ChamferedPartsExporter {
         let chamferAngle = 45; // Default chamfer
         let isConvex = true; // Default for boundary edges (assume convex)
         let chamferOnInteriorFace = true; // Default for boundary edges
+        let dotProductSignature = 'nn'; // Default for boundary edges (negative/negative)
 
         if (adjacentFaces.length === 2) {
           // Find the other face that shares this edge
