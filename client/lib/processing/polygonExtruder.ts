@@ -212,10 +212,34 @@ export class PolygonExtruder {
       );
     }
 
-    // Back face - ORIGINAL polygon (full cross-sectional area), reversed winding
-    const backTriangles = frontTriangles.map((triangle) =>
-      triangle.map((v) => v.clone().add(offset)).reverse(),
-    );
+    // Back face - PARAMETRICALLY CHAMFERED vertices with proper triangulation
+    // Map the triangulation to use the parametrically chamfered vertices
+    const backTriangles: THREE.Vector3[][] = [];
+
+    if (polygonAny.originalTriangulation && polygonAny.originalTriangulation.length > 0) {
+      // Use original triangulation with PARAMETRICALLY CHAMFERED vertices
+      console.log(`   Using original triangulation for PARAMETRIC back face (${polygonAny.originalTriangulation.length} triangles)`);
+
+      for (const triangle of polygonAny.originalTriangulation) {
+        const v1 = backVertices[triangle[0]];
+        const v2 = backVertices[triangle[1]];
+        const v3 = backVertices[triangle[2]];
+
+        if (v1 && v2 && v3) {
+          // Reverse winding for back face
+          backTriangles.push([v3, v2, v1]);
+        }
+      }
+    } else {
+      // Fallback: triangulate the parametrically chamfered vertices
+      console.log(`   Triangulating PARAMETRIC back face vertices`);
+      const chamferedBackTriangles = this.triangulatePolygon(backVertices, normal);
+      // Reverse winding for back face
+      backTriangles.push(...chamferedBackTriangles.map(triangle => triangle.reverse()));
+    }
+
+    console.log(`   Creating ${backTriangles.length} back face triangles using PARAMETRICALLY CHAMFERED vertices`);
+
     for (const triangle of backTriangles) {
       stlContent += this.addTriangleToSTL(
         triangle[0],
