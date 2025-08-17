@@ -171,6 +171,19 @@ export class ChamferedPartsExporter {
     // Track part information for Excel database
     const partDatabase: any[] = [];
 
+    // Track data for clean summary output
+    const summaryData: {
+      faceCount: number;
+      allInteriorAngles: number[][];
+      allChamferAngles: number[][];
+      shapeName: string;
+    } = {
+      faceCount: polygonFaces.length,
+      allInteriorAngles: [],
+      allChamferAngles: [],
+      shapeName: filename.replace(/\.[^/.]+$/, '') || 'shape'
+    };
+
     // Calculate edge angles for all faces first (referencing 3D model)
     const chamferedFaces = this.calculateEdgeAngles(
       polygonFaces,
@@ -863,7 +876,7 @@ export class ChamferedPartsExporter {
     const numVertices = frontVertices.length;
 
     console.log(
-      `🔧 OBJ: Calculating chamfered vertices using plane intersections for ${numVertices} vertices`,
+      `��� OBJ: Calculating chamfered vertices using plane intersections for ${numVertices} vertices`,
     );
 
     for (let i = 0; i < numVertices; i++) {
