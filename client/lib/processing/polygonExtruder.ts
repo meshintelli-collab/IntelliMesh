@@ -171,9 +171,10 @@ export class PolygonExtruder {
 
     const backVertices = chamferedBackVertices; // BACK: Chamfered (smaller)
 
-    console.log(`🔧 FULL-THROUGH CHAMFERING: Front face FULL SIZE, back face CHAMFERED (smaller)`);
-    console.log(`🔧 Creates truncated pyramid - parts can mate together properly`);
-    console.log(`🔧 Chamfer goes ALL THE WAY THROUGH the ${thickness}mm thick part`);
+    console.log(`🔧 PARAMETRIC CHAMFERING: Front face FULL SIZE, back face PARAMETRICALLY CHAMFERED`);
+    console.log(`🔧 Creates geometry with parametric vertex movements along edge directions`);
+    console.log(`🔧 Maintains quad structure through ${thickness}mm thick part`);
+    console.log(`🔧 All vertex movements applied simultaneously for geometric consistency`);
 
     let stlContent = `solid chamfered_polygon_${polygon.index || 0}\n`;
 
