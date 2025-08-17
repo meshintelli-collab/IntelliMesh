@@ -225,7 +225,9 @@ export class ChamferedPartsExporter {
         originalTriangulation: (polygonFace as any).originalTriangulation
       };
 
-      // Generate chamfered content using PolygonExtruder
+      // Generate chamfered content
+      // STL: Use PolygonExtruder (creates triangulated STL)
+      // OBJ: Create proper OBJ with polygon faces (no triangulation)
       const partContent = format === "obj"
         ? this.createChamferedPolygonOBJ(polygonFaceForExtruder, extrusionOptions, chamferOptions)
         : PolygonExtruder.createChamferedPolygon(polygonFaceForExtruder, extrusionOptions, chamferOptions);
