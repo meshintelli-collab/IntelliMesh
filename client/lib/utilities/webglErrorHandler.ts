@@ -107,10 +107,8 @@ class WebGLErrorHandler {
       }
 
       // Step 5: Quick THREE.js test
-      let threeRenderer: THREE.WebGLRenderer | null = null;
-
       try {
-        threeRenderer = new THREE.WebGLRenderer({
+        const threeRenderer = new THREE.WebGLRenderer({
           canvas,
           context: gl,
           antialias: false,
@@ -122,29 +120,10 @@ class WebGLErrorHandler {
           preserveDrawingBuffer: false
         });
 
-        console.log('✅ THREE.js WebGLRenderer created successfully');
-
-        // Test basic rendering capability and context validity
         threeRenderer.setSize(1, 1);
-
-        // Test if the renderer context is valid
-        const rendererGL = threeRenderer.getContext();
-        if (!rendererGL || typeof rendererGL.getParameter !== 'function') {
-          throw new Error('THREE.js WebGLRenderer created invalid context');
-        }
-
-        // Test basic GL operations
-        try {
-          rendererGL.getParameter(rendererGL.VERSION);
-          threeRenderer.clear();
-        } catch (glError) {
-          throw new Error(`WebGL context operations failed: ${glError instanceof Error ? glError.message : 'Unknown GL error'}`);
-        }
-
         threeRenderer.dispose();
 
       } catch (rendererError) {
-        console.error('❌ THREE.js WebGLRenderer creation failed:', rendererError);
 
         this.webglSupport = {
           supported: false,
