@@ -393,9 +393,14 @@ export class ChamferedPartsExporter {
       console.log(`  Interior/exterior edge analysis needed`);
     }
 
-    console.log(`\nInterior angles by face:`);
+    console.log(`\nInterior angles by face (dotAV/dotBU signs: p=positive, n=negative):`);
     summaryData.allInteriorAngles.forEach((angles, i) => {
-      console.log(`Face ${i + 1}: [${angles.map(a => a.toFixed(1)).join(', ')}]°`);
+      const signs = summaryData.allDotProductSigns[i] || [];
+      const angleStrings = angles.map((angle, j) => {
+        const dotSigns = signs[j] || 'nn';
+        return `${angle.toFixed(1)}${dotSigns}`;
+      });
+      console.log(`Face ${i + 1}: [${angleStrings.join(', ')}]°`);
     });
     console.log(`\nChamfer angles by face (i=interior, e=exterior):`);
     summaryData.allChamferAngles.forEach((angles, i) => {
