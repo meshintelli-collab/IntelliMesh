@@ -605,6 +605,116 @@ export class ChamferedPartsExporter {
   }
 
   /**
+   * Calculate chamfered back vertices using plane intersection method
+   * Same method as PolygonExtruder for consistency
+   */
+  private static calculateChamferedVerticesFromPlaneIntersections(
+    frontVertices: THREE.Vector3[],
+    backVertices: THREE.Vector3[],
+    chamferDepth: number,
+    chamferAngles: number[]
+  ): THREE.Vector3[] {
+    const chamferedBackVertices: THREE.Vector3[] = [];
+    const numVertices = frontVertices.length;
+
+    console.log(`🔧 OBJ: Calculating chamfered vertices using plane intersections for ${numVertices} vertices`);
+
+    for (let i = 0; i < numVertices; i++) {
+      // Get the two edges that meet at this vertex
+      const prevEdgeIndex = (i - 1 + numVertices) % numVertices;
+      const currentEdgeIndex = i;
+
+      // Get chamfer angles for the two adjacent edges
+      const prevChamferAngle = chamferAngles[prevEdgeIndex] || 45;
+      const currentChamferAngle = chamferAngles[currentEdgeIndex] || 45;
+
+      // Calculate the intersection of the two chamfer planes
+      const chamferedVertex = this.calculateVertexChamferIntersection(
+        i,
+        frontVertices,
+        backVertices,
+        chamferDepth,
+        prevChamferAngle,
+        currentChamferAngle
+      );
+
+      chamferedBackVertices.push(chamferedVertex);
+
+      if (i < 3) {
+        console.log(`   OBJ Vertex ${i}: original(${backVertices[i].x.toFixed(3)}, ${backVertices[i].y.toFixed(3)}) → chamfered(${chamferedVertex.x.toFixed(3)}, ${chamferedVertex.y.toFixed(3)})`);
+      }
+    }
+
+    return chamferedBackVertices;
+  }
+
+  /**
+   * Calculate where a vertex should move based on the intersection of two adjacent chamfer planes
+   * Same method as PolygonExtruder for consistency
+   */
+  private static calculateVertexChamferIntersection(
+    vertexIndex: number,
+    frontVertices: THREE.Vector3[],
+    backVertices: THREE.Vector3[],
+    chamferDepth: number,
+    prevChamferAngle: number,
+    currentChamferAngle: number
+  ): THREE.Vector3 {
+    const numVertices = frontVertices.length;
+    const prevIndex = (vertexIndex - 1 + numVertices) % numVertices;
+    const nextIndex = (vertexIndex + 1) % numVertices;
+
+    // Get the vertex and its neighbors
+    const currentVertex = backVertices[vertexIndex];
+    const frontCurrentVertex = frontVertices[vertexIndex];
+
+    // Get edge directions
+    const prevEdgeDir = new THREE.Vector3()
+      .subVectors(frontCurrentVertex, frontVertices[prevIndex])
+      .normalize();
+    const nextEdgeDir = new THREE.Vector3()
+      .subVectors(frontVertices[nextIndex], frontCurrentVertex)
+      .normalize();
+
+    // Calculate face normal (extrusion direction)
+    const thickness = new THREE.Vector3().subVectors(currentVertex, frontCurrentVertex);
+    const faceNormal = thickness.clone().normalize();
+
+    // Calculate outward normals for each edge
+    const prevOutwardNormal = new THREE.Vector3()
+      .crossVectors(prevEdgeDir, faceNormal)
+      .normalize();
+    const nextOutwardNormal = new THREE.Vector3()
+      .crossVectors(nextEdgeDir, faceNormal)
+      .normalize();
+
+    // Calculate chamfer offsets for each edge
+    const prevChamferRadians = (prevChamferAngle * Math.PI) / 180;
+    const currentChamferRadians = (currentChamferAngle * Math.PI) / 180;
+
+    const prevChamferOffset = chamferDepth * Math.tan(prevChamferRadians);
+    const currentChamferOffset = chamferDepth * Math.tan(currentChamferRadians);
+
+    // Calculate the two chamfer plane movements
+    const prevInwardDirection = prevOutwardNormal.clone().negate();
+    const currentInwardDirection = nextOutwardNormal.clone().negate();
+
+    // Average the two movements for intersection point
+    // This works well for most polygon shapes where chamfer planes intersect reasonably
+    const averageMovement = new THREE.Vector3()
+      .addVectors(
+        prevInwardDirection.clone().multiplyScalar(prevChamferOffset),
+        currentInwardDirection.clone().multiplyScalar(currentChamferOffset)
+      )
+      .multiplyScalar(0.5);
+
+    // Apply the movement to get the final chamfered vertex position
+    const chamferedVertex = currentVertex.clone().add(averageMovement);
+
+    return chamferedVertex;
+  }
+
+  /**
    * Calculate detailed information for a chamfered polygon part
    * Similar to polygon parts exporter but includes chamfer considerations
    */
