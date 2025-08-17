@@ -571,8 +571,8 @@ export class ChamferedPartsExporter {
                 console.log(`edgeDirection = (${edgeDirection.x.toFixed(3)}, ${edgeDirection.y.toFixed(3)}, ${edgeDirection.z.toFixed(3)})`);
                 console.log(`u (face normal) = (${u.x.toFixed(3)}, ${u.y.toFixed(3)}, ${u.z.toFixed(3)})`);
                 console.log(`v (other normal) = (${v.x.toFixed(3)}, ${v.y.toFixed(3)}, ${v.z.toFixed(3)})`);
-                console.log(`a = edgeDir × u = (${a.x.toFixed(3)}, ${a.y.toFixed(3)}, ${a.z.toFixed(3)})`);
-                console.log(`b = edgeDir × v = (${b.x.toFixed(3)}, ${b.y.toFixed(3)}, ${b.z.toFixed(3)})`);
+                console.log(`a = AWAY FROM EDGE = (${a.x.toFixed(3)}, ${a.y.toFixed(3)}, ${a.z.toFixed(3)})`);
+                console.log(`b = AWAY FROM EDGE = (${b.x.toFixed(3)}, ${b.y.toFixed(3)}, ${b.z.toFixed(3)})`);
 
                 // Validate perpendicularity
                 const aEdgeDot = a.dot(edgeDirection);
@@ -585,6 +585,18 @@ export class ChamferedPartsExporter {
                 console.log(`  b·edge = ${bEdgeDot.toFixed(6)} (should be ~0)`);
                 console.log(`  a·u = ${aDotU.toFixed(6)} (should be ~0)`);
                 console.log(`  b·v = ${bDotV.toFixed(6)} (should be ~0)`);
+
+                // Validate direction away from edge
+                if (refPointU) {
+                  const toRefU = new THREE.Vector3().subVectors(refPointU, edgeMidpoint).normalize();
+                  const awayCheckU = a.dot(toRefU);
+                  console.log(`DIRECTION CHECK U: a·(refPoint-edge) = ${awayCheckU.toFixed(6)} (should be >0 for away)`);
+                }
+                if (refPointV) {
+                  const toRefV = new THREE.Vector3().subVectors(refPointV, edgeMidpoint).normalize();
+                  const awayCheckV = b.dot(toRefV);
+                  console.log(`DIRECTION CHECK V: b·(refPoint-edge) = ${awayCheckV.toFixed(6)} (should be >0 for away)`);
+                }
 
                 console.log(`DOT PRODUCTS FOR CLASSIFICATION:`);
                 console.log(`  dotAV = a·v = ${dotAV.toFixed(6)}`);
