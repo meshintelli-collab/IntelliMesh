@@ -269,7 +269,7 @@ export default function STLWorkflowPanel({
 
       if (result?.success) {
         toast({
-          title: "✅ Decimation Complete",
+          title: "��� Decimation Complete",
           description: `Reduced triangles by ${result.stats?.reductionAchieved ? Math.round(result.stats.reductionAchieved * 100) : 0}% in ${result.stats?.processingTime || 0}ms`,
           duration: 3000,
         });
@@ -3054,10 +3054,6 @@ function MobileWorkflowContent(props: any) {
 
               <Button
                 onClick={() => {
-                  console.log(
-                    "🔄 Mobile button clicked! Amount:",
-                    reductionAmount,
-                  );
                   onReducePoints(
                     reductionAmount,
                     "quadric_edge_collapse" as any,
