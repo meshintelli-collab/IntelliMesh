@@ -627,10 +627,10 @@ export class ChamferedPartsExporter {
 
     const actualFrontVertices = frontVertices; // FRONT: Full size
 
-    // Generate chamfered back vertices
+    // Generate chamfered back vertices using thickness for full-through chamfering
     const chamferedBackVertices = this.generateChamferedVerticesOBJ(
       backVertices,  // Start with full back vertices
-      chamferDepth,
+      thickness, // Use thickness for full-through chamfering calculation
       edgeAngles || Array(originalVertices.length).fill(defaultChamferAngle)
     );
 
