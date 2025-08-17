@@ -19,6 +19,7 @@ interface EdgeInfo {
   chamferAngle: number; // calculated chamfer angle
   isConvex: boolean; // true for convex (external) edges, false for concave (internal)
   chamferOnInteriorFace?: boolean; // true if chamfer should be on interior face, false for exterior
+  dotProductSignature?: string; // "pp", "nn", "pn", "np" for dotAV/dotBU signs
 }
 
 /**
