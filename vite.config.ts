@@ -33,10 +33,18 @@ export default defineConfig(({ mode }) => ({
       // Use server-sent events as fallback if WebSocket fails
       fallback: true,
     },
-    // Add websocket configuration
+    // Add websocket configuration with stability improvements
     watch: {
       usePolling: false,
       interval: 100,
+      // Ignore certain files that might cause connection issues
+      ignored: ['**/node_modules/**', '**/.git/**'],
+    },
+    // Add WebSocket keepalive and connection options
+    ws: {
+      keepAlive: true,
+      pingInterval: 30000,
+      pongTimeout: 5000,
     },
   },
   build: {
