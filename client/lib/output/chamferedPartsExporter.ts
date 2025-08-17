@@ -663,22 +663,22 @@ export class ChamferedPartsExporter {
     // Write faces (PRESERVE POLYGON STRUCTURE - NO TRIANGULATION)
     objContent += `\n# Faces (polygons preserved)\n`;
 
-    // Front face (FULL SIZE for mating surface)
-    objContent += `# Front face (FULL SIZE for mating surface)\nf`;
+    // Front face (ORIGINAL FULL SIZE vertices for mating surface)
+    objContent += `# Front face (ORIGINAL FULL SIZE vertices for mating surface)\nf`;
     for (let i = 1; i <= actualFrontVertices.length; i++) {
       objContent += ` ${i}//1`;
     }
     objContent += `\n`;
 
-    // Back face (CHAMFERED - smaller polygon) - reversed winding
-    objContent += `# Back face (CHAMFERED - smaller polygon)\nf`;
+    // Back face (PARAMETRICALLY CHAMFERED vertices) - reversed winding
+    objContent += `# Back face (PARAMETRICALLY CHAMFERED vertices)\nf`;
     for (let i = actualFrontVertices.length * 2; i > actualFrontVertices.length; i--) {
       objContent += ` ${i}//2`;
     }
     objContent += `\n`;
 
-    // FULL-THROUGH tapered walls (quads) - create truncated pyramid
-    objContent += `# FULL-THROUGH tapered walls (quads) - truncated pyramid for mating\n`;
+    // PARAMETRIC tapered walls (quads) - maintains quad structure
+    objContent += `# PARAMETRIC tapered walls (quads) - maintains quad structure\n`;
     for (let i = 0; i < actualFrontVertices.length; i++) {
       const next = (i + 1) % actualFrontVertices.length;
 
