@@ -505,9 +505,8 @@ export class ChamferedPartsExporter {
                 .crossVectors(v, edgeDirection)
                 .normalize();
 
-              // Step 4: Calculate required dot products
+              // Step 4: Calculate required dot products (no clamping - trust normalized vectors)
               const dotUV = u.dot(v);
-              const clampedDotUV = Math.max(-1, Math.min(1, dotUV));
               const dotAV = a.dot(v);
               const dotBU = b.dot(u);
 
@@ -516,19 +515,16 @@ export class ChamferedPartsExporter {
 
               if (dotAV <= 0 && dotBU <= 0) {
                 // Both dot products negative or zero
-                interiorAngle =
-                  180 - (Math.acos(Math.abs(clampedDotUV)) * 180) / Math.PI;
+                interiorAngle = 180 - (Math.acos(dotUV) * 180) / Math.PI;
               } else if (dotAV > 0 && dotBU > 0) {
                 // Both dot products positive
-                interiorAngle =
-                  180 + (Math.acos(Math.abs(clampedDotUV)) * 180) / Math.PI;
+                interiorAngle = 180 + (Math.acos(-dotUV) * 180) / Math.PI;
               } else {
                 // Mixed signs - use fallback calculation
                 console.warn(
                   `Mixed dot product signs: dotAV=${dotAV.toFixed(3)}, dotBU=${dotBU.toFixed(3)}`,
                 );
-                interiorAngle =
-                  (Math.acos(Math.abs(clampedDotUV)) * 180) / Math.PI;
+                interiorAngle = (Math.acos(dotUV) * 180) / Math.PI;
               }
 
               // Step 6: Calculate exterior angle
@@ -550,11 +546,11 @@ export class ChamferedPartsExporter {
 
               edgeAngle = interiorAngle;
 
-              // Store calculated values for debugging before clamping
+              // Store calculated values for debugging (NO CLAMPING)
               const originalChamferAngle = chamferAngle;
 
-              // Ensure reasonable chamfer angles (15° to 75°)
-              chamferAngle = Math.max(15, Math.min(75, Math.abs(chamferAngle)));
+              // NO CLAMPING - allow full range of chamfer angles
+              // chamferAngle = chamferAngle; // Keep original calculated value
 
               if (faceIndex < 8) { // Increased to capture more faces for octahedron debugging
                 // Log detailed sophisticated calculation for debugging
