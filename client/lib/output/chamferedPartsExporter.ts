@@ -510,9 +510,17 @@ export class ChamferedPartsExporter {
               // Step 4: Use u, v, a, b vector logic to determine interior/exterior chamfering
               const edgeDirection = new THREE.Vector3().subVectors(v2, v1).normalize();
 
-              // Calculate vectors a and b (u and v rotated around edge by 90°)
-              const a = new THREE.Vector3().crossVectors(u, edgeDirection).normalize();
-              const b = new THREE.Vector3().crossVectors(v, edgeDirection).normalize();
+              // Calculate vectors a and b: from edge through face away from edge
+              // a should be perpendicular to edge and parallel to face u, pointing away from edge
+              // b should be perpendicular to edge and parallel to face v, pointing away from edge
+
+              // For face u: a = (edgeDirection × u) × edgeDirection (double cross product)
+              const temp1 = new THREE.Vector3().crossVectors(edgeDirection, u);
+              const a = new THREE.Vector3().crossVectors(temp1, edgeDirection).normalize();
+
+              // For face v: b = (edgeDirection × v) × edgeDirection (double cross product)
+              const temp2 = new THREE.Vector3().crossVectors(edgeDirection, v);
+              const b = new THREE.Vector3().crossVectors(temp2, edgeDirection).normalize();
 
               const dotAV = a.dot(v);
               const dotBU = b.dot(u);
