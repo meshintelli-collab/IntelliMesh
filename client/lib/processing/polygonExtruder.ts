@@ -256,7 +256,9 @@ export class PolygonExtruder {
     chamferDepth: number,
     chamferAngles: number[],
   ): THREE.Vector3[] {
-    console.log(`🔧 Generating chamfered vertices with proper corner intersection method`);
+    console.log(`🔧 Generating FULL-THROUGH chamfered vertices using THICKNESS-BASED calculation`);
+    console.log(`🔧 Mathematical approach: Each vertex moves inward by thickness × tan(chamfer_angle)`);
+    console.log(`🔧 This creates a truncated pyramid where chamfer goes ALL THE WAY THROUGH`);
     const chamferedVertices: THREE.Vector3[] = [];
 
     for (let i = 0; i < originalVertices.length; i++) {
@@ -309,9 +311,14 @@ export class PolygonExtruder {
       chamferedVertices.push(chamferedVertex);
 
       if (i < 3) {
-        console.log(`   Vertex ${i}: prev_angle=${prevEdgeChamferAngle.toFixed(1)}°, current_angle=${currentEdgeChamferAngle.toFixed(1)}°`);
-        console.log(`   Movement: prev=(${prevMovement.x.toFixed(3)}, ${prevMovement.y.toFixed(3)}), current=(${currentMovement.x.toFixed(3)}, ${currentMovement.y.toFixed(3)})`);
-        console.log(`   Final: (${vertex.x.toFixed(3)}, ${vertex.y.toFixed(3)}) → (${chamferedVertex.x.toFixed(3)}, ${chamferedVertex.y.toFixed(3)})`);
+        console.log(`🔢 CHAMFER MATH Vertex ${i}:`);
+        console.log(`   📐 Chamfer angles: prev=${prevEdgeChamferAngle.toFixed(1)}°, current=${currentEdgeChamferAngle.toFixed(1)}°`);
+        console.log(`   📏 Part thickness: ${partThickness.toFixed(3)}mm`);
+        console.log(`   🧮 Formula: offset = thickness × tan(angle)`);
+        console.log(`   🧮 Offsets: prev=${prevChamferOffset.toFixed(3)}, current=${currentChamferOffset.toFixed(3)}`);
+        console.log(`   ↗️ Movements: prev=(${prevMovement.x.toFixed(3)}, ${prevMovement.y.toFixed(3)}), current=(${currentMovement.x.toFixed(3)}, ${currentMovement.y.toFixed(3)})`);
+        console.log(`   🎯 Vertex: (${vertex.x.toFixed(3)}, ${vertex.y.toFixed(3)}) → (${chamferedVertex.x.toFixed(3)}, ${chamferedVertex.y.toFixed(3)})`);
+        console.log(`   📊 Inward movement: ${Math.sqrt(averageMovement.x * averageMovement.x + averageMovement.y * averageMovement.y).toFixed(3)}mm`);
       }
     }
 
