@@ -48,17 +48,38 @@ class WebSocketErrorHandler {
     }
   }
 
-  private handleWebSocketError(event: Event | PromiseRejectionEvent) {
+  private handleWebSocketError(event: Event | PromiseRejectionEvent | Error) {
+    // Silently handle "closed without opened" errors - they're usually transient
+    const isClosedWithoutOpened = event instanceof Error ?
+      event.message.includes('closed without opened') :
+      (event as any).message?.includes('closed without opened');
+
+    if (isClosedWithoutOpened) {
+      // Don't log noisy "closed without opened" errors
+      this.attemptSilentReconnection();
+      return;
+    }
+
     console.warn('WebSocket connection issue detected, attempting recovery...');
-    
+
     // Don't spam reconnection attempts
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.warn('Max websocket reconnection attempts reached. Manual refresh may be needed.');
+      console.warn('Max websocket reconnection attempts reached. Page will continue to work without HMR.');
       return;
     }
 
     this.reconnectAttempts++;
+    this.attemptReconnection();
+  }
 
+  private attemptSilentReconnection() {
+    // For "closed without opened" errors, just wait a bit and reset
+    setTimeout(() => {
+      this.reset();
+    }, 1000);
+  }
+
+  private attemptReconnection() {
     // Try to reconnect after a delay
     setTimeout(() => {
       try {
@@ -67,7 +88,7 @@ class WebSocketErrorHandler {
           import.meta.hot.invalidate();
         }
       } catch (error) {
-        console.warn('HMR reconnection failed:', error);
+        console.warn('HMR reconnection failed, but app will continue to work:', error);
       }
     }, this.reconnectInterval);
   }
