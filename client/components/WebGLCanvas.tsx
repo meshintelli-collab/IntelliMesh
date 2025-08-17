@@ -139,69 +139,43 @@ const WebGLCanvas: React.FC<WebGLCanvasProps> = ({
     );
   }
 
-  // Render the Canvas with comprehensive error handling
-  return (
-    <EmergencyWebGLFallback>
-      {(() => {
-        try {
-          console.log('🎮 Attempting to create Canvas with Three.js...');
-
-          return (
-            <WebGLErrorBoundary
-              onError={(error, errorInfo) => {
-                console.error('❌ WebGL Error Boundary caught error:', error, errorInfo);
-                handleWebGLError(error);
-              }}
-              fallback={fallbackComponent || <WebGLFallback />}
-            >
-              <Canvas
-                ref={canvasRef}
-                onCreated={(state) => {
-                  // Very simple validation - just log success
-                  console.log('✅ Canvas created successfully');
-
-                  // Optional: Try to get basic info without causing errors
-                  try {
-                    if (state.gl && typeof state.gl.getParameter === 'function') {
-                      const version = state.gl.getParameter(state.gl.VERSION);
-                      console.log('📊 WebGL Version:', version);
-                    }
-                  } catch (e) {
-                    // Silently ignore validation errors
-                    console.log('🎮 Canvas running without WebGL parameter access');
-                  }
-                }}
-                onError={(error) => {
-                  console.warn('⚠️ Canvas onError callback triggered:', error);
-                  // Don't immediately trigger state updates that could cause issues
-                  console.log('🎮 Canvas error handled gracefully, continuing operation');
-                }}
-                dpr={1} // Force device pixel ratio to 1 to reduce complexity
-                gl={{
-                  antialias: false,
-                  alpha: false,
-                  depth: true,
-                  stencil: false,
-                  powerPreference: 'default',
-                  failIfMajorPerformanceCaveat: false,
-                  preserveDrawingBuffer: false,
-                  logarithmicDepthBuffer: false,
-                  precision: 'lowp',
-                }}
-                {...canvasProps}
-              >
-                {children}
-              </Canvas>
-            </WebGLErrorBoundary>
-          );
-        } catch (error) {
-          console.error('❌ Canvas creation threw exception:', error);
-          handleWebGLError(error instanceof Error ? error : new Error('Canvas creation failed'));
-          return fallbackComponent || <WebGLFallback />;
-        }
-      })()}
-    </EmergencyWebGLFallback>
-  );
+  // Render the Canvas with minimal error handling
+  try {
+    return (
+      <WebGLErrorBoundary
+        onError={(error) => {
+          setWebglSupported(false);
+          setError(error.message);
+        }}
+        fallback={fallbackComponent || <WebGLFallback />}
+      >
+        <Canvas
+          ref={canvasRef}
+          onCreated={() => {
+            // Minimal success indication
+          }}
+          onError={(error) => {
+            setWebglSupported(false);
+            setError(error.message);
+          }}
+          gl={{
+            antialias: false,
+            alpha: false,
+            depth: true,
+            stencil: false,
+            powerPreference: 'default',
+            failIfMajorPerformanceCaveat: false,
+            preserveDrawingBuffer: false,
+          }}
+          {...canvasProps}
+        >
+          {children}
+        </Canvas>
+      </WebGLErrorBoundary>
+    );
+  } catch (error) {
+    return fallbackComponent || <WebGLFallback />;
+  }
 };
 
 export default WebGLCanvas;
