@@ -235,7 +235,7 @@ export class ChamferedPartsExporter {
         // STL: Use PolygonExtruder (creates triangulated STL)
         console.log(`🔧 Creating STL chamfered part ${i + 1} using PolygonExtruder`);
         partContent = PolygonExtruder.createChamferedPolygon(polygonFaceForExtruder, extrusionOptions, chamferOptions);
-        console.log(`🔧 STL content length: ${partContent.length} characters`);
+        console.log(`���� STL content length: ${partContent.length} characters`);
 
         if (partContent.length < 100) {
           console.error(`❌ STL content suspiciously short! Content: ${partContent.substring(0, 200)}...`);
@@ -483,7 +483,9 @@ export class ChamferedPartsExporter {
           edgeAngle,
           chamferAngle,
           isConvex,
-        });
+          // Store whether chamfer should be on interior or exterior face
+          chamferOnInteriorFace: chamferOnInteriorFace ?? true,
+        } as EdgeInfo & { chamferOnInteriorFace: boolean });
       }
 
       chamferedFaces.push({
