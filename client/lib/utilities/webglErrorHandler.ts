@@ -77,8 +77,20 @@ class WebGLErrorHandler {
         return this.webglSupport;
       }
 
-      // Step 2: Check for context loss immediately
-      if (gl.isContextLost()) {
+      // Step 2: Validate context methods are available
+      if (typeof gl.getParameter !== 'function') {
+        console.error('❌ WebGL context missing getParameter method');
+        this.webglSupport = {
+          supported: false,
+          error: 'WebGL context incomplete - missing core methods',
+          fallbackReason: 'WebGL implementation is incomplete or corrupted',
+          recommendation: 'Try refreshing the page or using a different browser'
+        };
+        return this.webglSupport;
+      }
+
+      // Step 3: Check for context loss immediately
+      if (gl.isContextLost && gl.isContextLost()) {
         console.error('❌ WebGL context is lost immediately after creation');
         this.webglSupport = {
           supported: false,
