@@ -187,7 +187,7 @@ export class PolygonExtruder {
     const chamferedBackVertices = this.generateChamferedVertices(
       originalVertices.map((v) => v.clone().add(offset)), // Start with full back face
       thickness, // Use thickness for full-through chamfering calculation
-      edgeAngles || Array(originalVertices.length).fill(defaultChamferAngle),
+      edgeAngles !== undefined ? edgeAngles : Array(originalVertices.length).fill(defaultChamferAngle),
     );
 
     const backVertices = chamferedBackVertices; // BACK: Chamfered (smaller)
