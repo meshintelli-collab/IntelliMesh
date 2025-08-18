@@ -961,6 +961,15 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     setErrors((prev) => prev.filter((err) => err.id !== id));
   }, []);
 
+  const createBackup = useCallback(() => {
+    if (originalMesh && workingMeshTri && previewMeshMerged) {
+      setBackupOriginalMesh(originalMesh.clone());
+      setBackupWorkingMeshTri(workingMeshTri.clone());
+      setBackupPreviewMeshMerged(previewMeshMerged.clone());
+      setHasBackup(true);
+    }
+  }, [originalMesh, workingMeshTri, previewMeshMerged]);
+
   const reducePoints = useCallback(
     async (
       reductionAmount: number,
