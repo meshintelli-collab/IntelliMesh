@@ -889,14 +889,19 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       scale?: number;
       useTriangulated?: boolean;
     }) => {
-      if (!previewMeshMerged) {
-        console.error("No 3D model loaded for parts export");
+      // Choose the correct mesh based on useTriangulated parameter
+      const meshToUse = options?.useTriangulated ? workingMeshTri : previewMeshMerged;
+
+      if (!meshToUse) {
+        console.error(
+          `No 3D model loaded for parts export (${options?.useTriangulated ? 'triangulated' : 'merged'} mode)`
+        );
         return;
       }
 
       try {
         await PolygonPartsExporter.exportPartsAsZip(
-          previewMeshMerged,
+          meshToUse,
           fileName || "model",
           options,
         );
@@ -904,7 +909,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         console.error("Parts export failed:", error);
       }
     },
-    [previewMeshMerged, fileName],
+    [previewMeshMerged, workingMeshTri, fileName],
   );
 
   const exportChamferedParts = useCallback(
