@@ -13,7 +13,7 @@ export class TriangleExporter {
    */
   static async exportTrianglesAsZip(
     geometry: THREE.BufferGeometry,
-    filename: string = 'triangle_pieces.zip',
+    filename: string = 'model_triangles.zip',
     options: {
       partThickness?: number; // mm thickness for each triangle piece
       scale?: number; // overall scale factor
