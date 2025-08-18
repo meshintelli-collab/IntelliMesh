@@ -976,8 +976,8 @@ export class ChamferedPartsExporter {
     for (let edgeIndex = 0; edgeIndex < numVertices; edgeIndex++) {
       const nextVertexIndex = (edgeIndex + 1) % numVertices;
 
-      // Get chamfer angle for this edge
-      const edgeChamferAngle = chamferAngles[edgeIndex] || 45;
+      // Get chamfer angle for this edge (handle 0° angles correctly)
+      const edgeChamferAngle = chamferAngles[edgeIndex] !== undefined ? chamferAngles[edgeIndex] : 45;
       const chamferRadians = (edgeChamferAngle * Math.PI) / 180;
 
       // Calculate chamfer offset: thickness * tan(chamfer_angle)
