@@ -877,7 +877,7 @@ export class ChamferedPartsExporter {
     const chamferedBackVertices = this.generateChamferedVerticesOBJ(
       backVertices, // Start with full back vertices
       thickness, // Use thickness for full-through chamfering calculation
-      edgeAngles || Array(originalVertices.length).fill(defaultChamferAngle),
+      edgeAngles !== undefined ? edgeAngles : Array(originalVertices.length).fill(defaultChamferAngle),
     );
 
     const actualBackVertices = chamferedBackVertices; // BACK: Chamfered (smaller)
@@ -1093,9 +1093,9 @@ export class ChamferedPartsExporter {
       const prevEdgeIndex = (i - 1 + numVertices) % numVertices;
       const currentEdgeIndex = i;
 
-      // Get chamfer angles for the two adjacent edges
-      const prevChamferAngle = chamferAngles[prevEdgeIndex] || 45;
-      const currentChamferAngle = chamferAngles[currentEdgeIndex] || 45;
+      // Get chamfer angles for the two adjacent edges (handle 0° angles correctly)
+      const prevChamferAngle = chamferAngles[prevEdgeIndex] !== undefined ? chamferAngles[prevEdgeIndex] : 45;
+      const currentChamferAngle = chamferAngles[currentEdgeIndex] !== undefined ? chamferAngles[currentEdgeIndex] : 45;
 
       // Calculate the intersection of the two chamfer planes
       const chamferedVertex = this.calculateVertexChamferIntersection(
