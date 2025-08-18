@@ -420,7 +420,7 @@ export class ChamferedPartsExporter {
       polygonFaces,
       useTriangulated,
     );
-    zip.file("chamfer_angle_reference.txt", chamferReference);
+    //zip.file("chamfer_angle_reference.txt", chamferReference);
 
     // Generate and download zip
     const zipBlob = await zip.generateAsync({ type: "blob" });
@@ -1443,31 +1443,7 @@ Visit: intellimesh.pro
     polygonFaces: PolygonFace[],
     useTriangulated: boolean,
   ): string {
-    let content = `CHAMFER ANGLE REFERENCE
-======================
-
-This document shows the chamfer angles for each part.
-Formula used: chamfer angle = 90° - (edge angle)/2
-
-Part Index | Face Type | Vertex Count | Chamfer Angle (°) | Notes
------------|-----------|--------------|-------------------|-------
-`;
-
-    for (let i = 0; i < polygonFaces.length; i++) {
-      const face = polygonFaces[i];
-      const chamferAngle = 45; // Default chamfer angle
-      const notes = useTriangulated ? "Triangulated" : "Merged Polygon";
-
-      content += `${String(i + 1).padStart(10)} | ${(face.type || "polygon").padStart(9)} | ${String(face.vertices.length).padStart(12)} | ${chamferAngle.toFixed(1).padStart(17)} | ${notes}\n`;
-    }
-
-    content += `
-
-SUMMARY:
-Total Parts: ${polygonFaces.length}
-Mode: ${useTriangulated ? "Triangulated Backup" : "Merged Polygon"}
-Default Chamfer Angle: 45.0°
-`;
+    let content = ``;
 
     return content;
   }
