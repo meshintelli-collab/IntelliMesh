@@ -263,12 +263,11 @@ export class PolygonPartsExporter {
     // Generate and download zip
     const zipBlob = await zip.generateAsync({ type: "blob" });
 
-    // Download the zip file with proper .zip extension
+    // Create clean filename: modelname_polygon_intellimesh.zip
+    const baseFilename = filename.replace(/\.[^/.]+$/, "").replace(/_polygon_intellimesh$/, "");
     const zipFilename = filename.endsWith(".zip")
       ? filename
-      : filename
-          .replace(/\.[^/.]+$/, "_parts.zip")
-          .replace(/^(.+?)(?:_parts)?$/, "$1_parts.zip");
+      : `${baseFilename}_polygon_intellimesh.zip`;
     this.downloadBlob(zipBlob, zipFilename);
 
     const endTime = Date.now();
