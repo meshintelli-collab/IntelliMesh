@@ -420,12 +420,16 @@ export default function STLWorkflowPanel({
         <button
           onClick={() => setIsMenuCollapsed(!isMenuCollapsed)}
           className={`fixed top-1/2 -translate-y-1/2 z-50 transition-all duration-300 ease-in-out
-            ${isMenuCollapsed ? "left-2" : "left-[19rem]"}
             bg-slate-900/90 backdrop-blur-lg border border-blue-400/30
             hover:border-blue-400/50 hover:bg-slate-800/90
             text-white p-2 rounded-full shadow-lg hover:shadow-blue-500/20
             w-8 h-8 flex items-center justify-center text-xs font-bold
           `}
+          style={{
+            left: isMenuCollapsed
+              ? 'max(0.5rem, env(safe-area-inset-left))'
+              : 'calc(max(1rem, env(safe-area-inset-left)) + 18rem)',
+          }}
           title={isMenuCollapsed ? "Show Menu" : "Hide Menu"}
         >
           {isMenuCollapsed ? ">" : "<"}
