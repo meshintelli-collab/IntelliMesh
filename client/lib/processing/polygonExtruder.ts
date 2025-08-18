@@ -308,7 +308,7 @@ export class PolygonExtruder {
       backVertices,
       originalVertices,
       thickness, // Pass actual thickness, not chamferDepth
-      edgeAngles || Array(originalVertices.length).fill(defaultChamferAngle),
+      edgeAngles !== undefined ? edgeAngles : Array(originalVertices.length).fill(defaultChamferAngle),
     );
 
     console.log(
