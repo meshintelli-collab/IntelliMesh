@@ -717,7 +717,7 @@ export class PolygonExtruder {
 
       if (i < 3) {
         console.log(
-          `   PARAMETRIC Chamfer Wall ${i}: ${chamferAngles[i] || 45}° parametric movement`,
+          `   PARAMETRIC Chamfer Wall ${i}: ${chamferAngles[i] !== undefined ? chamferAngles[i] : 45}° parametric movement`,
         );
         console.log(
           `   FULL front(${ff1.x.toFixed(2)}, ${ff1.y.toFixed(2)}) → PARAMETRIC back(${cb1.x.toFixed(2)}, ${cb1.y.toFixed(2)})`,
@@ -763,9 +763,9 @@ export class PolygonExtruder {
       const prevEdgeIndex = (i - 1 + numVertices) % numVertices;
       const currentEdgeIndex = i;
 
-      // Get chamfer angles for the two adjacent edges
-      const prevChamferAngle = chamferAngles[prevEdgeIndex] || 45;
-      const currentChamferAngle = chamferAngles[currentEdgeIndex] || 45;
+      // Get chamfer angles for the two adjacent edges (handle 0° angles correctly)
+      const prevChamferAngle = chamferAngles[prevEdgeIndex] !== undefined ? chamferAngles[prevEdgeIndex] : 45;
+      const currentChamferAngle = chamferAngles[currentEdgeIndex] !== undefined ? chamferAngles[currentEdgeIndex] : 45;
 
       // Calculate the intersection of the two chamfer planes
       const chamferedVertex = this.calculateVertexChamferIntersection(
