@@ -435,6 +435,9 @@ export default function STLWorkflowPanel({
           className={`fixed top-4 bottom-4 z-40 w-72 max-w-[85vw] max-h-[calc(100vh-2rem)] transition-all duration-300 ease-in-out
           ${isMenuCollapsed ? "-left-72 opacity-0" : "left-4 opacity-100"}
         `}
+          style={{
+            maxHeight: 'calc(100vh - max(1rem, env(safe-area-inset-top)) - max(1rem, env(safe-area-inset-bottom)))',
+          }}
         >
           <div className="bg-slate-900/90 backdrop-blur-lg rounded-2xl border border-blue-400/30 h-full overflow-y-auto shadow-2xl shadow-blue-500/20">
             {/* Mobile Header - aligned with desktop */}
