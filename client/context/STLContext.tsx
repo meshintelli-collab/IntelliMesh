@@ -1473,15 +1473,6 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     [workingMeshTri],
   );
 
-  const createBackup = useCallback(() => {
-    if (originalMesh && workingMeshTri && previewMeshMerged) {
-      setBackupOriginalMesh(originalMesh.clone());
-      setBackupWorkingMeshTri(workingMeshTri.clone());
-      setBackupPreviewMeshMerged(previewMeshMerged.clone());
-      setHasBackup(true);
-    }
-  }, [originalMesh, workingMeshTri, previewMeshMerged]);
-
   const restoreFromBackup = useCallback(() => {
     if (
       hasBackup &&
