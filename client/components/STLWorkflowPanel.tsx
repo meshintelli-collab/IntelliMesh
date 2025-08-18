@@ -2750,7 +2750,7 @@ function MobileWorkflowContent(props: any) {
   );
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-2">
       {/* Compact mobile content with collapsible sections */}
 
       {/* Enhanced Loading Progress Bar - Compact */}
