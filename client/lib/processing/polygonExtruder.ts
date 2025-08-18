@@ -68,14 +68,10 @@ export class PolygonExtruder {
     const polygonAny = polygon as any;
     let frontTriangles: THREE.Vector3[][];
 
-    
-
     if (
       polygonAny.originalTriangulation &&
       polygonAny.originalTriangulation.length > 0
     ) {
-      
-
       // Use original triangulation with current vertices
       frontTriangles = [];
       for (const triangle of polygonAny.originalTriangulation) {
@@ -93,11 +89,9 @@ export class PolygonExtruder {
           );
         }
       }
-
     } else {
       // Fallback to re-triangulation
       frontTriangles = this.triangulatePolygon(frontVertices, normal);
-      
     }
 
     // Front face
@@ -168,12 +162,12 @@ export class PolygonExtruder {
     const chamferedBackVertices = this.generateChamferedVertices(
       originalVertices.map((v) => v.clone().add(offset)), // Start with full back face
       thickness, // Use thickness for full-through chamfering calculation
-      edgeAngles !== undefined ? edgeAngles : Array(originalVertices.length).fill(defaultChamferAngle),
+      edgeAngles !== undefined
+        ? edgeAngles
+        : Array(originalVertices.length).fill(defaultChamferAngle),
     );
 
     const backVertices = chamferedBackVertices; // BACK: Chamfered (smaller)
-
-    
 
     let stlContent = `solid chamfered_polygon_${polygon.index || 0}\n`;
 
@@ -185,8 +179,6 @@ export class PolygonExtruder {
       polygonAny.originalTriangulation &&
       polygonAny.originalTriangulation.length > 0
     ) {
-      
-
       // Use original triangulation with ORIGINAL vertices (not chamfered ones)
       frontTriangles = [];
       for (const triangle of polygonAny.originalTriangulation) {
@@ -199,13 +191,11 @@ export class PolygonExtruder {
         }
       }
     } else {
-      
       // Fallback to re-triangulation
       frontTriangles = this.triangulatePolygon(frontVertices, normal);
     }
 
     // Front face - ORIGINAL vertices (full cross-sectional area for mating)
-    
 
     for (const triangle of frontTriangles) {
       stlContent += this.addTriangleToSTL(
@@ -225,7 +215,6 @@ export class PolygonExtruder {
       polygonAny.originalTriangulation.length > 0
     ) {
       // Use original triangulation with PARAMETRICALLY CHAMFERED vertices
-      
 
       for (const triangle of polygonAny.originalTriangulation) {
         const v1 = backVertices[triangle[0]];
@@ -249,8 +238,6 @@ export class PolygonExtruder {
       );
     }
 
-    
-
     for (const triangle of backTriangles) {
       stlContent += this.addTriangleToSTL(
         triangle[0],
@@ -266,10 +253,11 @@ export class PolygonExtruder {
       backVertices,
       originalVertices,
       thickness, // Pass actual thickness, not chamferDepth
-      edgeAngles !== undefined ? edgeAngles : Array(originalVertices.length).fill(defaultChamferAngle),
+      edgeAngles !== undefined
+        ? edgeAngles
+        : Array(originalVertices.length).fill(defaultChamferAngle),
     );
 
-    
     if (sideWallsContent.length === 0) {
       console.error(
         `❌ CRITICAL: No side walls content generated! This is why STL has no side faces.`,
@@ -293,8 +281,6 @@ export class PolygonExtruder {
     chamferDepth: number,
     chamferAngles: number[],
   ): THREE.Vector3[] {
-
-
     const partThickness = chamferDepth; // chamferDepth is actually the part thickness
     const numVertices = originalVertices.length;
 
@@ -308,7 +294,8 @@ export class PolygonExtruder {
       const nextVertexIndex = (edgeIndex + 1) % numVertices;
 
       // Get chamfer angle for this edge (handle 0° angles correctly)
-      const edgeChamferAngle = chamferAngles[edgeIndex] !== undefined ? chamferAngles[edgeIndex] : 45;
+      const edgeChamferAngle =
+        chamferAngles[edgeIndex] !== undefined ? chamferAngles[edgeIndex] : 45;
       const chamferRadians = (edgeChamferAngle * Math.PI) / 180;
 
       // Calculate chamfer offset: thickness * tan(chamfer_angle)
@@ -332,7 +319,6 @@ export class PolygonExtruder {
         .clone()
         .multiplyScalar(-chamferOffset);
       vertexMovements[nextVertexIndex].add(nextVertexMovement);
-
     }
 
     // Apply all parametric movements simultaneously to create chamfered vertices
@@ -342,9 +328,7 @@ export class PolygonExtruder {
         .clone()
         .add(vertexMovements[i]);
       chamferedVertices.push(chamferedVertex);
-
     }
-
 
     return chamferedVertices;
   }
@@ -575,8 +559,6 @@ export class PolygonExtruder {
     chamferDepth: number,
     chamferAngles: number[],
   ): string {
-
-
     let content = "";
     let triangleCount = 0;
 
@@ -593,7 +575,6 @@ export class PolygonExtruder {
 
       // Validate vertices before creating the parametric chamfer quad
       if (!ff1 || !ff2 || !cb1 || !cb2) {
-
         continue;
       }
 
@@ -622,11 +603,8 @@ export class PolygonExtruder {
       content += triangle1;
       content += triangle2;
       triangleCount += 2;
-
-
     }
 
- 
     return content;
   }
 
@@ -643,16 +621,20 @@ export class PolygonExtruder {
     const chamferedBackVertices: THREE.Vector3[] = [];
     const numVertices = frontVertices.length;
 
-
-
     for (let i = 0; i < numVertices; i++) {
       // Get the two edges that meet at this vertex
       const prevEdgeIndex = (i - 1 + numVertices) % numVertices;
       const currentEdgeIndex = i;
 
       // Get chamfer angles for the two adjacent edges (handle 0° angles correctly)
-      const prevChamferAngle = chamferAngles[prevEdgeIndex] !== undefined ? chamferAngles[prevEdgeIndex] : 45;
-      const currentChamferAngle = chamferAngles[currentEdgeIndex] !== undefined ? chamferAngles[currentEdgeIndex] : 45;
+      const prevChamferAngle =
+        chamferAngles[prevEdgeIndex] !== undefined
+          ? chamferAngles[prevEdgeIndex]
+          : 45;
+      const currentChamferAngle =
+        chamferAngles[currentEdgeIndex] !== undefined
+          ? chamferAngles[currentEdgeIndex]
+          : 45;
 
       // Calculate the intersection of the two chamfer planes
       const chamferedVertex = this.calculateVertexChamferIntersection(
@@ -665,7 +647,6 @@ export class PolygonExtruder {
       );
 
       chamferedBackVertices.push(chamferedVertex);
-
     }
 
     return chamferedBackVertices;
@@ -722,8 +703,6 @@ export class PolygonExtruder {
     const prevChamferOffset = chamferDepth * Math.tan(prevChamferRadians);
     const currentChamferOffset = chamferDepth * Math.tan(currentChamferRadians);
 
-
-
     // Calculate the two chamfer plane movements
     const prevInwardDirection = prevOutwardNormal.clone().negate();
     const currentInwardDirection = nextOutwardNormal.clone().negate();
@@ -745,8 +724,6 @@ export class PolygonExtruder {
         currentInwardDirection.clone().multiplyScalar(currentChamferOffset),
       )
       .multiplyScalar(0.5);
-
-
 
     // Apply the movement to get the final chamfered vertex position
     const chamferedVertex = currentVertex.clone().add(averageMovement);
@@ -838,12 +815,7 @@ export class PolygonExtruder {
       return [];
     }
 
-
-
     return polygonFaces.map((faceInfo: any, index: number) => {
-
-
-
       return {
         vertices: faceInfo.originalVertices || [],
         normal: faceInfo.normal || new THREE.Vector3(0, 0, 1),

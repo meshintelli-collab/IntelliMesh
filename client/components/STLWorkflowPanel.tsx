@@ -427,8 +427,8 @@ export default function STLWorkflowPanel({
           `}
           style={{
             left: isMenuCollapsed
-              ? 'max(0.5rem, env(safe-area-inset-left))'
-              : 'calc(max(1rem, env(safe-area-inset-left)) + 18rem)',
+              ? "max(0.5rem, env(safe-area-inset-left))"
+              : "calc(max(1rem, env(safe-area-inset-left)) + 18rem)",
           }}
           title={isMenuCollapsed ? "Show Menu" : "Hide Menu"}
         >
@@ -440,8 +440,11 @@ export default function STLWorkflowPanel({
           ${isMenuCollapsed ? "-left-72 opacity-0" : "left-4 opacity-100"}
         `}
           style={{
-            maxHeight: 'calc(100vh - max(1rem, env(safe-area-inset-top)) - max(1rem, env(safe-area-inset-bottom)))',
-            left: isMenuCollapsed ? '-18rem' : 'max(1rem, env(safe-area-inset-left))',
+            maxHeight:
+              "calc(100vh - max(1rem, env(safe-area-inset-top)) - max(1rem, env(safe-area-inset-bottom)))",
+            left: isMenuCollapsed
+              ? "-18rem"
+              : "max(1rem, env(safe-area-inset-left))",
           }}
         >
           <div className="bg-slate-900/90 backdrop-blur-lg rounded-2xl border border-blue-400/30 h-full overflow-y-auto shadow-2xl shadow-blue-500/20">

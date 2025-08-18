@@ -405,8 +405,6 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
           counts[face.type] = (counts[face.type] || 0) + 1;
           return counts;
         }, {});
-
-
       } else {
         // Fallback: create basic triangle structure
         const positions = preview.attributes.position.array as Float32Array;
@@ -457,7 +455,6 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
 
     if (defaultMeshType === "merged") {
       initialGeometry = prepareGeometryForViewing(preview, "merged_display");
-
     } else {
       initialGeometry = prepareGeometryForViewing(
         triangulated,
@@ -466,8 +463,6 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     }
 
     setGeometry(initialGeometry);
-
-
   };
 
   // Minimal setup for very large files (>500KB) - NO heavy processing to prevent timeouts
@@ -507,8 +502,6 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     // Create merged mesh (with polygon metadata if available)
     setPreviewMeshMerged(loadedGeometry);
     setGeometry(loadedGeometry);
-
-
   };
 
   // Progressive setup for large models (50k+ triangles)
@@ -613,7 +606,6 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
   };
 
   const loadModelFromFile = useCallback(async (file: File) => {
-
     setIsLoading(true);
     setError(null);
     setErrors([]);
@@ -640,8 +632,6 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       const isLargeModel = triangleCount > 50000; // 50k+ triangles = large model
 
       updateProgress(50, "Build", "Preparing display...");
-
-
 
       if (isVeryLargeFile) {
         // MINIMAL PROCESSING for large files to prevent timeouts
@@ -693,7 +683,6 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       setError(`Failed to load ${file.name}: ${errorMessage}`);
       addError(errorMessage);
     } finally {
-
       setIsLoading(false);
     }
   }, []);
@@ -821,8 +810,6 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-
-
       } else {
         console.error("❌ OBJ export failed:", result.error);
       }
@@ -847,11 +834,13 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       useTriangulated?: boolean;
     }) => {
       // Choose the correct mesh based on useTriangulated parameter
-      const meshToUse = options?.useTriangulated ? workingMeshTri : previewMeshMerged;
+      const meshToUse = options?.useTriangulated
+        ? workingMeshTri
+        : previewMeshMerged;
 
       if (!meshToUse) {
         console.error(
-          `No 3D model loaded for parts export (${options?.useTriangulated ? 'triangulated' : 'merged'} mode)`
+          `No 3D model loaded for parts export (${options?.useTriangulated ? "triangulated" : "merged"} mode)`,
         );
         return;
       }
@@ -878,14 +867,16 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       useTriangulated?: boolean;
     }) => {
       // Choose the correct mesh based on useTriangulated parameter
-      const meshToUse = options?.useTriangulated ? workingMeshTri : previewMeshMerged;
+      const meshToUse = options?.useTriangulated
+        ? workingMeshTri
+        : previewMeshMerged;
 
       if (!meshToUse) {
         console.error(
-          `No 3D model loaded for chamfered parts export (${options?.useTriangulated ? 'triangulated' : 'merged'} mode)`
+          `No 3D model loaded for chamfered parts export (${options?.useTriangulated ? "triangulated" : "merged"} mode)`,
         );
         addError(
-          `No 3D model loaded for chamfered parts export (${options?.useTriangulated ? 'triangulated' : 'merged'} mode)`
+          `No 3D model loaded for chamfered parts export (${options?.useTriangulated ? "triangulated" : "merged"} mode)`,
         );
         return;
       }
@@ -894,7 +885,9 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       const polygonFaces = (meshToUse as any).polygonFaces;
       if (
         !options?.useTriangulated &&
-        (!polygonFaces || !Array.isArray(polygonFaces) || polygonFaces.length === 0)
+        (!polygonFaces ||
+          !Array.isArray(polygonFaces) ||
+          polygonFaces.length === 0)
       ) {
         console.error(
           "Chamfered export requires polygon faces. Please ensure model is properly processed.",
@@ -959,8 +952,6 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       setIsProcessingTool(true);
 
       try {
-
-
         // Colors will be reapplied after decimation based on polygon face structure
 
         // Call static method directly
@@ -970,16 +961,12 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
           method,
         );
 
-
-
         if (result.geometry) {
-
           // Update working mesh - ensure it stays pure triangulated with flat normals
           const cleanTriangleMesh = result.geometry;
           delete (cleanTriangleMesh as any).isProcedurallyGenerated;
 
           // Keep polygon metadata if it exists for proper coloring
-
 
           // CRITICAL: Remove any existing normals and force flat normals for solid face coloring
           if (cleanTriangleMesh.attributes.normal) {
@@ -987,7 +974,6 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
           }
           // Force recalculation of flat normals using right-hand rule
           cleanTriangleMesh.computeVertexNormals();
-
 
           setWorkingMeshTri(cleanTriangleMesh);
 
@@ -1052,8 +1038,6 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     const polygonBreakdown: Array<{ type: string; count: number }> = [
       { type: "triangle", count: triangles },
     ];
-
-
 
     return {
       vertices,
@@ -1585,8 +1569,6 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
             ? (originalStats.triangles - polygonCount) / originalStats.triangles
             : 0;
 
-
-
           // Apply polygon faces to the merged mesh geometry
           const { PolygonFaceReconstructor } = await import(
             "../lib/processing/polygonFaceReconstructor"
@@ -1643,7 +1625,6 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
 
     if (meshType === "merged") {
       if (previewMeshMerged) {
-
         const displayGeometry = prepareGeometryForViewing(
           previewMeshMerged,
           "merged_display",

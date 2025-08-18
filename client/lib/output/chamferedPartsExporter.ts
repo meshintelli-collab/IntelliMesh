@@ -426,7 +426,9 @@ export class ChamferedPartsExporter {
     const zipBlob = await zip.generateAsync({ type: "blob" });
 
     // Create clean filename: modelname_chamfered_intellimesh.zip
-    const baseFilename = filename.replace(/\.[^/.]+$/, "").replace(/_chamfered_intellimesh$/, "");
+    const baseFilename = filename
+      .replace(/\.[^/.]+$/, "")
+      .replace(/_chamfered_intellimesh$/, "");
     const zipFilename = filename.endsWith(".zip")
       ? filename
       : `${baseFilename}_chamfered_intellimesh.zip`;
@@ -877,7 +879,9 @@ export class ChamferedPartsExporter {
     const chamferedBackVertices = this.generateChamferedVerticesOBJ(
       backVertices, // Start with full back vertices
       thickness, // Use thickness for full-through chamfering calculation
-      edgeAngles !== undefined ? edgeAngles : Array(originalVertices.length).fill(defaultChamferAngle),
+      edgeAngles !== undefined
+        ? edgeAngles
+        : Array(originalVertices.length).fill(defaultChamferAngle),
     );
 
     const actualBackVertices = chamferedBackVertices; // BACK: Chamfered (smaller)
@@ -977,7 +981,8 @@ export class ChamferedPartsExporter {
       const nextVertexIndex = (edgeIndex + 1) % numVertices;
 
       // Get chamfer angle for this edge (handle 0° angles correctly)
-      const edgeChamferAngle = chamferAngles[edgeIndex] !== undefined ? chamferAngles[edgeIndex] : 45;
+      const edgeChamferAngle =
+        chamferAngles[edgeIndex] !== undefined ? chamferAngles[edgeIndex] : 45;
       const chamferRadians = (edgeChamferAngle * Math.PI) / 180;
 
       // Calculate chamfer offset: thickness * tan(chamfer_angle)
@@ -1094,8 +1099,14 @@ export class ChamferedPartsExporter {
       const currentEdgeIndex = i;
 
       // Get chamfer angles for the two adjacent edges (handle 0° angles correctly)
-      const prevChamferAngle = chamferAngles[prevEdgeIndex] !== undefined ? chamferAngles[prevEdgeIndex] : 45;
-      const currentChamferAngle = chamferAngles[currentEdgeIndex] !== undefined ? chamferAngles[currentEdgeIndex] : 45;
+      const prevChamferAngle =
+        chamferAngles[prevEdgeIndex] !== undefined
+          ? chamferAngles[prevEdgeIndex]
+          : 45;
+      const currentChamferAngle =
+        chamferAngles[currentEdgeIndex] !== undefined
+          ? chamferAngles[currentEdgeIndex]
+          : 45;
 
       // Calculate the intersection of the two chamfer planes
       const chamferedVertex = this.calculateVertexChamferIntersection(

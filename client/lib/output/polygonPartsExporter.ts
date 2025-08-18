@@ -264,7 +264,9 @@ export class PolygonPartsExporter {
     const zipBlob = await zip.generateAsync({ type: "blob" });
 
     // Create clean filename: modelname_polygon_intellimesh.zip
-    const baseFilename = filename.replace(/\.[^/.]+$/, "").replace(/_polygon_intellimesh$/, "");
+    const baseFilename = filename
+      .replace(/\.[^/.]+$/, "")
+      .replace(/_polygon_intellimesh$/, "");
     const zipFilename = filename.endsWith(".zip")
       ? filename
       : `${baseFilename}_polygon_intellimesh.zip`;

@@ -30,9 +30,9 @@ export default function About() {
 
             <div className="text-lg leading-relaxed space-y-4 text-gray-300">
               <p>
-                Intellimesh is a&nbsp; for 3D mesh manipulation and
-                fabrication. Built for designers, engineers, tinkerers, and
-                3D enthusiasts worldwide.
+                Intellimesh is a&nbsp; for 3D mesh manipulation and fabrication.
+                Built for designers, engineers, tinkerers, and 3D enthusiasts
+                worldwide.
               </p>
 
               <p>
@@ -78,7 +78,11 @@ export default function About() {
                 </li>
                 <li className="flex items-start">
                   <span className="text-blue-400 mr-3 text-xl">•</span>
-                  <span>Export your simplified model as a whole, or all of its separate parts (so you can laser cut and weld, 3D print and glue, or whatever!)</span>
+                  <span>
+                    Export your simplified model as a whole, or all of its
+                    separate parts (so you can laser cut and weld, 3D print and
+                    glue, or whatever!)
+                  </span>
                 </li>
               </ul>
             </div>
@@ -120,11 +124,11 @@ export default function About() {
 
             <div className="mb-6 text-gray-300">
               <p className="mb-4">
-                Intellimesh is a passion project built by some guys who,
-                whilst they are terrified of women, want to make 3D
-                computational geometry tools accessible to everyone. Your
-                support helps us maintain the platform, add new features, and
-                keep it free for the community.
+                Intellimesh is a passion project built by some guys who, whilst
+                they are terrified of women, want to make 3D computational
+                geometry tools accessible to everyone. Your support helps us
+                maintain the platform, add new features, and keep it free for
+                the community.
               </p>
             </div>
 
