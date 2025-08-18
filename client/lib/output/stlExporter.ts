@@ -227,7 +227,7 @@ export class STLExporter {
     let finalFilename = safeFilename;
 
     if (!finalFilename.toLowerCase().endsWith('.stl')) {
-      finalFilename += '.stl';
+      finalFilename += '_intellimesh.stl';
     }
 
     // Create blob and download
