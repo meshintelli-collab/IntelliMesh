@@ -314,7 +314,7 @@ export class ChamferedPartsExporter {
         partContent = stlContent;
       }
 
-      const partFilename = `part_${String(i + 1).padStart(4, "0")}_${polygonFace.type || "polygon"}_chamfered.${fileExtension}`;
+      const partFilename = `part_${String(i + 1).padStart(4, "0")}.${fileExtension}`;
 
       // Calculate part geometry and metrics (similar to polygon parts exporter)
       const partInfo = this.calculateChamferedPartInfo(
@@ -406,7 +406,7 @@ export class ChamferedPartsExporter {
       chamferDepth,
       polygonType,
     });
-    zip.file("chamfered_parts_database.xlsx", excelBuffer);
+    zip.file("assembly_info.xlsx", excelBuffer);
 
     // Add assembly instructions
     const instructions = this.generateChamferedAssemblyInstructions(
@@ -428,8 +428,8 @@ export class ChamferedPartsExporter {
     const zipFilename = filename.endsWith(".zip")
       ? filename
       : filename
-          .replace(/\.[^/.]+$/, "_chamfered_parts.zip")
-          .replace(/^(.+?)(?:_chamfered_parts)?$/, "$1_chamfered_parts.zip");
+          .replace(/\.[^/.]+$/, "_chamfered.zip")
+          .replace(/^(.+?)(?:_chamfered)?$/, "$1_chamfered.zip");
     this.downloadBlob(zipBlob, zipFilename);
 
     // CLEAN SUMMARY OUTPUT WITH DEBUG INFO FOR COMPLEX SHAPES
