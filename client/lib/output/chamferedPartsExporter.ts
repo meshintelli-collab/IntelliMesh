@@ -425,11 +425,11 @@ export class ChamferedPartsExporter {
     // Generate and download zip
     const zipBlob = await zip.generateAsync({ type: "blob" });
 
+    // Create clean filename: modelname_chamfered_intellimesh.zip
+    const baseFilename = filename.replace(/\.[^/.]+$/, "").replace(/_chamfered_intellimesh$/, "");
     const zipFilename = filename.endsWith(".zip")
       ? filename
-      : filename
-          .replace(/\.[^/.]+$/, "_chamfered.zip")
-          .replace(/^(.+?)(?:_chamfered)?$/, "$1_chamfered.zip");
+      : `${baseFilename}_chamfered_intellimesh.zip`;
     this.downloadBlob(zipBlob, zipFilename);
 
     // CLEAN SUMMARY OUTPUT WITH DEBUG INFO FOR COMPLEX SHAPES
