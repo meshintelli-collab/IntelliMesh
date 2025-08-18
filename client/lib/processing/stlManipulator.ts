@@ -30,29 +30,46 @@ export class STLManipulator {
     try {
       const { PythonMeshProcessor } = await import("./pythonMeshProcessor");
 
-      // Check if Python service is available
-      const isAvailable = await PythonMeshProcessor.isServiceHealthy();
+      // Check if Python service is available (handles cloud environment detection)
+      const isAvailable = await PythonMeshProcessor.checkServiceHealth();
 
       if (isAvailable) {
-        const pythonResult = await PythonMeshProcessor.decimateMesh(
-          geometry,
-          targetReduction,
+        console.log("🐍 Using Python Open3D service for decimation");
+        try {
+          const pythonResult = await PythonMeshProcessor.decimateMesh(
+            geometry,
+            targetReduction,
+          );
+
+          const newStats = this.calculateMeshStats(pythonResult.geometry);
+          const reductionAchieved =
+            1 - newStats.vertices / originalStats.vertices;
+
+          console.log("🐍 ✅ Python Open3D decimation completed successfully");
+          return {
+            geometry: pythonResult.geometry,
+            originalStats,
+            newStats,
+            reductionAchieved,
+            processingTime: pythonResult.processingTime,
+          };
+        } catch (decimationError) {
+          console.log(
+            "🐍 ❌ Python decimation failed, using JavaScript fallback:",
+            decimationError,
+          );
+        }
+      } else {
+        console.log(
+          "🔄 Using JavaScript decimation (Python service not available)",
         );
-
-        const newStats = this.calculateMeshStats(pythonResult.geometry);
-        const reductionAchieved =
-          1 - newStats.vertices / originalStats.vertices;
-
-        return {
-          geometry: pythonResult.geometry,
-          originalStats,
-          newStats,
-          reductionAchieved,
-          processingTime: pythonResult.processingTime,
-        };
       }
     } catch (error) {
-      // Python service unavailable, fall back to JavaScript
+      // Handle any import or unexpected errors gracefully
+      console.log(
+        "🔄 Using JavaScript decimation (Python service error):",
+        error,
+      );
     }
 
     // Choose implementation based on method

@@ -72,10 +72,14 @@ export default function Index() {
     const result = await reducePoints(reduction, backendMethod);
     if (result.success) {
       // Success message will be shown in console logs
+      console.log("✅ Reduction successful:", result.message);
     } else {
       console.error("❌ Reduction failed:", result.message);
       addError(result.message);
     }
+
+    // Return the result for the caller to handle
+    return result;
   };
 
   const handleRandomColorsChange = (checked: boolean) => {
@@ -162,7 +166,7 @@ export default function Index() {
               isMobile ? "text-xs" : "text-xs md:text-sm"
             }`}
           >
-            IntelliMesh
+            IntelliMesh (v0.1)
           </div>
           {!isMobile && (
             <div className="text-xs text-white/50 hidden md:block">
@@ -195,7 +199,7 @@ export default function Index() {
                     : "text-2xl md:text-3xl mb-3 md:mb-4"
                 }`}
               >
-                IntelliMesh
+                IntelliMesh (v0.1)
               </h1>
               <p
                 className={`text-white/80 ${

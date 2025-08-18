@@ -96,6 +96,7 @@ interface STLContextType {
   availableModels: Array<{ name: string; description: string }>;
   updateViewerSettings: (settings: Partial<ViewerSettings>) => void;
   exportSTL: (customFilename?: string) => void;
+  exportOBJ: (customFilename?: string) => void;
   exportParts: (options?: {
     format?: "stl" | "obj";
     partThickness?: number;
@@ -145,7 +146,7 @@ const defaultViewerSettings: ViewerSettings = {
   autoSpin: false,
   highlightColor: "#ff0000",
   enableHighlighting: true,
-  meshType: "triangle",
+  meshType: "merged",
 };
 
 const STLContext = createContext<STLContextType | undefined>(undefined);
@@ -242,7 +243,7 @@ const ensureNormals = (geometry: THREE.BufferGeometry): void => {
 export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
   // Add safeguard for hot reload issues
   useEffect(() => {
-    console.log("🔧 STLProvider initialized/re-initialized");
+    // STLProvider initialized
   }, []);
   // Dual mesh system state
   const [originalMesh, setOriginalMesh] = useState<THREE.BufferGeometry | null>(
@@ -328,7 +329,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
   ];
 
   // Set up dual mesh system
-  const setupDualMeshSystem = (loadedGeometry: THREE.BufferGeometry) => {
+  const setupDualMeshSystem = async (loadedGeometry: THREE.BufferGeometry) => {
     // 1. Store original mesh (keep untouched)
     const original = loadedGeometry.clone();
     setOriginalMesh(original);
@@ -346,6 +347,18 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     // Apply repairs
     triangulated = repairGeometry(triangulated);
     ensureNormals(triangulated);
+
+    // CRITICAL: Ensure triangle mesh has NO polygon metadata
+    // This should be pure triangulated data only
+    delete (triangulated as any).polygonFaces;
+    delete (triangulated as any).polygonType;
+    delete (triangulated as any).isProcedurallyGenerated;
+
+    console.log("✅ Triangle mesh created - pure triangulated data only", {
+      vertices: triangulated.attributes.position.count,
+      triangles: Math.floor(triangulated.attributes.position.count / 3),
+      hasPolygonFaces: !!(triangulated as any).polygonFaces,
+    });
 
     setWorkingMeshTri(triangulated);
 
@@ -365,19 +378,47 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       ).isProcedurallyGenerated;
     }
 
-    // Apply coplanar merging for clean preview if geometry supports it
-    if (
-      (loadedGeometry as any).isProcedurallyGenerated &&
-      (loadedGeometry as any).polygonFaces
-    ) {
-      // For procedural geometry, polygon structure is already perfect
-    } else {
-      // For loaded files, apply polygon reconstruction to create merged faces
-      const polygonFaces =
-        PolygonFaceReconstructor.reconstructPolygonFaces(triangulated);
-      if (polygonFaces.length > 0) {
-        PolygonFaceReconstructor.applyReconstructedFaces(preview, polygonFaces);
-        (preview as any).polygonType = "reconstructed_merged";
+    // Choose strategy: preserve original polygons for procedural models, or apply merging for loaded files
+    const hasOriginalPolygons =
+      (loadedGeometry as any).polygonFaces &&
+      (loadedGeometry as any).isProcedurallyGenerated;
+
+    try {
+      let mergedFaces: any[];
+
+      if (hasOriginalPolygons) {
+        // For procedural models: preserve original polygon structure
+        console.log(
+          `🎯 PRESERVING original polygon structure for procedural model`,
+        );
+        mergedFaces = (loadedGeometry as any).polygonFaces;
+      } else {
+        // For loaded files: apply coplanar merging
+        console.log(`🔧 APPLYING coplanar merging for loaded file`);
+        const { EdgeAdjacentMerger } = await import(
+          "../lib/processing/edgeAdjacentMerger"
+        );
+        mergedFaces = EdgeAdjacentMerger.mergeCoplanarTriangles(triangulated);
+      }
+
+      if (mergedFaces.length > 0) {
+        // Apply the merged faces to the preview geometry
+        PolygonFaceReconstructor.applyReconstructedFaces(preview, mergedFaces);
+        (preview as any).polygonFaces = mergedFaces;
+        (preview as any).polygonType = hasOriginalPolygons
+          ? "preserved_procedural"
+          : "edge_adjacent_merged";
+
+        // Detailed logging for merged faces
+        const faceTypeCounts = mergedFaces.reduce((counts: any, face: any) => {
+          counts[face.type] = (counts[face.type] || 0) + 1;
+          return counts;
+        }, {});
+
+        console.log(
+          `✅ ${hasOriginalPolygons ? "Preserved original" : "Created merged"} preview with ${mergedFaces.length} polygon faces:`,
+          faceTypeCounts,
+        );
       } else {
         // Fallback: create basic triangle structure
         const positions = preview.attributes.position.array as Float32Array;
@@ -394,19 +435,61 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
 
         (preview as any).polygonFaces = fallbackFaces;
         (preview as any).polygonType = "fallback_triangles";
+        console.log("⚠️ Fallback to triangulated faces for merged preview");
+      }
+    } catch (error) {
+      console.error("❌ Error during coplanar merging:", error);
+      // Fallback: use original polygon structure if available
+      if ((loadedGeometry as any).polygonFaces) {
+        (preview as any).polygonFaces = (loadedGeometry as any).polygonFaces;
+        (preview as any).polygonType = "preserved_original";
+      } else {
+        // Final fallback: basic triangles
+        const positions = preview.attributes.position.array as Float32Array;
+        const fallbackFaces: any[] = [];
+
+        for (let i = 0; i < positions.length; i += 9) {
+          fallbackFaces.push({
+            type: "triangle",
+            startVertex: i / 3,
+            endVertex: i / 3 + 2,
+            triangleCount: 1,
+          });
+        }
+
+        (preview as any).polygonFaces = fallbackFaces;
+        (preview as any).polygonType = "error_fallback_triangles";
       }
     }
 
     setPreviewMeshMerged(preview);
 
-    // 4. Set display geometry (use preview for viewing)
-    const displayGeometry = prepareGeometryForViewing(preview, "display");
-    console.log("✅ Normal processing complete - display geometry prepared", {
-      vertices: displayGeometry.attributes.position.count,
-      hasNormals: !!displayGeometry.attributes.normal,
-      hasGeometry: !!displayGeometry,
+    // 4. Set initial display geometry based on default meshType
+    const defaultMeshType = defaultViewerSettings.meshType;
+    let initialGeometry: THREE.BufferGeometry;
+
+    if (defaultMeshType === "merged") {
+      initialGeometry = prepareGeometryForViewing(preview, "merged_display");
+      console.log(
+        `✅ Initial display set to MERGED with ${(preview as any).polygonFaces?.length || 0} polygon faces`,
+      );
+    } else {
+      initialGeometry = prepareGeometryForViewing(
+        triangulated,
+        "triangle_display",
+      );
+      console.log(`✅ Initial display set to TRIANGLE`);
+    }
+
+    setGeometry(initialGeometry);
+
+    console.log("✅ Normal processing complete - dual mesh system ready", {
+      triangleVertices: triangulated.attributes.position.count,
+      mergedVertices: preview.attributes.position.count,
+      polygonFaces: (preview as any).polygonFaces?.length || 0,
+      hasNormals: !!preview.attributes.normal,
+      initialMeshType: defaultMeshType,
     });
-    setGeometry(displayGeometry);
   };
 
   // Minimal setup for very large files (>500KB) - NO heavy processing to prevent timeouts
@@ -433,9 +516,17 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     // Always recompute normals for large files to fix any malformed faces from STL
     loadedGeometry.computeVertexNormals();
 
-    // Use the same geometry for everything - no dual mesh system
+    // Even for large files, maintain separate triangle and merged meshes
     setOriginalMesh(loadedGeometry);
-    setWorkingMeshTri(loadedGeometry);
+
+    // Create clean triangle mesh (no polygon metadata)
+    const triangleMesh = loadedGeometry.clone();
+    delete (triangleMesh as any).polygonFaces;
+    delete (triangleMesh as any).polygonType;
+    delete (triangleMesh as any).isProcedurallyGenerated;
+    setWorkingMeshTri(triangleMesh);
+
+    // Create merged mesh (with polygon metadata if available)
     setPreviewMeshMerged(loadedGeometry);
     setGeometry(loadedGeometry);
 
@@ -469,8 +560,13 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     }
     ensureNormals(basicMesh);
 
-    // Set for immediate display
-    setWorkingMeshTri(basicMesh);
+    // Set for immediate display - maintain separate meshes
+    const triangleMesh = basicMesh.clone();
+    delete (triangleMesh as any).polygonFaces;
+    delete (triangleMesh as any).polygonType;
+    delete (triangleMesh as any).isProcedurallyGenerated;
+    setWorkingMeshTri(triangleMesh);
+
     setPreviewMeshMerged(basicMesh);
 
     // 3. Set up basic display geometry immediately
@@ -484,6 +580,9 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       try {
         // Apply repairs and polygon reconstruction in background
         const repairedMesh = repairGeometry(basicMesh.clone());
+        delete (repairedMesh as any).polygonFaces;
+        delete (repairedMesh as any).polygonType;
+        delete (repairedMesh as any).isProcedurallyGenerated;
         setWorkingMeshTri(repairedMesh);
 
         // Only do polygon reconstruction if needed for parts export
@@ -501,19 +600,43 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
   ) => {
     let preview = workingGeometry.clone();
 
-    // Try to reconstruct polygon faces for better preview
+    // Try to use preserved polygon faces first, then reconstruct if needed
     try {
-      const polygonFaces =
-        PolygonFaceReconstructor.reconstructPolygonFaces(workingGeometry);
-      if (polygonFaces.length > 0) {
-        PolygonFaceReconstructor.applyReconstructedFaces(preview, polygonFaces);
-        (preview as any).polygonType = `${operationType}_merged`;
+      const existingPolygonFaces = (workingGeometry as any).polygonFaces;
+
+      if (
+        existingPolygonFaces &&
+        Array.isArray(existingPolygonFaces) &&
+        existingPolygonFaces.length > 0
+      ) {
+        // Use preserved polygon faces from decimation
+        console.log(
+          `🔧 Using preserved polygon faces: ${existingPolygonFaces.length} faces`,
+        );
+        (preview as any).polygonFaces = existingPolygonFaces;
+        (preview as any).polygonType = `${operationType}_preserved`;
+        (preview as any).isPolygonPreserved = true;
       } else {
-        // Fallback: use triangulated geometry as-is
-        (preview as any).polygonType = `${operationType}_triangulated`;
+        // Reconstruct polygon faces from triangulated geometry
+        console.log(
+          `🔧 Reconstructing polygon faces for ${operationType} preview`,
+        );
+        const polygonFaces =
+          PolygonFaceReconstructor.reconstructPolygonFaces(workingGeometry);
+        if (polygonFaces.length > 0) {
+          PolygonFaceReconstructor.applyReconstructedFaces(
+            preview,
+            polygonFaces,
+          );
+          (preview as any).polygonType = `${operationType}_merged`;
+        } else {
+          // Fallback: use triangulated geometry as-is
+          (preview as any).polygonType = `${operationType}_triangulated`;
+        }
       }
     } catch (error) {
       // Fallback: use triangulated geometry as-is
+      console.log(`⚠️ Preview creation error for ${operationType}:`, error);
       (preview as any).polygonType = `${operationType}_triangulated`;
     }
 
@@ -582,7 +705,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         if (isLargeModel) {
           await setupDualMeshSystemProgressive(loadedGeometry, updateProgress);
         } else {
-          setupDualMeshSystem(loadedGeometry);
+          await setupDualMeshSystem(loadedGeometry);
         }
       }
 
@@ -671,7 +794,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       updateProgress(80, "Processing", "Setting up mesh system...");
 
       // Set up dual mesh system
-      setupDualMeshSystem(bufferGeometry);
+      await setupDualMeshSystem(bufferGeometry);
 
       setFileName(`${modelName}.stl`);
       setOriginalFormat("stl");
@@ -711,6 +834,41 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
 
       const filename = customFilename || fileName || "model.stl";
       STLExporter.exportGeometry(previewMeshMerged, filename);
+    },
+    [previewMeshMerged, fileName],
+  );
+
+  const exportOBJ = useCallback(
+    (customFilename?: string) => {
+      if (!previewMeshMerged) return;
+
+      const filename = customFilename || fileName || "model.obj";
+      const result = OBJConverter.geometryToOBJ(previewMeshMerged, filename);
+
+      if (result.success !== false && result.objString) {
+        // Create and download the OBJ file
+        const blob = new Blob([result.objString], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename.endsWith(".obj")
+          ? filename
+          : `${filename}.obj`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        console.log("✅ OBJ export complete:", {
+          filename: link.download,
+          vertices: result.vertexCount,
+          faces: result.faceCount,
+          hasQuads: result.hasQuads,
+          hasPolygons: result.hasPolygons,
+        });
+      } else {
+        console.error("❌ OBJ export failed:", result.error);
+      }
     },
     [previewMeshMerged, fileName],
   );
@@ -834,7 +992,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
           method,
         );
 
-        console.log("🔧 Decimation result:", {
+        console.log("�� Decimation result:", {
           hasGeometry: !!result.geometry,
           originalVertices: result.originalStats.vertices,
           newVertices: result.newStats.vertices,
@@ -845,8 +1003,28 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         if (result.geometry) {
           console.log("✅ Updating meshes after decimation...");
 
-          // Update working mesh
-          setWorkingMeshTri(result.geometry);
+          // Update working mesh - ensure it stays pure triangulated with flat normals
+          const cleanTriangleMesh = result.geometry;
+          delete (cleanTriangleMesh as any).isProcedurallyGenerated;
+
+          // Keep polygon metadata if it exists for proper coloring
+          if ((cleanTriangleMesh as any).polygonFaces) {
+            console.log(
+              `✅ Preserved ${(cleanTriangleMesh as any).polygonFaces.length} polygon faces after decimation`,
+            );
+          }
+
+          // CRITICAL: Remove any existing normals and force flat normals for solid face coloring
+          if (cleanTriangleMesh.attributes.normal) {
+            cleanTriangleMesh.deleteAttribute("normal");
+          }
+          // Force recalculation of flat normals using right-hand rule
+          cleanTriangleMesh.computeVertexNormals();
+          console.log(
+            "✅ Applied flat normals to decimated triangle mesh for solid face coloring",
+          );
+
+          setWorkingMeshTri(cleanTriangleMesh);
 
           // Create proper preview mesh with reconstructed faces
           const newPreview = createPreviewFromWorkingMesh(
@@ -908,25 +1086,18 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     const triangles = Math.floor(vertices / 3);
     const edges = (triangles * 3) / 2; // Approximate for manifold mesh
 
-    // Create polygon breakdown from geometry metadata
-    const polygonFaces = (workingMeshTri as any).polygonFaces;
-    let polygonBreakdown: Array<{ type: string; count: number }> = [];
+    // Triangle mesh should ONLY show triangle data, never polygon faces
+    // This ensures pure triangulated statistics for triangle mode
+    const polygonBreakdown: Array<{ type: string; count: number }> = [
+      { type: "triangle", count: triangles },
+    ];
 
-    if (polygonFaces && Array.isArray(polygonFaces)) {
-      const typeCount: Record<string, number> = {};
-      polygonFaces.forEach((face: any) => {
-        const type = face.type || "triangle";
-        typeCount[type] = (typeCount[type] || 0) + 1;
-      });
-
-      polygonBreakdown = Object.entries(typeCount).map(([type, count]) => ({
-        type,
-        count,
-      }));
-    } else {
-      // Fallback to triangles
-      polygonBreakdown = [{ type: "triangle", count: triangles }];
-    }
+    console.log("📊 Triangle mesh stats - pure triangulated data:", {
+      vertices,
+      edges,
+      triangles,
+      hasPolygonFaces: !!(workingMeshTri as any).polygonFaces,
+    });
 
     return {
       vertices,
@@ -1008,147 +1179,218 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     (triangleIndex: number | null) => {
       setHighlightedTriangleState(triangleIndex);
 
-      if (triangleIndex !== null && previewMeshMerged) {
-        const polygonFaces = (previewMeshMerged as any).polygonFaces;
+      if (triangleIndex !== null) {
+        // Check if we're in triangle mode or merged mode
+        const isTriangleMode = viewerSettings.meshType === "triangle";
 
-        if (!polygonFaces || !Array.isArray(polygonFaces)) {
-          setTriangleStats(null);
-          return;
-        }
-
-        // Find the face that contains this triangle
-        let targetFace = null;
-        let targetFaceIndex = -1;
-
-        for (let faceIndex = 0; faceIndex < polygonFaces.length; faceIndex++) {
-          const face = polygonFaces[faceIndex];
-          if (
-            face.triangleIndices &&
-            face.triangleIndices.includes(triangleIndex)
-          ) {
-            targetFace = face;
-            targetFaceIndex = faceIndex;
-            break;
+        if (isTriangleMode && workingMeshTri) {
+          // Calculate actual triangle information from the triangle mesh
+          const positionAttribute = workingMeshTri.attributes.position;
+          if (!positionAttribute) {
+            setTriangleStats(null);
+            return;
           }
-        }
 
-        if (!targetFace) {
-          setTriangleStats(null);
-          return;
-        }
+          // Get the three vertices of this triangle
+          const vertices: THREE.Vector3[] = [];
+          for (let i = 0; i < 3; i++) {
+            const vertexIndex = triangleIndex * 3 + i;
+            if (vertexIndex < positionAttribute.count) {
+              vertices.push(
+                new THREE.Vector3(
+                  positionAttribute.getX(vertexIndex),
+                  positionAttribute.getY(vertexIndex),
+                  positionAttribute.getZ(vertexIndex),
+                ),
+              );
+            }
+          }
 
-        // Get the face vertices
-        let faceVertices: THREE.Vector3[] = [];
-        if (
-          targetFace.originalVertices &&
-          Array.isArray(targetFace.originalVertices)
-        ) {
-          faceVertices = targetFace.originalVertices.map(
-            (v: any) => new THREE.Vector3(v.x, v.y, v.z),
-          );
-        } else {
-          setTriangleStats(null);
-          return;
-        }
+          if (vertices.length !== 3) {
+            setTriangleStats(null);
+            return;
+          }
 
-        // Calculate perimeter
-        let facePerimeter = 0;
-        for (let i = 0; i < faceVertices.length; i++) {
-          const current = faceVertices[i];
-          const next = faceVertices[(i + 1) % faceVertices.length];
-          facePerimeter += current.distanceTo(next);
-        }
-
-        // Calculate area using shoelace formula for planar polygons
-        let faceArea = 0;
-        if (faceVertices.length === 3) {
-          // Triangle area
+          // Calculate triangle area
           const edge1 = new THREE.Vector3().subVectors(
-            faceVertices[1],
-            faceVertices[0],
+            vertices[1],
+            vertices[0],
           );
           const edge2 = new THREE.Vector3().subVectors(
-            faceVertices[2],
-            faceVertices[0],
+            vertices[2],
+            vertices[0],
           );
           const cross = new THREE.Vector3().crossVectors(edge1, edge2);
-          faceArea = cross.length() / 2;
-        } else if (faceVertices.length === 4) {
-          // Quad area using two triangles
-          const edge1 = new THREE.Vector3().subVectors(
-            faceVertices[1],
-            faceVertices[0],
-          );
-          const edge2 = new THREE.Vector3().subVectors(
-            faceVertices[2],
-            faceVertices[0],
-          );
-          const cross1 = new THREE.Vector3().crossVectors(edge1, edge2);
+          const triangleArea = cross.length() / 2;
 
-          const edge3 = new THREE.Vector3().subVectors(
-            faceVertices[2],
-            faceVertices[0],
-          );
-          const edge4 = new THREE.Vector3().subVectors(
-            faceVertices[3],
-            faceVertices[0],
-          );
-          const cross2 = new THREE.Vector3().crossVectors(edge3, edge4);
+          // Calculate triangle perimeter
+          const trianglePerimeter =
+            vertices[0].distanceTo(vertices[1]) +
+            vertices[1].distanceTo(vertices[2]) +
+            vertices[2].distanceTo(vertices[0]);
 
-          faceArea = (cross1.length() + cross2.length()) / 2;
-        } else {
-          // Polygon area using fan triangulation from first vertex
-          for (let i = 1; i < faceVertices.length - 1; i++) {
+          // Calculate triangle normal
+          const triangleNormal = cross.normalize();
+
+          setTriangleStats({
+            index: triangleIndex,
+            vertices: vertices,
+            area: triangleArea,
+            perimeter: trianglePerimeter,
+            normal: triangleNormal,
+            faceType: "triangle",
+            vertexCount: 3,
+            parentFaceIndex: null, // No parent face in triangle mode
+          });
+        } else if (!isTriangleMode && previewMeshMerged) {
+          // Merged mode - show polygon face information
+          const polygonFaces = (previewMeshMerged as any).polygonFaces;
+
+          if (!polygonFaces || !Array.isArray(polygonFaces)) {
+            setTriangleStats(null);
+            return;
+          }
+
+          // Find the face that contains this triangle
+          let targetFace = null;
+          let targetFaceIndex = -1;
+
+          for (
+            let faceIndex = 0;
+            faceIndex < polygonFaces.length;
+            faceIndex++
+          ) {
+            const face = polygonFaces[faceIndex];
+            if (
+              face.triangleIndices &&
+              face.triangleIndices.includes(triangleIndex)
+            ) {
+              targetFace = face;
+              targetFaceIndex = faceIndex;
+              break;
+            }
+          }
+
+          if (!targetFace) {
+            setTriangleStats(null);
+            return;
+          }
+
+          // Get the face vertices
+          let faceVertices: THREE.Vector3[] = [];
+          if (
+            targetFace.originalVertices &&
+            Array.isArray(targetFace.originalVertices)
+          ) {
+            faceVertices = targetFace.originalVertices.map(
+              (v: any) => new THREE.Vector3(v.x, v.y, v.z),
+            );
+          } else {
+            setTriangleStats(null);
+            return;
+          }
+
+          // Calculate perimeter
+          let facePerimeter = 0;
+          for (let i = 0; i < faceVertices.length; i++) {
+            const current = faceVertices[i];
+            const next = faceVertices[(i + 1) % faceVertices.length];
+            facePerimeter += current.distanceTo(next);
+          }
+
+          // Calculate area using shoelace formula for planar polygons
+          let faceArea = 0;
+          if (faceVertices.length === 3) {
+            // Triangle area
             const edge1 = new THREE.Vector3().subVectors(
-              faceVertices[i],
+              faceVertices[1],
               faceVertices[0],
             );
             const edge2 = new THREE.Vector3().subVectors(
-              faceVertices[i + 1],
+              faceVertices[2],
               faceVertices[0],
             );
             const cross = new THREE.Vector3().crossVectors(edge1, edge2);
-            faceArea += cross.length() / 2;
+            faceArea = cross.length() / 2;
+          } else if (faceVertices.length === 4) {
+            // Quad area using two triangles
+            const edge1 = new THREE.Vector3().subVectors(
+              faceVertices[1],
+              faceVertices[0],
+            );
+            const edge2 = new THREE.Vector3().subVectors(
+              faceVertices[2],
+              faceVertices[0],
+            );
+            const cross1 = new THREE.Vector3().crossVectors(edge1, edge2);
+
+            const edge3 = new THREE.Vector3().subVectors(
+              faceVertices[2],
+              faceVertices[0],
+            );
+            const edge4 = new THREE.Vector3().subVectors(
+              faceVertices[3],
+              faceVertices[0],
+            );
+            const cross2 = new THREE.Vector3().crossVectors(edge3, edge4);
+
+            faceArea = (cross1.length() + cross2.length()) / 2;
+          } else {
+            // Polygon area using fan triangulation from first vertex
+            for (let i = 1; i < faceVertices.length - 1; i++) {
+              const edge1 = new THREE.Vector3().subVectors(
+                faceVertices[i],
+                faceVertices[0],
+              );
+              const edge2 = new THREE.Vector3().subVectors(
+                faceVertices[i + 1],
+                faceVertices[0],
+              );
+              const cross = new THREE.Vector3().crossVectors(edge1, edge2);
+              faceArea += cross.length() / 2;
+            }
           }
-        }
 
-        // Calculate normal
-        let faceNormal = new THREE.Vector3();
-        if (targetFace.normal) {
-          faceNormal = new THREE.Vector3(
-            targetFace.normal.x,
-            targetFace.normal.y,
-            targetFace.normal.z,
-          );
+          // Calculate normal
+          let faceNormal = new THREE.Vector3();
+          if (targetFace.normal) {
+            faceNormal = new THREE.Vector3(
+              targetFace.normal.x,
+              targetFace.normal.y,
+              targetFace.normal.z,
+            );
+          } else {
+            const edge1 = new THREE.Vector3().subVectors(
+              faceVertices[1],
+              faceVertices[0],
+            );
+            const edge2 = new THREE.Vector3().subVectors(
+              faceVertices[2],
+              faceVertices[0],
+            );
+            faceNormal = new THREE.Vector3()
+              .crossVectors(edge1, edge2)
+              .normalize();
+          }
+
+          setTriangleStats({
+            index: triangleIndex,
+            vertices: faceVertices,
+            area: faceArea,
+            perimeter: facePerimeter,
+            normal: faceNormal,
+            faceType: targetFace.type,
+            vertexCount: faceVertices.length,
+            parentFaceIndex: targetFaceIndex,
+          });
         } else {
-          const edge1 = new THREE.Vector3().subVectors(
-            faceVertices[1],
-            faceVertices[0],
-          );
-          const edge2 = new THREE.Vector3().subVectors(
-            faceVertices[2],
-            faceVertices[0],
-          );
-          faceNormal = new THREE.Vector3()
-            .crossVectors(edge1, edge2)
-            .normalize();
+          setTriangleStats(null);
         }
-
-        setTriangleStats({
-          index: triangleIndex,
-          vertices: faceVertices,
-          area: faceArea,
-          perimeter: facePerimeter,
-          normal: faceNormal,
-          faceType: targetFace.type,
-          vertexCount: faceVertices.length,
-          parentFaceIndex: targetFaceIndex,
-        });
       } else {
         setTriangleStats(null);
       }
     },
-    [previewMeshMerged],
+    [viewerSettings.meshType, workingMeshTri, previewMeshMerged],
   );
 
   const decimateEdge = useCallback(
@@ -1171,8 +1413,13 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         );
 
         if (result.success && result.geometry) {
-          // Update working mesh
-          setWorkingMeshTri(result.geometry);
+          // Update working mesh - ensure it stays pure triangulated
+          const cleanTriangleMesh = result.geometry;
+          delete (cleanTriangleMesh as any).polygonFaces;
+          delete (cleanTriangleMesh as any).polygonType;
+          delete (cleanTriangleMesh as any).isProcedurallyGenerated;
+
+          setWorkingMeshTri(cleanTriangleMesh);
 
           // Clear merged mesh since triangle mesh changed
           clearMergedMesh();
@@ -1252,6 +1499,46 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     setViewerSettings((prev) => ({ ...prev, meshType: "triangle" }));
   }, []);
 
+  // Helper function to convert THREE.js geometry to STL format
+  const geometryToSTL = (geometry: THREE.BufferGeometry): string => {
+    const positions = geometry.attributes.position;
+    let stlContent = "solid merged_mesh\n";
+
+    for (let i = 0; i < positions.count; i += 3) {
+      const v1 = new THREE.Vector3(
+        positions.getX(i),
+        positions.getY(i),
+        positions.getZ(i),
+      );
+      const v2 = new THREE.Vector3(
+        positions.getX(i + 1),
+        positions.getY(i + 1),
+        positions.getZ(i + 1),
+      );
+      const v3 = new THREE.Vector3(
+        positions.getX(i + 2),
+        positions.getY(i + 2),
+        positions.getZ(i + 2),
+      );
+
+      // Calculate normal
+      const edge1 = new THREE.Vector3().subVectors(v2, v1);
+      const edge2 = new THREE.Vector3().subVectors(v3, v1);
+      const normal = new THREE.Vector3().crossVectors(edge1, edge2).normalize();
+
+      stlContent += `  facet normal ${normal.x.toFixed(6)} ${normal.y.toFixed(6)} ${normal.z.toFixed(6)}\n`;
+      stlContent += `    outer loop\n`;
+      stlContent += `      vertex ${v1.x.toFixed(6)} ${v1.y.toFixed(6)} ${v1.z.toFixed(6)}\n`;
+      stlContent += `      vertex ${v2.x.toFixed(6)} ${v2.y.toFixed(6)} ${v2.z.toFixed(6)}\n`;
+      stlContent += `      vertex ${v3.x.toFixed(6)} ${v3.y.toFixed(6)} ${v3.z.toFixed(6)}\n`;
+      stlContent += `    endloop\n`;
+      stlContent += `  endfacet\n`;
+    }
+
+    stlContent += "endsolid merged_mesh\n";
+    return stlContent;
+  };
+
   const mergeCoplanarFaces =
     useCallback(async (): Promise<ToolOperationResult> => {
       if (!workingMeshTri) {
@@ -1265,39 +1552,134 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       try {
         setIsProcessingTool(true);
 
-        // Import the coplanar merger if not already available
-        const { EdgeAdjacentMerger } = await import(
-          "../lib/processing/edgeAdjacentMerger"
-        );
-
         const startTime = performance.now();
         const originalStats = getGeometryStats();
 
-        // Create merged mesh from current triangle mesh
-        const mergedMesh = workingMeshTri.clone();
+        // Try Python service first, fallback to JavaScript if unavailable
+        let mergedMesh: THREE.BufferGeometry;
+        let polygonFaces: any[];
+        let newStats: any;
+        let reductionFromPython = 0;
 
-        // Apply coplanar face merging
-        const polygonFaces =
-          EdgeAdjacentMerger.mergeCoplanarTriangles(mergedMesh);
+        try {
+          // Skip Python service for now to avoid AbortController issues in deployed environment
+          // TODO: Re-enable when AbortController timeout issues are resolved
+          console.log(
+            `⚠️ Python service temporarily disabled to prevent errors`,
+          );
+          throw new Error(
+            "Python service disabled - using JavaScript fallback",
+          );
+        } catch (pythonError) {
+          // Handle different types of errors
+          let errorMessage = "Unknown error";
+          if (pythonError instanceof Error) {
+            if (
+              pythonError.name === "AbortError" ||
+              pythonError.message.includes("aborted")
+            ) {
+              errorMessage =
+                "Request timed out - service may be slow or unavailable";
+            } else if (
+              pythonError.message.includes("fetch") ||
+              pythonError.message.includes("Failed to fetch")
+            ) {
+              errorMessage = "Network error - service not accessible";
+            } else if (pythonError.message.includes("TypeError")) {
+              errorMessage = "Network connection failed";
+            } else {
+              errorMessage = pythonError.message;
+            }
+          }
 
-        // Add polygon face metadata to geometry
-        (mergedMesh as any).polygonFaces = polygonFaces;
+          console.warn(
+            `⚠️ Python service failed (${errorMessage}), falling back to JavaScript merger`,
+          );
+
+          // Fallback to JavaScript EdgeAdjacentMerger
+          console.log(
+            `🔧 FALLBACK: Using JavaScript EdgeAdjacentMerger with ${originalStats?.triangles || 0} triangles`,
+          );
+
+          const { EdgeAdjacentMerger } = await import(
+            "../lib/processing/edgeAdjacentMerger"
+          );
+
+          // Create merged mesh from current triangle mesh
+          mergedMesh = workingMeshTri.clone();
+
+          // Apply coplanar face merging using JavaScript
+          polygonFaces = EdgeAdjacentMerger.mergeCoplanarTriangles(mergedMesh);
+
+          // Add polygon face metadata to geometry
+          (mergedMesh as any).polygonFaces = polygonFaces;
+          (mergedMesh as any).polygonType = "javascript_fallback_merged";
+
+          // Calculate stats based on polygon faces
+          const polygonCount = polygonFaces.length;
+          const triangleCount = polygonFaces.filter(
+            (f) => f.type === "triangle",
+          ).length;
+          const quadCount = polygonFaces.filter(
+            (f) => f.type === "quad",
+          ).length;
+          const polygonCountHigher = polygonFaces.filter(
+            (f) => !["triangle", "quad"].includes(f.type),
+          ).length;
+
+          newStats = {
+            vertices: mergedMesh.attributes.position.count / 3,
+            faces: polygonCount,
+            polygons: polygonCount,
+            triangles: triangleCount,
+            quads: quadCount,
+            higherPolygons: polygonCountHigher,
+          };
+
+          reductionFromPython = originalStats
+            ? (originalStats.triangles - polygonCount) / originalStats.triangles
+            : 0;
+
+          console.log(`📊 JAVASCRIPT FALLBACK STATS:`);
+          console.log(
+            `   Original triangles: ${originalStats?.triangles || 0}`,
+          );
+          console.log(`   Final polygons: ${polygonCount}`);
+          console.log(
+            `   Breakdown: ${triangleCount} triangles, ${quadCount} quads, ${polygonCountHigher} higher polygons`,
+          );
+          console.log(
+            `   Reduction: ${(reductionFromPython * 100).toFixed(1)}%`,
+          );
+
+          // Apply polygon faces to the merged mesh geometry
+          const { PolygonFaceReconstructor } = await import(
+            "../lib/processing/polygonFaceReconstructor"
+          );
+          PolygonFaceReconstructor.applyReconstructedFaces(
+            mergedMesh,
+            polygonFaces,
+          );
+        }
 
         const processingTime = Math.round(performance.now() - startTime);
-        const newStats = {
-          vertices: mergedMesh.attributes.position.count / 3,
-          faces: mergedMesh.index
-            ? mergedMesh.index.count / 3
-            : mergedMesh.attributes.position.count / 9,
-        };
 
-        // Store the merged mesh
+        // Store the merged mesh and update preview
         setMergedGeometry(mergedMesh);
+        setPreviewMeshMerged(mergedMesh); // This is what the viewer actually uses!
         setHasMergedMesh(true);
 
-        const reductionAchieved = originalStats
-          ? (originalStats.faces - newStats.faces) / originalStats.faces
-          : 0;
+        // Force viewer update if currently in merged mode
+        if (viewerSettings.meshType === "merged") {
+          console.log("���� Forcing viewer update with new merged mesh");
+          const displayGeometry = prepareGeometryForViewing(
+            mergedMesh,
+            "merged_display",
+          );
+          setGeometry(displayGeometry);
+        }
+
+        const reductionAchieved = reductionFromPython;
 
         return {
           success: true,
@@ -1324,9 +1706,20 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
   // Function to update viewer geometry based on mesh type setting
   const updateViewerGeometry = useCallback(() => {
     const meshType = viewerSettings.meshType;
+    console.log(`🔄 Switching to ${meshType} mesh view`);
 
     if (meshType === "merged") {
-      if (mergedGeometry) {
+      if (previewMeshMerged) {
+        console.log(
+          `✅ Using previewMeshMerged with ${(previewMeshMerged as any).polygonFaces?.length || 0} polygon faces`,
+        );
+        const displayGeometry = prepareGeometryForViewing(
+          previewMeshMerged,
+          "merged_display",
+        );
+        setGeometry(displayGeometry);
+      } else if (mergedGeometry) {
+        console.log(`✅ Using mergedGeometry fallback`);
         const displayGeometry = prepareGeometryForViewing(
           mergedGeometry,
           "merged_display",
@@ -1334,8 +1727,9 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         setGeometry(displayGeometry);
       } else {
         // No merged mesh available, show error and revert to triangle
+        console.log(`❌ No merged mesh available, reverting to triangle view`);
         addError(
-          "No merged mesh found. Please run Merge Coplanar Faces first.",
+          "⚠️ Merged mesh not available. Please run 'Merge Coplanar Faces' first to create the merged version.",
         );
         setViewerSettings((prev) => ({ ...prev, meshType: "triangle" }));
         if (workingMeshTri) {
@@ -1348,6 +1742,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       }
     } else {
       // Show triangle mesh
+      console.log(`✅ Using workingMeshTri (triangle mesh)`);
       if (workingMeshTri) {
         const displayGeometry = prepareGeometryForViewing(
           workingMeshTri,
@@ -1356,19 +1751,31 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         setGeometry(displayGeometry);
       }
     }
-  }, [viewerSettings.meshType, mergedGeometry, workingMeshTri, addError]);
+  }, [
+    viewerSettings.meshType,
+    mergedGeometry,
+    workingMeshTri,
+    previewMeshMerged,
+    addError,
+  ]);
 
-  // Update viewer when mesh type setting changes
+  // Update viewer when mesh type setting changes or when meshes are ready
   useEffect(() => {
     updateViewerGeometry();
   }, [updateViewerGeometry]);
 
-  // Clear merged mesh when triangle mesh is updated
+  // Clear merged mesh when triangle mesh is updated (but not during initial setup)
   useEffect(() => {
-    if (workingMeshTri) {
-      clearMergedMesh();
+    // Only clear merged mesh if we have a preview mesh (meaning we're not in initial setup)
+    if (workingMeshTri && previewMeshMerged && !isLoading) {
+      // Check if this is a real update (not initial setup) by seeing if the geometries are different
+      const isInitialSetup = workingMeshTri === previewMeshMerged;
+      if (!isInitialSetup) {
+        console.log("🧹 Clearing merged mesh due to triangle mesh update");
+        clearMergedMesh();
+      }
     }
-  }, [workingMeshTri, clearMergedMesh]);
+  }, [workingMeshTri, clearMergedMesh, previewMeshMerged, isLoading]);
 
   const contextValue: STLContextType = {
     geometry,
@@ -1396,6 +1803,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
     availableModels,
     updateViewerSettings,
     exportSTL,
+    exportOBJ,
     exportParts,
     exportChamferedParts,
     clearError,

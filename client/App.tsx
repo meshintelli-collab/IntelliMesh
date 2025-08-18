@@ -15,6 +15,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { STLProvider } from "./context/STLContext";
 import { STLErrorBoundary } from "./components/ErrorBoundary";
+
+// Import websocket error handler and HMR fallback for development
+import "./lib/utilities/websocketErrorHandler";
+import "./lib/utilities/hmrFallback";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
@@ -42,6 +46,7 @@ const App = () => (
   </STLErrorBoundary>
 );
 
+// Ensure createRoot is only called once to prevent double mounting warnings
 // Ensure createRoot is only called once to prevent double mounting warnings
 const rootElement = document.getElementById("root")!;
 if (!rootElement._reactRoot) {

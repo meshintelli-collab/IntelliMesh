@@ -6,6 +6,43 @@ import {
   PolygonFace,
   ExtrusionOptions,
 } from "../processing/polygonExtruder";
+import { FaceExtruder, Face } from "../processing/faceExtruder";
+
+/**
+ * Utility function to scale polygon faces before part creation
+ * This ensures scale is applied to geometry, not thickness
+ */
+function scalePolygonFaces(
+  polygonFaces: PolygonFace[],
+  scale: number,
+): PolygonFace[] {
+  if (scale === 1) return polygonFaces; // No scaling needed
+
+  return polygonFaces.map((face) => {
+    const scaledFace = { ...face };
+
+    // Scale vertices if they exist
+    if (face.vertices) {
+      scaledFace.vertices = face.vertices.map((v) =>
+        v.clone().multiplyScalar(scale),
+      );
+    }
+
+    // Scale originalVertices if they exist
+    if (face.originalVertices) {
+      scaledFace.originalVertices = face.originalVertices.map((v) =>
+        v.clone().multiplyScalar(scale),
+      );
+    }
+
+    // Scale normal (no change needed, just normalize)
+    if (face.normal) {
+      scaledFace.normal = face.normal.clone().normalize();
+    }
+
+    return scaledFace;
+  });
+}
 
 /**
  * PolygonPartsExporter exports each polygon face as a separate STL or OBJ file
@@ -45,13 +82,18 @@ export class PolygonPartsExporter {
     let polygonFaces: PolygonFace[];
     let polygonType: string;
 
+    console.log(`🔍 EXPORT MODE DEBUGGING:`);
+    console.log(`   useTriangulated parameter: ${useTriangulated}`);
+    console.log(`   Expected: false for Merged mode, true for Triangle mode`);
+
     if (useTriangulated) {
-      // Backup mode: use triangulated geometry
+      // Triangulated mode: use exact original triangulation (NO windmilling)
+      console.log(`🎯 USING TRIANGULATED MODE (as requested by UI)`);
       polygonFaces =
         PolygonExtruder.extractPolygonsFromTriangulatedGeometry(geometry);
-      polygonType = "triangulated_backup";
+      polygonType = "triangulated_exact";
       console.log(
-        `🔄 Using backup triangulated mode: ${polygonFaces.length} triangles`,
+        `✅ Using EXACT triangulated mode: ${polygonFaces.length} triangles (NO reconstruction)`,
       );
     } else {
       // Normal mode: use merged polygon faces
@@ -60,16 +102,44 @@ export class PolygonPartsExporter {
       if (mergedFaces.length === 0) {
         // Fallback to triangulated if no merged faces available
         console.log(
-          "⚠️ No merged faces found, falling back to triangulated mode",
+          "��️ No merged faces found, falling back to triangulated mode",
         );
         polygonFaces =
           PolygonExtruder.extractPolygonsFromTriangulatedGeometry(geometry);
         polygonType = "triangulated_fallback";
       } else {
+        console.log(
+          `📊 MERGED MODE: Found ${mergedFaces.length} merged faces to export`,
+        );
+
+        // Log details about the merged faces
+        for (let i = 0; i < Math.min(3, mergedFaces.length); i++) {
+          const face = mergedFaces[i];
+          console.log(
+            `   Face ${i}: ${face.type}, ${face.vertices?.length || 0} vertices, triangulation: ${(face as any).originalTriangulation?.length || 0} triangles`,
+          );
+        }
+
+        // RESPECT user's choice - no auto-detection override
+        console.log(
+          `✅ RESPECTING user's merged mode choice: using ${mergedFaces.length} polygons`,
+        );
+
+        // Optional: Show complexity warning but don't override user choice
+        const complexityInfo = this.analyzeShapeComplexity(
+          mergedFaces,
+          geometry,
+        );
+        if (complexityInfo.isComplex) {
+          console.warn(
+            `⚠️ Complex shape detected (${complexityInfo.reason}) but respecting merged mode choice`,
+          );
+        }
+
         polygonFaces = mergedFaces;
         polygonType = (geometry as any).polygonType || "merged";
         console.log(
-          `✅ Using merged polygon mode: ${polygonFaces.length} polygons`,
+          `✅ Using merged polygon mode: ${polygonFaces.length} polygons (preserving structure)`,
         );
       }
     }
@@ -77,6 +147,12 @@ export class PolygonPartsExporter {
     if (polygonFaces.length === 0) {
       throw new Error("No polygon faces found for export");
     }
+
+    // Apply scale to geometry BEFORE processing (not to thickness)
+    console.log(
+      `🔧 Applying scale factor ${scale} to geometry before part creation...`,
+    );
+    polygonFaces = scalePolygonFaces(polygonFaces, scale);
 
     // Store original geometry data for triangle extraction
     const originalGeometry = geometry;
@@ -89,19 +165,35 @@ export class PolygonPartsExporter {
       const polygonFace = polygonFaces[i];
       const fileExtension = format === "obj" ? "obj" : "stl";
 
-      // Use generalized polygon extruder for consistent geometry
-      const extrusionOptions: ExtrusionOptions = {
-        thickness: partThickness,
-        scale: scale,
+      // Use clean face extrusion (preserves exact polygon structure)
+      // Creating part for polygon face
+
+      // DEBUG: Log the actual face data to see what we're getting
+      console.log(
+        `   📊 Face vertices:`,
+        polygonFace.vertices?.map(
+          (v, idx) =>
+            `${idx}: (${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)})`,
+        ),
+      );
+      console.log(`   📊 Face normal:`, polygonFace.normal);
+      console.log(`   📊 Face type:`, polygonFace.type);
+
+      // Convert PolygonFace to Face interface
+      const face: Face = {
+        vertices: polygonFace.vertices || [],
+        normal: polygonFace.normal || new THREE.Vector3(0, 0, 1),
+        type: polygonFace.type || "polygon",
       };
 
+      // Extrude the face with specified thickness
+      const extrudedFace = FaceExtruder.extrudeFace(face, partThickness);
+
+      // Generate content in requested format
       const partContent =
         format === "obj"
-          ? this.createPolygonOBJ(polygonFace, i, partThickness, scale) // Keep OBJ for now
-          : PolygonExtruder.createExtrudedPolygon(
-              polygonFace,
-              extrusionOptions,
-            );
+          ? FaceExtruder.extrudedFaceToOBJ(extrudedFace, `part_${i + 1}`)
+          : FaceExtruder.extrudedFaceToSTL(extrudedFace, `part_${i + 1}`);
 
       const partFilename = `part_${String(i + 1).padStart(4, "0")}_${polygonFace.type || "polygon"}.${fileExtension}`;
 
@@ -193,8 +285,9 @@ export class PolygonPartsExporter {
     scale: number,
     originalGeometry: THREE.BufferGeometry,
   ): string {
+    // Vertices are already scaled in polygon faces
     const vertices = faceInfo.originalVertices.map((v: THREE.Vector3) =>
-      v.clone().multiplyScalar(scale),
+      v.clone(),
     );
 
     if (vertices.length < 3) {
@@ -207,35 +300,70 @@ export class PolygonPartsExporter {
     let stlContent = `solid part_${polygonIndex + 1}_${faceInfo.type}\n`;
 
     // Use ORIGINAL triangulation from the mesh - NO re-triangulation!
-    if (faceInfo.triangleIndices && faceInfo.triangleIndices.length > 0) {
-      // Extract the original triangles from the geometry
-      const originalTriangles = this.extractOriginalTriangles(
-        faceInfo.triangleIndices,
-        originalGeometry,
-        scale,
+    if (
+      faceInfo.originalTriangulation &&
+      faceInfo.originalTriangulation.length > 0
+    ) {
+      console.log(
+        `   Using original triangulation to preserve exact shape (${faceInfo.originalTriangulation.length} triangles)`,
       );
 
       // Front face: use exact original triangulation
-      for (const triangle of originalTriangles) {
-        stlContent += this.addTriangleToSTL(
-          triangle[0],
-          triangle[1],
-          triangle[2],
-          normal,
-        );
+      for (const triangle of faceInfo.originalTriangulation) {
+        const v1 = vertices[triangle[0]];
+        const v2 = vertices[triangle[1]];
+        const v3 = vertices[triangle[2]];
+
+        if (v1 && v2 && v3) {
+          stlContent += this.addTriangleToSTL(v1, v2, v3, normal);
+        }
       }
 
       // Back face: same triangles offset by thickness, reversed winding
-      for (const triangle of originalTriangles) {
-        const backTriangle = triangle
-          .map((v) => v.clone().add(offset))
-          .reverse();
-        stlContent += this.addTriangleToSTL(
-          backTriangle[0],
-          backTriangle[1],
-          backTriangle[2],
-          normal.clone().negate(),
-        );
+      for (const triangle of faceInfo.originalTriangulation) {
+        const v1 = vertices[triangle[0]];
+        const v2 = vertices[triangle[1]];
+        const v3 = vertices[triangle[2]];
+
+        if (v1 && v2 && v3) {
+          const backV1 = v1.clone().add(offset);
+          const backV2 = v2.clone().add(offset);
+          const backV3 = v3.clone().add(offset);
+
+          // Reverse winding for back face
+          stlContent += this.addTriangleToSTL(
+            backV3,
+            backV2,
+            backV1,
+            normal.clone().negate(),
+          );
+        }
+      }
+    } else {
+      // Fallback to simple fan triangulation if no original triangulation available
+      console.log(
+        `   No original triangulation found, using simple fan triangulation fallback`,
+      );
+      for (let i = 1; i < vertices.length - 1; i++) {
+        const v1 = vertices[0];
+        const v2 = vertices[i];
+        const v3 = vertices[i + 1];
+
+        if (v1 && v2 && v3) {
+          // Front face
+          stlContent += this.addTriangleToSTL(v1, v2, v3, normal);
+
+          // Back face with reversed winding
+          const backV1 = v1.clone().add(offset);
+          const backV2 = v2.clone().add(offset);
+          const backV3 = v3.clone().add(offset);
+          stlContent += this.addTriangleToSTL(
+            backV3,
+            backV2,
+            backV1,
+            normal.clone().negate(),
+          );
+        }
       }
     }
 
@@ -248,53 +376,6 @@ export class PolygonPartsExporter {
 
     stlContent += `endsolid part_${polygonIndex + 1}_${faceInfo.type}\n`;
     return stlContent;
-  }
-
-  /**
-   * Extract the original triangles from geometry using triangleIndices
-   * This gives us the EXACT triangulation without re-triangulating
-   */
-  private static extractOriginalTriangles(
-    triangleIndices: number[],
-    geometry: THREE.BufferGeometry,
-    scale: number,
-  ): THREE.Vector3[][] {
-    const triangles: THREE.Vector3[][] = [];
-    const positions = geometry.attributes.position;
-
-    if (!positions) {
-      console.error("No position attribute in geometry");
-      return triangles;
-    }
-
-    // Each triangle is 3 vertices, each vertex is 3 coordinates
-    for (const triangleIndex of triangleIndices) {
-      const vertexStart = triangleIndex * 9; // 9 values per triangle (3 vertices * 3 coords)
-
-      if (vertexStart + 8 < positions.count * 3) {
-        const v1 = new THREE.Vector3(
-          positions.getX(vertexStart / 3),
-          positions.getY(vertexStart / 3),
-          positions.getZ(vertexStart / 3),
-        ).multiplyScalar(scale);
-
-        const v2 = new THREE.Vector3(
-          positions.getX((vertexStart + 3) / 3),
-          positions.getY((vertexStart + 3) / 3),
-          positions.getZ((vertexStart + 3) / 3),
-        ).multiplyScalar(scale);
-
-        const v3 = new THREE.Vector3(
-          positions.getX((vertexStart + 6) / 3),
-          positions.getY((vertexStart + 6) / 3),
-          positions.getZ((vertexStart + 6) / 3),
-        ).multiplyScalar(scale);
-
-        triangles.push([v1, v2, v3]);
-      }
-    }
-
-    return triangles;
   }
 
   /**
@@ -380,8 +461,9 @@ export class PolygonPartsExporter {
     thickness: number,
     scale: number,
   ): string {
+    // Vertices are already scaled in polygon faces
     const vertices = faceInfo.originalVertices.map((v: THREE.Vector3) =>
-      v.clone().multiplyScalar(scale),
+      v.clone(),
     );
     const normal = faceInfo.normal.clone();
 
@@ -491,9 +573,8 @@ export class PolygonPartsExporter {
     thickness: number,
     scale: number,
   ) {
-    const vertices = polygonFace.vertices.map((v: THREE.Vector3) =>
-      v.clone().multiplyScalar(scale),
-    );
+    // Vertices are already scaled in polygon faces
+    const vertices = polygonFace.vertices.map((v: THREE.Vector3) => v.clone());
 
     // Calculate polygon properties
     const edges = [];
@@ -714,6 +795,51 @@ Generated by STL Viewer Platform - Polygon Parts Exporter
     document.body.removeChild(link);
 
     setTimeout(() => URL.revokeObjectURL(url), 100);
+  }
+
+  /**
+   * Analyze shape complexity for informational purposes
+   * No longer forces triangulated mode - respects user choice
+   */
+  private static analyzeShapeComplexity(
+    mergedFaces: any[],
+    geometry: THREE.BufferGeometry,
+  ): { isComplex: boolean; reason: string } {
+    // If we have very few merged faces compared to triangles, it suggests complex merging
+    const triangleCount = Math.floor(geometry.attributes.position.count / 3);
+    const mergedCount = mergedFaces.length;
+    const compressionRatio = triangleCount / mergedCount;
+
+    console.log(
+      `   📊 Analyzing shape complexity: ${triangleCount} triangles → ${mergedCount} polygons (${compressionRatio.toFixed(1)}x compression)`,
+    );
+
+    // High compression ratio indicates complex merging
+    if (compressionRatio > 10) {
+      console.log(
+        `   📊 HIGH compression ratio detected (${compressionRatio.toFixed(1)}x) - complex shape`,
+      );
+      return {
+        isComplex: true,
+        reason: `High compression ratio: ${compressionRatio.toFixed(1)}x`,
+      };
+    }
+
+    // Check for polygons with many vertices
+    for (const face of mergedFaces) {
+      if (face.vertices && face.vertices.length > 8) {
+        console.log(
+          `   📊 Complex polygon detected (${face.vertices.length} vertices)`,
+        );
+        return {
+          isComplex: true,
+          reason: `Complex polygon with ${face.vertices.length} vertices`,
+        };
+      }
+    }
+
+    console.log(`   ✅ Shape appears simple`);
+    return { isComplex: false, reason: "Simple shape" };
   }
 
   /**

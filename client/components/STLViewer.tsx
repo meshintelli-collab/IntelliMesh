@@ -1,7 +1,8 @@
 import React, { useRef, useMemo, useEffect, useState } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Environment } from "@react-three/drei";
+import { useFrame, useThree } from "@react-three/fiber";
+import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
+import WebGLCanvas from "./WebGLCanvas";
 import { useSTL } from "../context/STLContext";
 import { STLManipulator, STLToolMode } from "../lib/processing/stlManipulator";
 import { computeFlatNormals } from "../lib/visualization/flatNormals";
@@ -914,23 +915,13 @@ function STLMesh() {
   const wireframeGeometry = useMemo(() => {
     if (!viewerSettings.wireframe || !geometry) return null;
 
-    console.log(
-      `��� Creating wireframe for geometry: ${geometry.attributes.position.count} vertices, ${geometry.index ? geometry.index.count / 3 : 0} faces`,
-    );
-
     const polygonFaces = (geometry as any).polygonFaces;
 
     if (!polygonFaces || !Array.isArray(polygonFaces)) {
       // Fallback to standard edge wireframe for non-polygon geometries
-      console.log("🔗 Creating standard edge wireframe (no polygon data)");
       const edgeGeometry = new THREE.EdgesGeometry(geometry);
-      console.log(
-        `🔗 Standard wireframe created with ${edgeGeometry.attributes.position.count / 2} edges`,
-      );
       return edgeGeometry;
     }
-
-    console.log("🔗 Creating polygon-aware wireframe");
 
     const wireframePositions: number[] = [];
 
@@ -971,9 +962,6 @@ function STLMesh() {
       new THREE.Float32BufferAttribute(wireframePositions, 3),
     );
 
-    console.log(
-      `�� Created polygon wireframe with ${wireframePositions.length / 6} edge segments`,
-    );
     return wireGeometry;
   }, [geometry, viewerSettings.wireframe]);
 
@@ -1203,10 +1191,83 @@ function STLMesh() {
   // POLYGON-AWARE coloring with enforced flat shading per polygon face
   useEffect(() => {
     if (geometry && viewerSettings.randomColors && !viewerSettings.wireframe) {
-      // Applying fresh vertex colors to geometry
+      // Analyze normals for flatness
+      if (geometry.attributes.normal) {
+        const normals = geometry.attributes.normal.array;
+        console.log(`   📐 Normal analysis:`);
+        console.log(`      Normal count: ${geometry.attributes.normal.count}`);
+        console.log(`      Array length: ${normals.length}`);
+
+        // Check if normals are flat per triangle
+        let flatTriangles = 0;
+        let blendedTriangles = 0;
+        const totalTriangles = Math.floor(normals.length / 9);
+
+        for (let i = 0; i < totalTriangles; i++) {
+          const offset = i * 9;
+          // Get normals for all 3 vertices of this triangle
+          const n1 = [
+            normals[offset],
+            normals[offset + 1],
+            normals[offset + 2],
+          ];
+          const n2 = [
+            normals[offset + 3],
+            normals[offset + 4],
+            normals[offset + 5],
+          ];
+          const n3 = [
+            normals[offset + 6],
+            normals[offset + 7],
+            normals[offset + 8],
+          ];
+
+          // Check if all 3 normals are the same (flat shading)
+          const tolerance = 0.001;
+          const same12 =
+            Math.abs(n1[0] - n2[0]) < tolerance &&
+            Math.abs(n1[1] - n2[1]) < tolerance &&
+            Math.abs(n1[2] - n2[2]) < tolerance;
+          const same13 =
+            Math.abs(n1[0] - n3[0]) < tolerance &&
+            Math.abs(n1[1] - n3[1]) < tolerance &&
+            Math.abs(n1[2] - n3[2]) < tolerance;
+
+          if (same12 && same13) {
+            flatTriangles++;
+          } else {
+            blendedTriangles++;
+            if (i < 3) {
+              // Log first few blended triangles for debugging
+              console.log(
+                `      ���️ Triangle ${i} has blended normals: n1[${n1.map((n) => n.toFixed(3)).join(",")}] n2[${n2.map((n) => n.toFixed(3)).join(",")}] n3[${n3.map((n) => n.toFixed(3)).join(",")}]`,
+              );
+            }
+          }
+        }
+        console.log(
+          `      ✅ Flat triangles: ${flatTriangles}/${totalTriangles} (${((flatTriangles / totalTriangles) * 100).toFixed(1)}%)`,
+        );
+        console.log(
+          `      ❌ Blended triangles: ${blendedTriangles}/${totalTriangles} (${((blendedTriangles / totalTriangles) * 100).toFixed(1)}%)`,
+        );
+
+        if (blendedTriangles > 0) {
+          console.log(
+            `      🚨 PROBLEM: ${blendedTriangles} triangles have vertex-based normals (causing blended colors)`,
+          );
+        }
+      }
 
       const colors = new Float32Array(geometry.attributes.position.count * 3);
       const polygonFaces = (geometry as any).polygonFaces;
+
+      console.log(`   🎨 Polygon faces info:`);
+      console.log(`      Available: ${!!polygonFaces}`);
+      console.log(`      Count: ${polygonFaces?.length || 0}`);
+      console.log(
+        `      Type: ${Array.isArray(polygonFaces) ? "Array" : typeof polygonFaces}`,
+      );
 
       if (polygonFaces && Array.isArray(polygonFaces)) {
         for (let faceIndex = 0; faceIndex < polygonFaces.length; faceIndex++) {
@@ -1292,6 +1353,94 @@ function STLMesh() {
       // Since we now use non-indexed geometry for viewing, just ensure flat normals
       computePolygonAwareFlatNormals(geometry, polygonFaces);
 
+      console.log("🔍 POST-COLORING VERIFICATION:");
+
+      // Verify colors are face-based (same for all 3 vertices of each triangle)
+      let solidColorTriangles = 0;
+      let blendedColorTriangles = 0;
+      const totalTriangles = Math.floor(colors.length / 9);
+
+      for (let i = 0; i < Math.min(totalTriangles, 10); i++) {
+        // Check first 10 triangles
+        const offset = i * 9;
+        // Get colors for all 3 vertices of this triangle
+        const c1 = [colors[offset], colors[offset + 1], colors[offset + 2]];
+        const c2 = [colors[offset + 3], colors[offset + 4], colors[offset + 5]];
+        const c3 = [colors[offset + 6], colors[offset + 7], colors[offset + 8]];
+
+        // Check if all 3 vertices have the same color (solid face)
+        const tolerance = 0.001;
+        const same12 =
+          Math.abs(c1[0] - c2[0]) < tolerance &&
+          Math.abs(c1[1] - c2[1]) < tolerance &&
+          Math.abs(c1[2] - c2[2]) < tolerance;
+        const same13 =
+          Math.abs(c1[0] - c3[0]) < tolerance &&
+          Math.abs(c1[1] - c3[1]) < tolerance &&
+          Math.abs(c1[2] - c3[2]) < tolerance;
+
+        if (same12 && same13) {
+          solidColorTriangles++;
+        } else {
+          blendedColorTriangles++;
+          console.log(
+            `   ⚠️ Triangle ${i} has blended colors: v1[${c1.map((c) => c.toFixed(3)).join(",")}] v2[${c2.map((c) => c.toFixed(3)).join(",")}] v3[${c3.map((c) => c.toFixed(3)).join(",")}]`,
+          );
+        }
+      }
+
+      console.log(
+        `   🎨 Color consistency: ${solidColorTriangles} solid, ${blendedColorTriangles} blended (of first 10 triangles)`,
+      );
+
+      // Re-verify normals after computePolygonAwareFlatNormals
+      if (geometry.attributes.normal) {
+        const normals = geometry.attributes.normal.array;
+        let postFlatTriangles = 0;
+        let postBlendedTriangles = 0;
+
+        for (let i = 0; i < Math.min(totalTriangles, 10); i++) {
+          const offset = i * 9;
+          const n1 = [
+            normals[offset],
+            normals[offset + 1],
+            normals[offset + 2],
+          ];
+          const n2 = [
+            normals[offset + 3],
+            normals[offset + 4],
+            normals[offset + 5],
+          ];
+          const n3 = [
+            normals[offset + 6],
+            normals[offset + 7],
+            normals[offset + 8],
+          ];
+
+          const tolerance = 0.001;
+          const same12 =
+            Math.abs(n1[0] - n2[0]) < tolerance &&
+            Math.abs(n1[1] - n2[1]) < tolerance &&
+            Math.abs(n1[2] - n2[2]) < tolerance;
+          const same13 =
+            Math.abs(n1[0] - n3[0]) < tolerance &&
+            Math.abs(n1[1] - n3[1]) < tolerance &&
+            Math.abs(n1[2] - n3[2]) < tolerance;
+
+          if (same12 && same13) {
+            postFlatTriangles++;
+          } else {
+            postBlendedTriangles++;
+            console.log(
+              `   ⚠️ Triangle ${i} STILL has blended normals after flat normal computation!`,
+            );
+          }
+        }
+        console.log(
+          `   📐 Post-flat normals: ${postFlatTriangles} flat, ${postBlendedTriangles} still blended (of first 10 triangles)`,
+        );
+      }
+
       // Debug: Sample some colors to verify they're applied (with bounds checking)
       if (colors.length >= 3) {
         const firstColors = `[${colors[0]?.toFixed(3) || "?"}, ${colors[1]?.toFixed(3) || "?"}, ${colors[2]?.toFixed(3) || "?"}]`;
@@ -1300,13 +1449,10 @@ function STLMesh() {
             ? `[${colors[9]?.toFixed(3) || "?"}, ${colors[10]?.toFixed(3) || "?"}, ${colors[11]?.toFixed(3) || "?"}]`
             : "[insufficient colors]";
         console.log(
-          `🎨 Color verification: First few colors ${firstColors}, ${laterColors}`,
-        );
-      } else {
-        console.log(
-          `🎨 Color verification: Colors array too short (${colors.length} elements)`,
+          `   🎨 Sample colors: First vertex ${firstColors}, Fourth vertex ${laterColors}`,
         );
       }
+
       console.log(
         `✅ Applied ${polygonFaces ? "polygon-aware" : "triangle-based"} coloring to ${geometry.attributes.position.count / 3} triangles`,
       );
@@ -1972,7 +2118,18 @@ function Scene() {
         dampingFactor={0.05}
       />
 
-      <Environment preset="city" />
+      {/* Simple ambient lighting to replace HDR environment */}
+      <ambientLight intensity={0.4} />
+      <directionalLight
+        position={[10, 10, 5]}
+        intensity={1}
+        castShadow={false}
+      />
+      <directionalLight
+        position={[-10, -10, -5]}
+        intensity={0.3}
+        castShadow={false}
+      />
     </>
   );
 }
@@ -1997,7 +2154,7 @@ export default function STLViewer() {
         background: isGradient ? viewerSettings.backgroundColor : "transparent",
       }}
     >
-      <Canvas
+      <WebGLCanvas
         camera={{
           position: [0, 30, 80],
           fov: 45,
@@ -2006,10 +2163,13 @@ export default function STLViewer() {
         }}
         style={{ background: "transparent" }}
         shadows
-        gl={{ antialias: true, alpha: true }}
+        onWebGLError={(error) => {
+          console.error("3D Viewer Error:", error);
+          // You could also show a toast notification here
+        }}
       >
         <Scene />
-      </Canvas>
+      </WebGLCanvas>
     </div>
   );
 }

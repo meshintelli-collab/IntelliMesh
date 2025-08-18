@@ -414,7 +414,7 @@ export class PolygonGeometryBuilder {
       new THREE.Float32BufferAttribute(normals, 3),
     );
 
-    let triangleIndex = 0;
+    let globalTriangleIndex = 0;
     const properPolygonFaces = faceData.map((face) => {
       const triangleCount =
         face.type === "triangle"
@@ -423,9 +423,27 @@ export class PolygonGeometryBuilder {
             ? 2
             : face.originalVertices.length - 2;
 
+      // Store the actual vertex indices for each triangle in this polygon
+      const originalTriangulation = [];
+      const startVertexIndex = face.startVertex;
+
+      if (face.type === "triangle") {
+        // Simple triangle: vertices 0, 1, 2
+        originalTriangulation.push([0, 1, 2]);
+      } else if (face.type === "quad") {
+        // Quad split into two triangles: 0,1,2 and 0,2,3
+        originalTriangulation.push([0, 1, 2]);
+        originalTriangulation.push([0, 2, 3]);
+      } else {
+        // Complex polygon: fan triangulation from vertex 0
+        for (let i = 1; i < face.originalVertices.length - 1; i++) {
+          originalTriangulation.push([0, i, i + 1]);
+        }
+      }
+
       const triangleIndices = [];
       for (let i = 0; i < triangleCount; i++) {
-        triangleIndices.push(triangleIndex++);
+        triangleIndices.push(globalTriangleIndex++);
       }
 
       return {
@@ -433,6 +451,7 @@ export class PolygonGeometryBuilder {
         originalVertices: face.originalVertices,
         normal: face.normal,
         triangleIndices: triangleIndices,
+        originalTriangulation: originalTriangulation, // Store original vertex index mapping
       };
     });
 
@@ -484,14 +503,23 @@ export class PolygonGeometryBuilder {
       new THREE.Float32BufferAttribute(normals, 3),
     );
 
-    let triangleIndex = 0;
+    let globalTriangleIndex = 0;
     const properPolygonFaces = faceData.map((face) => {
       // For center triangulation, each polygon with N vertices creates N triangles
       const triangleCount = face.originalVertices.length;
 
+      // Store the actual vertex indices for center triangulation
+      const originalTriangulation = [];
+      // Center triangulation: each triangle connects center to consecutive edge vertices
+      for (let i = 0; i < face.originalVertices.length; i++) {
+        const nextI = (i + 1) % face.originalVertices.length;
+        // Center vertex is always last, edge vertices are 0 to N-1
+        originalTriangulation.push([face.originalVertices.length, i, nextI]);
+      }
+
       const triangleIndices = [];
       for (let i = 0; i < triangleCount; i++) {
-        triangleIndices.push(triangleIndex++);
+        triangleIndices.push(globalTriangleIndex++);
       }
 
       return {
@@ -499,6 +527,7 @@ export class PolygonGeometryBuilder {
         originalVertices: face.originalVertices,
         normal: face.normal,
         triangleIndices: triangleIndices,
+        originalTriangulation: originalTriangulation, // Store original vertex index mapping
       };
     });
 

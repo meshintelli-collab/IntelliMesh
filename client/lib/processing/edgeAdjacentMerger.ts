@@ -5,39 +5,36 @@ export interface PolygonFace {
   originalVertices: THREE.Vector3[];
   normal: THREE.Vector3;
   triangleIndices?: number[];
+  originalTriangulation?: number[][]; // Preserves exact original triangle vertex indices
 }
 
 /**
- * Edge-Adjacent Coplanar Merger
- * Only merges triangles that share complete edges AND are coplanar
- * This prevents unwanted merging across voids/gaps in shapes like crosses
+ * Edge-Adjacent Coplanar Merger - Systematic & Thorough
+ * Finds ALL groups of edge-adjacent coplanar triangles and merges them properly
  *
- * REPLACES: CoplanarMerger and SimpleCoplanarMerger (removed)
- * WHY: Old mergers created unwanted connections across gaps by merging
- *      triangles that only shared vertices, not complete edges
- *
- * USE THIS APPROACH FOR:
- * - Shapes with voids/holes (crosses, rings, L-brackets)
- * - When you need clean faces but no connections across gaps
- * - General-purpose coplanar merging that respects geometric boundaries
- *
- * This is now the ONLY coplanar merging approach in the codebase
+ * Key improvements:
+ * - More thorough edge detection algorithm
+ * - Systematic processing of ALL triangle groups (no arbitrary limits)
+ * - Better vertex ordering and polygon reconstruction
+ * - Clear debugging to understand what's happening
  */
 export class EdgeAdjacentMerger {
-  private static readonly DISTANCE_TOLERANCE = 0.01; // Slightly more permissive for procedural shapes
-  private static readonly NORMAL_TOLERANCE = 0.995; // Still strict but allow tiny variations
-  private static readonly EDGE_TOLERANCE = 0.01; // More permissive for edge matching
+  private static readonly DISTANCE_TOLERANCE = 0.1;
+  private static readonly NORMAL_TOLERANCE = 0.9999; // Perfectly parallel faces only
+  private static readonly EDGE_TOLERANCE = 0.1;
 
   /**
-   * Merge coplanar triangles in a BufferGeometry (main interface)
+   * Main entry point: merge coplanar triangles in BufferGeometry
    */
   static mergeCoplanarTriangles(geometry: THREE.BufferGeometry): PolygonFace[] {
     const faces = this.extractTrianglesFromGeometry(geometry);
-    return this.groupEdgeAdjacentTriangles(faces);
+    // Processing triangles for parallel merging
+
+    return this.systematicMergeProcess(faces);
   }
 
   /**
-   * Extract triangles from BufferGeometry as PolygonFaces
+   * Extract triangles from BufferGeometry
    */
   private static extractTrianglesFromGeometry(
     geometry: THREE.BufferGeometry,
@@ -82,79 +79,147 @@ export class EdgeAdjacentMerger {
   }
 
   /**
-   * Group coplanar triangles that share complete edges
+   * Systematic merge process - find and merge ALL coplanar groups
    */
-  static groupEdgeAdjacentTriangles(faces: PolygonFace[]): PolygonFace[] {
-    // Debug first few faces to understand the geometry
-    for (let i = 0; i < Math.min(5, faces.length); i++) {
-      const face = faces[i];
-      const normal = this.ensureVector3(face.normal);
-      console.log(
-        `   Face ${i}: ${face.type}, normal(${normal.x.toFixed(3)}, ${normal.y.toFixed(3)}, ${normal.z.toFixed(3)}), vertices: ${face.originalVertices.length}`,
-      );
-    }
+  private static systematicMergeProcess(faces: PolygonFace[]): PolygonFace[] {
+    // Step 1: Build comprehensive adjacency map
+    const adjacencyMap = this.buildComprehensiveAdjacencyMap(faces);
 
-    // Build adjacency graph based on shared edges
-    const adjacencyGraph = this.buildEdgeAdjacencyGraph(faces);
+    // Step 2: Find all connected components
+    const components = this.findAllConnectedComponents(faces, adjacencyMap);
 
-    // Find connected components of coplanar faces
-    const components = this.findCoplanarComponents(faces, adjacencyGraph);
+    // Found connected components
 
-    console.log(`   Found ${components.length} connected components:`);
+    // Step 3: Merge each component systematically
+    const mergedFaces: PolygonFace[] = [];
+    let mergedTriangleCount = 0;
+    let preservedTriangleCount = 0;
 
-    // Merge each component into a single polygon
-    const mergedFaces = components.map((component, index) => {
-      return this.mergeComponent(component, faces);
-    });
+    for (let i = 0; i < components.length; i++) {
+      const component = components[i];
 
-    console.log(
-      `✅ Output: ${mergedFaces.length} merged faces (from ${components.length} components)`,
-    );
-    return mergedFaces;
-  }
-
-  /**
-   * Build graph where edges connect faces that share a complete edge
-   */
-  private static buildEdgeAdjacencyGraph(
-    faces: PolygonFace[],
-  ): Map<number, Set<number>> {
-    const graph = new Map<number, Set<number>>();
-
-    // Initialize empty adjacency lists
-    for (let i = 0; i < faces.length; i++) {
-      graph.set(i, new Set());
-    }
-
-    console.log(
-      `   Building edge adjacency graph for ${faces.length} faces...`,
-    );
-    let sharedEdgeCount = 0;
-
-    // Check each pair of faces for shared edges
-    for (let i = 0; i < faces.length; i++) {
-      for (let j = i + 1; j < faces.length; j++) {
-        if (this.facesShareCompleteEdge(faces[i], faces[j])) {
-          graph.get(i)!.add(j);
-          graph.get(j)!.add(i);
-          sharedEdgeCount++;
+      if (component.length === 1) {
+        // Single triangle - keep as is
+        mergedFaces.push(faces[component[0]]);
+        preservedTriangleCount++;
+      } else {
+        // Multiple triangles - merge into polygon
+        const mergedPolygon = this.mergeComponentSystematically(
+          component,
+          faces,
+        );
+        if (mergedPolygon) {
+          mergedFaces.push(mergedPolygon);
+          mergedTriangleCount += component.length;
+          // Component merged successfully
+        } else {
+          // Fallback: keep as individual triangles
+          for (const triIndex of component) {
+            mergedFaces.push(faces[triIndex]);
+          }
+          preservedTriangleCount += component.length;
+          // Component preserved as triangles
         }
       }
     }
 
-    // Debug graph connectivity
-    let connectedFaces = 0;
-    for (const [faceId, neighbors] of graph) {
-      if (neighbors.size > 0) connectedFaces++;
-    }
+    // Merge complete
 
-    return graph;
+    return mergedFaces;
   }
 
   /**
-   * Check if two faces share a complete edge (not just vertices)
+   * Build comprehensive adjacency map between triangles
    */
-  private static facesShareCompleteEdge(
+  private static buildComprehensiveAdjacencyMap(
+    faces: PolygonFace[],
+  ): Map<number, Set<number>> {
+    const adjacencyMap = new Map<number, Set<number>>();
+
+    // Initialize empty sets for all faces
+    for (let i = 0; i < faces.length; i++) {
+      adjacencyMap.set(i, new Set());
+    }
+
+    console.log(`🔍 Building adjacency map for ${faces.length} faces...`);
+    let edgeConnectionCount = 0;
+
+    // Check every pair of faces
+    for (let i = 0; i < faces.length; i++) {
+      for (let j = i + 1; j < faces.length; j++) {
+        if (this.facesAreAdjacentAndCoplanar(faces[i], faces[j])) {
+          adjacencyMap.get(i)!.add(j);
+          adjacencyMap.get(j)!.add(i);
+          edgeConnectionCount++;
+        }
+      }
+    }
+
+    console.log(`📊 Found ${edgeConnectionCount} edge connections`);
+
+    // Debug connectivity statistics
+    let connectedFaces = 0;
+    let totalConnections = 0;
+    for (const [faceId, neighbors] of adjacencyMap) {
+      if (neighbors.size > 0) {
+        connectedFaces++;
+        totalConnections += neighbors.size;
+      }
+    }
+
+    console.log(`📊 ${connectedFaces}/${faces.length} faces are connected`);
+    console.log(
+      `📊 Average connections per connected face: ${connectedFaces > 0 ? (totalConnections / connectedFaces).toFixed(1) : 0}`,
+    );
+
+    return adjacencyMap;
+  }
+
+  /**
+   * Check if two faces are both perfectly parallel AND share a complete edge
+   */
+  private static facesAreAdjacentAndCoplanar(
+    face1: PolygonFace,
+    face2: PolygonFace,
+  ): boolean {
+    // First check coplanarity (faster check)
+    if (!this.areCoplanar(face1, face2)) {
+      return false;
+    }
+
+    // Then check edge adjacency
+    return this.shareCompleteEdge(face1, face2);
+  }
+
+  /**
+   * Check if two faces are perfectly parallel and coplanar
+   */
+  private static areCoplanar(face1: PolygonFace, face2: PolygonFace): boolean {
+    const normal1 = this.ensureVector3(face1.normal);
+    const normal2 = this.ensureVector3(face2.normal);
+
+    // Check for perfect parallelism - normals must be nearly identical
+    const normalDot = Math.abs(normal1.dot(normal2));
+    if (normalDot < this.NORMAL_TOLERANCE) {
+      return false;
+    }
+
+    // For perfectly parallel faces, also check they're on the same plane
+    const face1Center = this.getFaceCenter(face1.originalVertices);
+    const face2Center = this.getFaceCenter(face2.originalVertices);
+    const planeDistance = this.distanceToPlane(
+      face1Center,
+      face2Center,
+      normal1,
+    );
+
+    return Math.abs(planeDistance) < this.DISTANCE_TOLERANCE;
+  }
+
+  /**
+   * Check if two faces share a complete edge
+   */
+  private static shareCompleteEdge(
     face1: PolygonFace,
     face2: PolygonFace,
   ): boolean {
@@ -173,7 +238,7 @@ export class EdgeAdjacentMerger {
   }
 
   /**
-   * Get all edges of a face as pairs of vertices
+   * Get all edges of a face
    */
   private static getFaceEdges(
     face: PolygonFace,
@@ -190,7 +255,7 @@ export class EdgeAdjacentMerger {
   }
 
   /**
-   * Check if two edges match (same vertices, possibly reversed)
+   * Check if two edges match (same vertices, any orientation)
    */
   private static edgesMatch(
     edge1: [THREE.Vector3, THREE.Vector3],
@@ -212,18 +277,18 @@ export class EdgeAdjacentMerger {
   }
 
   /**
-   * Find connected components of coplanar faces using DFS
+   * Find all connected components using DFS
    */
-  private static findCoplanarComponents(
+  private static findAllConnectedComponents(
     faces: PolygonFace[],
-    graph: Map<number, Set<number>>,
+    adjacencyMap: Map<number, Set<number>>,
   ): number[][] {
     const visited = new Set<number>();
     const components: number[][] = [];
 
     for (let i = 0; i < faces.length; i++) {
       if (!visited.has(i)) {
-        const component = this.dfsCoplanarComponent(i, faces, graph, visited);
+        const component = this.exploreComponent(i, adjacencyMap, visited);
         components.push(component);
       }
     }
@@ -232,33 +297,29 @@ export class EdgeAdjacentMerger {
   }
 
   /**
-   * DFS to find all coplanar faces connected via edges
+   * Explore a connected component using DFS
    */
-  private static dfsCoplanarComponent(
+  private static exploreComponent(
     startIndex: number,
-    faces: PolygonFace[],
-    graph: Map<number, Set<number>>,
+    adjacencyMap: Map<number, Set<number>>,
     visited: Set<number>,
   ): number[] {
     const component: number[] = [];
     const stack = [startIndex];
-    const startFace = faces[startIndex];
 
     while (stack.length > 0) {
-      const currentIndex = stack.pop()!;
+      const current = stack.pop()!;
 
-      if (visited.has(currentIndex)) continue;
-      visited.add(currentIndex);
-      component.push(currentIndex);
+      if (visited.has(current)) continue;
 
-      // Add adjacent faces that are coplanar
-      const neighbors = graph.get(currentIndex) || new Set();
-      for (const neighborIndex of neighbors) {
-        if (
-          !visited.has(neighborIndex) &&
-          this.facesAreCoplanar(startFace, faces[neighborIndex])
-        ) {
-          stack.push(neighborIndex);
+      visited.add(current);
+      component.push(current);
+
+      // Add all unvisited neighbors
+      const neighbors = adjacencyMap.get(current) || new Set();
+      for (const neighbor of neighbors) {
+        if (!visited.has(neighbor)) {
+          stack.push(neighbor);
         }
       }
     }
@@ -267,79 +328,260 @@ export class EdgeAdjacentMerger {
   }
 
   /**
-   * Check if two faces are coplanar
+   * Merge a component of triangles into a single polygon
    */
-  private static facesAreCoplanar(
-    face1: PolygonFace,
-    face2: PolygonFace,
-  ): boolean {
-    const normal1 = this.ensureVector3(face1.normal);
-    const normal2 = this.ensureVector3(face2.normal);
+  private static mergeComponentSystematically(
+    componentIndices: number[],
+    faces: PolygonFace[],
+  ): PolygonFace | null {
+    if (componentIndices.length === 0) return null;
+    if (componentIndices.length === 1) return faces[componentIndices[0]];
 
-    // Check normal similarity
-    const normalDot = Math.abs(normal1.dot(normal2));
-    const normalCheck = normalDot >= this.NORMAL_TOLERANCE;
-
-    if (!normalCheck) {
-      return false;
-    }
-
-    // Check if faces lie on the same plane
-    const face1Center = this.getFaceCenter(face1.originalVertices);
-    const face2Center = this.getFaceCenter(face2.originalVertices);
-    const planeDistance = this.distanceToPlane(
-      face1Center,
-      face2Center,
-      normal2,
+    console.log(
+      `🔧 Merging component with ${componentIndices.length} triangles`,
     );
-    const planeCheck = Math.abs(planeDistance) < this.DISTANCE_TOLERANCE;
 
-    return planeCheck;
+    try {
+      // Collect all vertices from component triangles
+      const allVertices: THREE.Vector3[] = [];
+      const allTriangleIndices: number[] = [];
+
+      for (const index of componentIndices) {
+        const face = faces[index];
+        allVertices.push(...face.originalVertices);
+        if (face.triangleIndices) {
+          allTriangleIndices.push(...face.triangleIndices);
+        }
+      }
+
+      // Find unique vertices
+      const uniqueVertices = this.removeDuplicateVertices(allVertices);
+      console.log(
+        `   Found ${uniqueVertices.length} unique vertices from ${allVertices.length} total`,
+      );
+
+      // Build perimeter by tracing edges
+      const perimeterVertices = this.tracePerimeter(componentIndices, faces);
+
+      if (!perimeterVertices || perimeterVertices.length < 3) {
+        console.log(`   ❌ Failed to trace perimeter`);
+        return null;
+      }
+
+      console.log(
+        `   Traced perimeter with ${perimeterVertices.length} vertices`,
+      );
+
+      // Get normal from first triangle
+      const normal = this.ensureVector3(faces[componentIndices[0]].normal);
+
+      // Determine face type
+      const faceType =
+        perimeterVertices.length === 3
+          ? "triangle"
+          : perimeterVertices.length === 4
+            ? "quad"
+            : "polygon";
+
+      // Create merged face
+      const mergedFace: PolygonFace = {
+        type: faceType,
+        originalVertices: perimeterVertices,
+        normal: normal.clone().normalize(),
+        triangleIndices: allTriangleIndices,
+        originalTriangulation: this.preserveTriangulation(
+          componentIndices,
+          faces,
+          perimeterVertices,
+        ),
+      };
+
+      return mergedFace;
+    } catch (error) {
+      console.log(`   ❌ Error merging component: ${error}`);
+      return null;
+    }
   }
 
   /**
-   * Merge a component of faces into a single polygon
+   * Trace the perimeter of a set of connected triangles
    */
-  private static mergeComponent(
+  private static tracePerimeter(
     componentIndices: number[],
     faces: PolygonFace[],
-  ): PolygonFace {
-    if (componentIndices.length === 1) {
-      return faces[componentIndices[0]];
-    }
+  ): THREE.Vector3[] | null {
+    // Build edge usage map
+    const edgeUsage = new Map<string, number>();
+    const edgeToVertices = new Map<string, [THREE.Vector3, THREE.Vector3]>();
 
-    // Combine all vertices from the component
-    const allVertices: THREE.Vector3[] = [];
-    const allTriangleIndices: number[] = [];
-
+    // Count how many times each edge appears
     for (const index of componentIndices) {
       const face = faces[index];
-      allVertices.push(...face.originalVertices);
-      allTriangleIndices.push(...(face.triangleIndices || []));
+      const edges = this.getFaceEdges(face);
+
+      for (const edge of edges) {
+        const edgeKey = this.getEdgeKey(edge[0], edge[1]);
+        edgeUsage.set(edgeKey, (edgeUsage.get(edgeKey) || 0) + 1);
+        edgeToVertices.set(edgeKey, edge);
+      }
     }
 
-    // Get unique vertices and order them around the perimeter
-    const uniqueVertices = this.removeDuplicateVertices(allVertices);
-    const normal = this.ensureVector3(faces[componentIndices[0]].normal);
-    const orderedVertices = this.orderPolygonVertices(uniqueVertices, normal);
+    // Find boundary edges (appear only once)
+    const boundaryEdges: Array<[THREE.Vector3, THREE.Vector3]> = [];
+    for (const [edgeKey, count] of edgeUsage) {
+      if (count === 1) {
+        const edge = edgeToVertices.get(edgeKey);
+        if (edge) {
+          boundaryEdges.push(edge);
+        }
+      }
+    }
 
-    // Determine face type
-    const faceType =
-      orderedVertices.length === 3
-        ? "triangle"
-        : orderedVertices.length === 4
-          ? "quad"
-          : "polygon";
+    if (boundaryEdges.length === 0) {
+      console.log(`   ⚠️ No boundary edges found`);
+      return null;
+    }
 
-    return {
-      type: faceType,
-      originalVertices: orderedVertices,
-      normal: normal.clone().normalize(),
-      triangleIndices: allTriangleIndices,
-    };
+    console.log(`   Found ${boundaryEdges.length} boundary edges`);
+
+    // Trace the perimeter by connecting boundary edges
+    return this.connectBoundaryEdges(boundaryEdges);
   }
 
-  // Helper methods (reused from existing merger)
+  /**
+   * Connect boundary edges into a continuous perimeter
+   */
+  private static connectBoundaryEdges(
+    boundaryEdges: Array<[THREE.Vector3, THREE.Vector3]>,
+  ): THREE.Vector3[] | null {
+    if (boundaryEdges.length === 0) return null;
+
+    const perimeter: THREE.Vector3[] = [];
+    const usedEdges = new Set<number>();
+
+    // Start with first edge
+    let currentEdge = boundaryEdges[0];
+    perimeter.push(currentEdge[0].clone());
+    perimeter.push(currentEdge[1].clone());
+    usedEdges.add(0);
+
+    // Connect remaining edges
+    while (usedEdges.size < boundaryEdges.length) {
+      const lastVertex = perimeter[perimeter.length - 1];
+      let foundConnection = false;
+
+      for (let i = 0; i < boundaryEdges.length; i++) {
+        if (usedEdges.has(i)) continue;
+
+        const edge = boundaryEdges[i];
+
+        // Check if this edge connects to our current position
+        if (lastVertex.distanceTo(edge[0]) < this.EDGE_TOLERANCE) {
+          perimeter.push(edge[1].clone());
+          usedEdges.add(i);
+          foundConnection = true;
+          break;
+        } else if (lastVertex.distanceTo(edge[1]) < this.EDGE_TOLERANCE) {
+          perimeter.push(edge[0].clone());
+          usedEdges.add(i);
+          foundConnection = true;
+          break;
+        }
+      }
+
+      if (!foundConnection) {
+        console.log(`   ⚠️ Failed to connect boundary edges`);
+        break;
+      }
+    }
+
+    // Remove the last vertex if it's the same as the first (closed loop)
+    if (perimeter.length > 3) {
+      const first = perimeter[0];
+      const last = perimeter[perimeter.length - 1];
+      if (first.distanceTo(last) < this.EDGE_TOLERANCE) {
+        perimeter.pop();
+      }
+    }
+
+    return perimeter.length >= 3 ? perimeter : null;
+  }
+
+  /**
+   * Generate a unique key for an edge (order independent)
+   */
+  private static getEdgeKey(v1: THREE.Vector3, v2: THREE.Vector3): string {
+    const key1 = `${v1.x.toFixed(6)},${v1.y.toFixed(6)},${v1.z.toFixed(6)}`;
+    const key2 = `${v2.x.toFixed(6)},${v2.y.toFixed(6)},${v2.z.toFixed(6)}`;
+
+    // Ensure consistent ordering for the same edge
+    return key1 < key2 ? `${key1}-${key2}` : `${key2}-${key1}`;
+  }
+
+  /**
+   * Remove duplicate vertices
+   */
+  private static removeDuplicateVertices(
+    vertices: THREE.Vector3[],
+  ): THREE.Vector3[] {
+    const unique: THREE.Vector3[] = [];
+
+    for (const vertex of vertices) {
+      const isDuplicate = unique.some(
+        (existing) => existing.distanceTo(vertex) < this.DISTANCE_TOLERANCE,
+      );
+
+      if (!isDuplicate) {
+        unique.push(vertex.clone());
+      }
+    }
+
+    return unique;
+  }
+
+  /**
+   * Preserve original triangulation pattern
+   */
+  private static preserveTriangulation(
+    componentIndices: number[],
+    faces: PolygonFace[],
+    perimeterVertices: THREE.Vector3[],
+  ): number[][] {
+    const triangulation: number[][] = [];
+
+    for (const triangleIndex of componentIndices) {
+      const triangle = faces[triangleIndex];
+      const triangleVertices = triangle.originalVertices;
+
+      if (triangleVertices.length === 3) {
+        const indices: number[] = [];
+
+        for (const triVertex of triangleVertices) {
+          let matchIndex = -1;
+          for (let i = 0; i < perimeterVertices.length; i++) {
+            if (
+              triVertex.distanceTo(perimeterVertices[i]) < this.EDGE_TOLERANCE
+            ) {
+              matchIndex = i;
+              break;
+            }
+          }
+
+          if (matchIndex !== -1) {
+            indices.push(matchIndex);
+          }
+        }
+
+        if (indices.length === 3) {
+          triangulation.push(indices);
+        }
+      }
+    }
+
+    return triangulation;
+  }
+
+  // Helper utility methods
   private static ensureVector3(vector: any): THREE.Vector3 {
     if (vector instanceof THREE.Vector3) return vector;
     if (
@@ -368,61 +610,5 @@ export class EdgeAdjacentMerger {
   ): number {
     const diff = point.clone().sub(planePoint);
     return diff.dot(planeNormal);
-  }
-
-  private static removeDuplicateVertices(
-    vertices: THREE.Vector3[],
-  ): THREE.Vector3[] {
-    const unique: THREE.Vector3[] = [];
-
-    for (const vertex of vertices) {
-      const isDuplicate = unique.some(
-        (existing) => existing.distanceTo(vertex) < this.DISTANCE_TOLERANCE,
-      );
-
-      if (!isDuplicate) {
-        unique.push(vertex);
-      }
-    }
-
-    return unique;
-  }
-
-  private static orderPolygonVertices(
-    vertices: THREE.Vector3[],
-    normal: THREE.Vector3,
-  ): THREE.Vector3[] {
-    if (vertices.length <= 3) return vertices;
-
-    // Calculate centroid
-    const centroid = new THREE.Vector3();
-    for (const vertex of vertices) {
-      centroid.add(vertex);
-    }
-    centroid.divideScalar(vertices.length);
-
-    // Sort vertices by angle around the centroid
-    return vertices.sort((a, b) => {
-      const vecA = a.clone().sub(centroid);
-      const vecB = b.clone().sub(centroid);
-
-      // Project vectors onto plane perpendicular to normal
-      const tangent = new THREE.Vector3(1, 0, 0);
-      if (Math.abs(normal.dot(tangent)) > 0.9) {
-        tangent.set(0, 1, 0);
-      }
-      tangent.cross(normal).normalize();
-
-      const angleA = Math.atan2(
-        vecA.dot(normal.clone().cross(tangent)),
-        vecA.dot(tangent),
-      );
-      const angleB = Math.atan2(
-        vecB.dot(normal.clone().cross(tangent)),
-        vecB.dot(tangent),
-      );
-
-      return angleA - angleB;
-    });
   }
 }

@@ -51,6 +51,7 @@ import {
 } from "../lib/utilities/fileSizeEstimator";
 import { HexColorPicker } from "react-colorful";
 import { useToast } from "../hooks/use-toast";
+import { PythonMeshProcessor } from "../lib/processing/pythonMeshProcessor";
 
 interface STLWorkflowPanelProps {
   activeToolMode: STLToolMode;
@@ -64,7 +65,7 @@ interface STLWorkflowPanelProps {
       | "python_vertex"
       | "quadric_edge_collapse"
       | "vertex_clustering",
-  ) => void;
+  ) => Promise<any>;
   isProcessing: boolean;
   geometryStats: {
     vertices: number;
@@ -140,6 +141,7 @@ export default function STLWorkflowPanel({
     loadSpecificModel,
     availableModels,
     exportSTL,
+    exportOBJ,
     exportParts,
     exportChamferedParts,
     viewerSettings,
@@ -154,6 +156,7 @@ export default function STLWorkflowPanel({
     hasMergedMesh,
     mergeCoplanarFaces,
     clearMergedMesh,
+    reducePoints, // Direct access to the context's reducePoints function
   } = useSTL();
 
   // Clear face highlight when interacting with menu
@@ -179,6 +182,12 @@ export default function STLWorkflowPanel({
 
   // Triangle export settings
   const [showTriangleSettings, setShowTriangleSettings] = useState(false);
+
+  // Export format dialog state
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [currentExportType, setCurrentExportType] = useState<
+    "complete" | "parts" | "chamfered"
+  >("complete");
   const [triangleOptions, setTriangleOptions] = useState({
     partThickness: 2,
     scale: 1,
@@ -231,7 +240,7 @@ export default function STLWorkflowPanel({
     onReducePoints(vertexClusteringTolerance, "vertex_clustering");
   };
 
-  // Quadric decimation implementation with popups
+  // Quadric Decimation with automatic Python Open3D detection and JavaScript fallback
   const handleQuadricDecimation = async () => {
     if (!geometry) {
       toast({
@@ -242,33 +251,44 @@ export default function STLWorkflowPanel({
       return;
     }
 
-    toast({
-      title: "🟢 Quadric Decimation Started",
-      description: `Reducing triangles by ${Math.round(quadricReduction * 100)}%...`,
-      duration: 1500,
-    });
+    // Switch to triangle mesh view immediately
+    updateViewerSettings({ meshType: "triangle" });
 
     try {
-      const result = await onReducePoints(quadricReduction, "quadric_edge_collapse");
+      // Use the context's reducePoints - it will automatically try Python Open3D first
+      toast({
+        title: "⚡ Starting Quadric Decimation",
+        description: `Checking for Python Open3D service and reducing triangles by ${Math.round(quadricReduction * 100)}%...`,
+        duration: 2000,
+      });
+
+      const result = await reducePoints(
+        quadricReduction,
+        "quadric_edge_collapse",
+      );
 
       if (result?.success) {
         toast({
-          title: "✅ Quadric Decimation Complete",
+          title: "��� Decimation Complete",
           description: `Reduced triangles by ${result.stats?.reductionAchieved ? Math.round(result.stats.reductionAchieved * 100) : 0}% in ${result.stats?.processingTime || 0}ms`,
           duration: 3000,
         });
         setSimplificationStats(result.stats || {});
+        console.log(
+          "✅ Quadric decimation complete - mesh updated with proper statistics",
+        );
       } else {
-        toast({
-          title: "❌ Quadric Decimation Failed",
-          description: result?.message || "Unknown error occurred",
-          duration: 3000,
-        });
+        throw new Error(result?.message || "Decimation failed");
       }
     } catch (error) {
+      console.error("❌ Decimation failed:", error);
+
       toast({
-        title: "❌ Quadric Decimation Error",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
+        title: "❌ Decimation Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Decimation operation failed",
         duration: 3000,
       });
     }
@@ -309,8 +329,9 @@ export default function STLWorkflowPanel({
       }
     } catch (error) {
       toast({
-        title: "❌ Coplanar Face Merging Error",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
+        title: "�� Coplanar Face Merging Error",
+        description:
+          error instanceof Error ? error.message : "Unknown error occurred",
         duration: 3000,
       });
     }
@@ -318,16 +339,11 @@ export default function STLWorkflowPanel({
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    console.log("🔄 File upload triggered:", file?.name, file?.size);
     if (file) {
-      console.log("📁 Calling loadModelFromFile...");
       loadModelFromFile(file).catch((err) => {
-        console.error("❌ Upload failed:", err);
-        // Make sure the error is visible to the user
+        console.error("Upload failed:", err);
         alert(`Upload failed: ${err.message}`);
       });
-    } else {
-      console.log("❌ No file selected");
     }
     event.target.value = "";
   };
@@ -700,13 +716,12 @@ export default function STLWorkflowPanel({
           <Separator className="bg-white/20 my-6" />
 
           {/* 2. VISUALIZATION SECTION */}
+          <SectionHeader
+            title="2. MESH PREVIEW"
+            isExpanded={expandedSections.visualization}
+            onToggle={() => toggleSection("visualization")}
+          />
           <div className="mb-6">
-            <SectionHeader
-              title="2. MESH PREVIEW"
-              isExpanded={expandedSections.visualization}
-              onToggle={() => toggleSection("visualization")}
-            />
-
             {expandedSections.visualization && (
               <div className="mt-4 space-y-4">
                 {/* Mesh Type Toggle */}
@@ -1038,15 +1053,15 @@ export default function STLWorkflowPanel({
                     className="w-full bg-blue-500 hover:bg-blue-600 text-white text-xs py-2 h-9"
                     disabled={isProcessing}
                   >
-                    🔵 Apply Vertex Clustering
+                    ���� Apply Vertex Clustering
                   </Button>
                 </div>
 
-                {/* 3.2 Open3D Quadric Decimation */}
+                {/* 3.2 Decimation */}
                 <div className="p-4 bg-white/10 rounded-lg border border-white/20">
                   <div className="text-white text-sm font-medium mb-3 flex items-center gap-2">
                     <span className="text-green-400">3.2</span>
-                    Open3D Quadric Decimation
+                    Decimation
                   </div>
 
                   <div className="mb-3">
@@ -1080,7 +1095,7 @@ export default function STLWorkflowPanel({
                     className="w-full bg-green-500 hover:bg-green-600 text-white text-xs py-2 h-9"
                     disabled={isProcessing}
                   >
-                    🟢 Apply Open3D Decimation
+                    🟢 Apply Decimation
                   </Button>
                 </div>
 
@@ -1148,7 +1163,8 @@ export default function STLWorkflowPanel({
                       Convert triangle mesh to merged polygon mesh
                     </div>
                     <div className="text-white/60 text-xs">
-                      Creates merged mesh with polygons instead of triangles. Required for merged mesh viewing and polygon exports.
+                      Creates merged mesh with polygons instead of triangles.
+                      Required for merged mesh viewing and polygon exports.
                     </div>
                   </div>
 
@@ -1190,7 +1206,7 @@ export default function STLWorkflowPanel({
                           <span>
                             {simplificationStats.originalStats?.faces?.toLocaleString() ||
                               0}{" "}
-                            →{" "}
+                            ���{" "}
                             {simplificationStats.newStats?.faces?.toLocaleString() ||
                               0}
                           </span>
@@ -1235,7 +1251,10 @@ export default function STLWorkflowPanel({
                     Standard Export
                   </div>
                   <Button
-                    onClick={() => handleExportClick("complete")}
+                    onClick={() => {
+                      setCurrentExportType("complete");
+                      setShowExportDialog(true);
+                    }}
                     disabled={!geometry}
                     className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold h-10"
                   >
@@ -1243,7 +1262,7 @@ export default function STLWorkflowPanel({
                     Export Complete Model
                   </Button>
                   <p className="text-xs text-white/60 mt-1">
-                    Download the complete model in STL format
+                    Download the current model in STL or OBJ format
                   </p>
                 </div>
 
@@ -1262,7 +1281,10 @@ export default function STLWorkflowPanel({
 
                   <div className="flex gap-2">
                     <Button
-                      onClick={() => handleExportClick("parts")}
+                      onClick={() => {
+                        setCurrentExportType("parts");
+                        setShowExportDialog(true);
+                      }}
                       disabled={!geometry}
                       className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold h-10"
                     >
@@ -1281,7 +1303,7 @@ export default function STLWorkflowPanel({
                     </Button>
                   </div>
                   <p className="text-xs text-white/60 mt-1">
-                    Download individual polygon parts in STL format
+                    Download individual polygon parts in STL or OBJ format
                   </p>
 
                   {/* Triangle Export Settings */}
@@ -1576,7 +1598,7 @@ export default function STLWorkflowPanel({
                                       (fallback)
                                     </div>
                                     <div>
-                                      • Thickness:{" "}
+                                      �� Thickness:{" "}
                                       {triangleOptions.partThickness}
                                       mm, Scale: {triangleOptions.scale}x
                                     </div>
@@ -1741,11 +1763,8 @@ export default function STLWorkflowPanel({
                       <div className="flex gap-2">
                         <Button
                           onClick={() => {
-                            exportParts({
-                              ...triangleOptions,
-                              useTriangulated:
-                                triangleOptions.modelType === "triangle",
-                            });
+                            setCurrentExportType("parts");
+                            setShowExportDialog(true);
                             setShowTriangleSettings(false);
                           }}
                           className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 h-8"
@@ -1774,11 +1793,8 @@ export default function STLWorkflowPanel({
                   <div className="flex gap-2">
                     <Button
                       onClick={() => {
-                        exportChamferedParts({
-                          ...chamferedOptions,
-                          useTriangulated:
-                            chamferedOptions.modelType === "triangle",
-                        });
+                        setCurrentExportType("chamfered");
+                        setShowExportDialog(true);
                         setShowChamferedSettings(false);
                       }}
                       disabled={!geometry}
@@ -2253,11 +2269,8 @@ export default function STLWorkflowPanel({
                       <div className="flex gap-2">
                         <Button
                           onClick={() => {
-                            exportChamferedParts({
-                              ...chamferedOptions,
-                              useTriangulated:
-                                chamferedOptions.modelType === "triangle",
-                            });
+                            setCurrentExportType("chamfered");
+                            setShowExportDialog(true);
                             setShowChamferedSettings(false);
                           }}
                           className="flex-1 bg-orange-600 hover:bg-orange-700 text-white text-xs py-2 h-8"
@@ -2312,27 +2325,29 @@ export default function STLWorkflowPanel({
         </div>
 
         {/* Export Format Selection Dialog */}
-        {false && (
+        {showExportDialog && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
             <div className="bg-black/90 backdrop-blur-md border border-white/20 rounded-xl p-6 max-w-md w-full mx-4">
               <h3 className="text-white text-lg font-semibold mb-4 text-center">
                 Choose Export Format
               </h3>
               <p className="text-white/70 text-sm mb-6 text-center">
-                {exportType === "complete"
+                {currentExportType === "complete"
                   ? "Select format for complete model export:"
-                  : "Select format for polygon parts export:"}
+                  : currentExportType === "parts"
+                    ? "Select format for polygon parts export:"
+                    : "Select format for chamfered parts export:"}
               </p>
 
               <div className="space-y-3">
                 {(() => {
                   // Get size estimates based on export type
                   const sizeEstimate =
-                    exportType === "complete"
+                    currentExportType === "complete"
                       ? estimateModelFileSize(geometry)
                       : null;
                   const partsEstimate =
-                    exportType === "parts"
+                    currentExportType === "parts"
                       ? estimatePartsFileSize(
                           geometry,
                           triangleOptions.partThickness,
@@ -2343,7 +2358,26 @@ export default function STLWorkflowPanel({
                   return (
                     <>
                       <button
-                        onClick={() => exportSTL()}
+                        onClick={() => {
+                          setShowExportDialog(false);
+                          if (currentExportType === "complete") {
+                            exportSTL();
+                          } else if (currentExportType === "parts") {
+                            exportParts({
+                              ...triangleOptions,
+                              format: "stl",
+                              useTriangulated:
+                                triangleOptions.modelType === "triangle",
+                            });
+                          } else if (currentExportType === "chamfered") {
+                            exportChamferedParts({
+                              ...chamferedOptions,
+                              format: "stl",
+                              useTriangulated:
+                                chamferedOptions.modelType === "triangle",
+                            });
+                          }
+                        }}
                         className="w-full p-4 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
                       >
                         <div className="flex items-center gap-3 mb-2">
@@ -2360,38 +2394,123 @@ export default function STLWorkflowPanel({
                         {geometry && (
                           <div className="mt-2 pt-2 border-t border-green-400/30">
                             <div className="text-xs text-green-100 space-y-1">
-                              {exportType === "complete" && sizeEstimate && (
-                                <>
-                                  <div className="flex justify-between">
-                                    <span>���� File size:</span>
-                                    <span className="font-mono">
-                                      {sizeEstimate.stl.formatted}
-                                    </span>
-                                  </div>
-                                </>
-                              )}
-                              {exportType === "parts" && partsEstimate && (
-                                <>
-                                  <div className="flex justify-between">
-                                    <span>📦 Total download:</span>
-                                    <span className="font-mono">
-                                      {partsEstimate.totalFormatted}
-                                    </span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span>📄 Per part average:</span>
-                                    <span className="font-mono">
-                                      {partsEstimate.averageFormatted}
-                                    </span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span>���� Number of files:</span>
-                                    <span className="font-mono">
-                                      {partsEstimate.partCount}
-                                    </span>
-                                  </div>
-                                </>
-                              )}
+                              {currentExportType === "complete" &&
+                                sizeEstimate && (
+                                  <>
+                                    <div className="flex justify-between">
+                                      <span>📄 File size:</span>
+                                      <span className="font-mono">
+                                        {sizeEstimate.stl.formatted}
+                                      </span>
+                                    </div>
+                                  </>
+                                )}
+                              {currentExportType === "parts" &&
+                                partsEstimate && (
+                                  <>
+                                    <div className="flex justify-between">
+                                      <span>📦 Total download:</span>
+                                      <span className="font-mono">
+                                        {partsEstimate.totalFormatted}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>📄 Per part average:</span>
+                                      <span className="font-mono">
+                                        {partsEstimate.averageFormatted}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>���� Number of files:</span>
+                                      <span className="font-mono">
+                                        {partsEstimate.partCount}
+                                      </span>
+                                    </div>
+                                  </>
+                                )}
+                            </div>
+                          </div>
+                        )}
+                      </button>
+
+                      {/* OBJ Export Button */}
+                      <button
+                        onClick={() => {
+                          setShowExportDialog(false);
+                          if (currentExportType === "complete") {
+                            exportOBJ();
+                          } else if (currentExportType === "parts") {
+                            exportParts({
+                              ...triangleOptions,
+                              format: "obj",
+                              useTriangulated:
+                                triangleOptions.modelType === "triangle",
+                            });
+                          } else if (currentExportType === "chamfered") {
+                            exportChamferedParts({
+                              ...chamferedOptions,
+                              format: "obj",
+                              useTriangulated:
+                                chamferedOptions.modelType === "triangle",
+                            });
+                          }
+                        }}
+                        className="w-full p-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                      >
+                        <div className="flex items-center gap-3 mb-2">
+                          <Download className="w-5 h-5" />
+                          <div className="text-left flex-1">
+                            <div className="font-semibold">OBJ Format</div>
+                            <div className="text-sm text-blue-100">
+                              Best for CAD software and polygon preservation
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* OBJ File Size Info */}
+                        {geometry && (
+                          <div className="mt-2 pt-2 border-t border-blue-400/30">
+                            <div className="text-xs text-blue-100 space-y-1">
+                              {currentExportType === "complete" &&
+                                sizeEstimate && (
+                                  <>
+                                    <div className="flex justify-between">
+                                      <span>������ File size:</span>
+                                      <span className="font-mono">
+                                        {sizeEstimate.obj?.formatted ||
+                                          "~" +
+                                            Math.round(
+                                              (sizeEstimate.stl.bytes * 1.2) /
+                                                1024,
+                                            ) +
+                                            "KB"}
+                                      </span>
+                                    </div>
+                                  </>
+                                )}
+                              {currentExportType === "parts" &&
+                                partsEstimate && (
+                                  <>
+                                    <div className="flex justify-between">
+                                      <span>📦 Total download:</span>
+                                      <span className="font-mono">
+                                        {partsEstimate.totalFormatted}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>📄 Per part average:</span>
+                                      <span className="font-mono">
+                                        {partsEstimate.averageFormatted}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>����️ Number of files:</span>
+                                      <span className="font-mono">
+                                        {partsEstimate.partCount}
+                                      </span>
+                                    </div>
+                                  </>
+                                )}
                             </div>
                           </div>
                         )}
@@ -2402,7 +2521,7 @@ export default function STLWorkflowPanel({
               </div>
 
               <button
-                onClick={() => {}}
+                onClick={() => setShowExportDialog(false)}
                 className="w-full mt-4 p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
               >
                 Cancel
@@ -2463,6 +2582,7 @@ function MobileWorkflowContent(props: any) {
     loadModelFromFile,
     loadDefaultSTL,
     exportSTL,
+    exportOBJ,
     exportParts,
     exportChamferedParts,
     viewerSettings,
@@ -2561,7 +2681,7 @@ function MobileWorkflowContent(props: any) {
     const file = event.target.files?.[0];
     if (file) {
       loadModelFromFile(file).catch((err) => {
-        console.error("����� Upload failed:", err);
+        console.error("�������� Upload failed:", err);
         alert(`Upload failed: ${err.message}`);
       });
     }
@@ -2934,10 +3054,6 @@ function MobileWorkflowContent(props: any) {
 
               <Button
                 onClick={() => {
-                  console.log(
-                    "🔄 Mobile button clicked! Amount:",
-                    reductionAmount,
-                  );
                   onReducePoints(
                     reductionAmount,
                     "quadric_edge_collapse" as any,
