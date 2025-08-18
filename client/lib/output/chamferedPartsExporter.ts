@@ -78,7 +78,7 @@ export class ChamferedPartsExporter {
    */
   static async exportChamferedPartsAsZip(
     geometry: THREE.BufferGeometry,
-    filename: string = "chamfered_parts.zip",
+    filename: string = "model_chamfered_intellimesh.zip",
     options: {
       format?: "stl" | "obj";
       partThickness?: number; // mm thickness for each polygon piece
@@ -314,7 +314,7 @@ export class ChamferedPartsExporter {
         partContent = stlContent;
       }
 
-      const partFilename = `part_${String(i + 1).padStart(4, "0")}_${polygonFace.type || "polygon"}_chamfered.${fileExtension}`;
+      const partFilename = `part_${String(i + 1).padStart(4, "0")}.${fileExtension}`;
 
       // Calculate part geometry and metrics (similar to polygon parts exporter)
       const partInfo = this.calculateChamferedPartInfo(
@@ -406,7 +406,7 @@ export class ChamferedPartsExporter {
       chamferDepth,
       polygonType,
     });
-    zip.file("chamfered_parts_database.xlsx", excelBuffer);
+    zip.file("assembly_info.xlsx", excelBuffer);
 
     // Add assembly instructions
     const instructions = this.generateChamferedAssemblyInstructions(
@@ -420,16 +420,18 @@ export class ChamferedPartsExporter {
       polygonFaces,
       useTriangulated,
     );
-    zip.file("chamfer_angle_reference.txt", chamferReference);
+    //zip.file("chamfer_angle_reference.txt", chamferReference);
 
     // Generate and download zip
     const zipBlob = await zip.generateAsync({ type: "blob" });
 
+    // Create clean filename: modelname_chamfered_intellimesh.zip
+    const baseFilename = filename
+      .replace(/\.[^/.]+$/, "")
+      .replace(/_chamfered_intellimesh$/, "");
     const zipFilename = filename.endsWith(".zip")
       ? filename
-      : filename
-          .replace(/\.[^/.]+$/, "_chamfered_parts.zip")
-          .replace(/^(.+?)(?:_chamfered_parts)?$/, "$1_chamfered_parts.zip");
+      : `${baseFilename}_chamfered_intellimesh.zip`;
     this.downloadBlob(zipBlob, zipFilename);
 
     // CLEAN SUMMARY OUTPUT WITH DEBUG INFO FOR COMPLEX SHAPES
@@ -877,7 +879,9 @@ export class ChamferedPartsExporter {
     const chamferedBackVertices = this.generateChamferedVerticesOBJ(
       backVertices, // Start with full back vertices
       thickness, // Use thickness for full-through chamfering calculation
-      edgeAngles || Array(originalVertices.length).fill(defaultChamferAngle),
+      edgeAngles !== undefined
+        ? edgeAngles
+        : Array(originalVertices.length).fill(defaultChamferAngle),
     );
 
     const actualBackVertices = chamferedBackVertices; // BACK: Chamfered (smaller)
@@ -976,8 +980,9 @@ export class ChamferedPartsExporter {
     for (let edgeIndex = 0; edgeIndex < numVertices; edgeIndex++) {
       const nextVertexIndex = (edgeIndex + 1) % numVertices;
 
-      // Get chamfer angle for this edge
-      const edgeChamferAngle = chamferAngles[edgeIndex] || 45;
+      // Get chamfer angle for this edge (handle 0° angles correctly)
+      const edgeChamferAngle =
+        chamferAngles[edgeIndex] !== undefined ? chamferAngles[edgeIndex] : 45;
       const chamferRadians = (edgeChamferAngle * Math.PI) / 180;
 
       // Calculate chamfer offset: thickness * tan(chamfer_angle)
@@ -1093,9 +1098,15 @@ export class ChamferedPartsExporter {
       const prevEdgeIndex = (i - 1 + numVertices) % numVertices;
       const currentEdgeIndex = i;
 
-      // Get chamfer angles for the two adjacent edges
-      const prevChamferAngle = chamferAngles[prevEdgeIndex] || 45;
-      const currentChamferAngle = chamferAngles[currentEdgeIndex] || 45;
+      // Get chamfer angles for the two adjacent edges (handle 0° angles correctly)
+      const prevChamferAngle =
+        chamferAngles[prevEdgeIndex] !== undefined
+          ? chamferAngles[prevEdgeIndex]
+          : 45;
+      const currentChamferAngle =
+        chamferAngles[currentEdgeIndex] !== undefined
+          ? chamferAngles[currentEdgeIndex]
+          : 45;
 
       // Calculate the intersection of the two chamfer planes
       const chamferedVertex = this.calculateVertexChamferIntersection(
@@ -1354,7 +1365,7 @@ export class ChamferedPartsExporter {
       { wch: 15 },
       { wch: 12 },
     ];
-    XLSX.utils.book_append_sheet(workbook, partsSheet, "Chamfered Parts");
+    XLSX.utils.book_append_sheet(workbook, partsSheet, "Parts List");
 
     const summary = this.generateChamferedSummaryData(partData, options);
     const summarySheet = XLSX.utils.json_to_sheet(summary);
@@ -1375,7 +1386,7 @@ export class ChamferedPartsExporter {
 
     return [
       { Property: "Generation Date", Value: date },
-      { Property: "Total Chamfered Parts", Value: totalParts },
+      { Property: "Total Parts", Value: totalParts },
       { Property: "Part Thickness (mm)", Value: options.partThickness || 2 },
       { Property: "Chamfer Depth (mm)", Value: options.chamferDepth || 0.5 },
       {
@@ -1383,7 +1394,7 @@ export class ChamferedPartsExporter {
         Value: avgChamferAngle.toFixed(1),
       },
       { Property: "Geometry Type", Value: options.polygonType || "mixed" },
-      { Property: "Generated By", Value: "STL Chamfered Parts Exporter" },
+      { Property: "Generated By", Value: "Intellimesh Platform" },
     ];
   }
 
@@ -1396,41 +1407,43 @@ export class ChamferedPartsExporter {
   ): string {
     const date = new Date().toLocaleDateString();
 
-    return `STL Chamfered Parts Assembly Kit
+    return `Intellimesh Chamfered Parts Assembly Kit
 Generated: ${date}
 
-CHAMFERED PARTS ASSEMBLY INSTRUCTIONS:
-=====================================
+ASSEMBLY INSTRUCTIONS:
+====================
 
-This kit contains ${partCount} chamfered parts designed for physical assembly.
-Each part has been specially chamfered so the edges fit together perfectly!
+This kit contains ${partCount} parts designed for physical assembly.
+Each part has been chamfered so the edges fit together perfectly!
 
 PART SPECIFICATIONS:
 - Part thickness: ${options.partThickness || 2}mm
 - Chamfer depth: ${options.chamferDepth || 0.5}mm
 - Chamfer formula: chamfer angle = 90° - (edge angle)/2
 
-ASSEMBLY STEPS:
-1. Identify matching chamfered edges on adjacent parts
-2. Clean up any support material carefully
-3. Test fit parts - chamfered edges should align perfectly
-4. Apply small amount of glue to chamfered edges
-5. Press parts together and hold until bond sets
+ASSEMBLY TIPS:
+1. Review the parts database to understand piece sizes and complexity
+2. Sort pieces by complexity or size before starting
+3. Use strong adhesive (CA glue or epoxy) for permanent assembly
+4. For temporary assembly, using masking tape.
+5. Test fit pieces before applying adhesive
+6. Work in small sections and allow adhesive to cure
 
-ASSEMBLY ADVANTAGES:
-- Chamfered edges provide perfect fit
-- Stronger joints due to angled surfaces
-- Professional appearance with clean joints
-- Reduced stress concentrations at edges
+SAFETY:
+- Use appropriate ventilation when working with adhesives
+- Wear safety glasses when cutting or sanding pieces
+- Adult supervision required for young builders
 
-PRINTING TIPS:
-- Use PLA or PETG for best results
-- Print with 0.2mm layer height for smooth chamfers
-- Sand lightly if edges are rough
+TROUBLESHOOTING:
+- If pieces don't fit perfectly, light sanding may be needed
+- Check your 3D printer calibration if multiple pieces are oversized
+- For gaps, consider using filler material or adjusting print settings
+- Refer to the statistics sheet in Excel for part size variations
 
-Happy building with precision chamfered parts!
+Happy building!
 
-Generated by STL Viewer Platform - Chamfered Parts Exporter
+Generated by Intellimesh
+Visit: intellimesh.pro
 `;
   }
 
@@ -1441,31 +1454,7 @@ Generated by STL Viewer Platform - Chamfered Parts Exporter
     polygonFaces: PolygonFace[],
     useTriangulated: boolean,
   ): string {
-    let content = `CHAMFER ANGLE REFERENCE
-======================
-
-This document shows the chamfer angles for each part.
-Formula used: chamfer angle = 90° - (edge angle)/2
-
-Part Index | Face Type | Vertex Count | Chamfer Angle (°) | Notes
------------|-----------|--------------|-------------------|-------
-`;
-
-    for (let i = 0; i < polygonFaces.length; i++) {
-      const face = polygonFaces[i];
-      const chamferAngle = 45; // Default chamfer angle
-      const notes = useTriangulated ? "Triangulated" : "Merged Polygon";
-
-      content += `${String(i + 1).padStart(10)} | ${(face.type || "polygon").padStart(9)} | ${String(face.vertices.length).padStart(12)} | ${chamferAngle.toFixed(1).padStart(17)} | ${notes}\n`;
-    }
-
-    content += `
-
-SUMMARY:
-Total Parts: ${polygonFaces.length}
-Mode: ${useTriangulated ? "Triangulated Backup" : "Merged Polygon"}
-Default Chamfer Angle: 45.0°
-`;
+    let content = ``;
 
     return content;
   }

@@ -420,32 +420,46 @@ export default function STLWorkflowPanel({
         <button
           onClick={() => setIsMenuCollapsed(!isMenuCollapsed)}
           className={`fixed top-1/2 -translate-y-1/2 z-50 transition-all duration-300 ease-in-out
-            ${isMenuCollapsed ? "left-2" : "left-[17rem]"}
             bg-slate-900/90 backdrop-blur-lg border border-blue-400/30
             hover:border-blue-400/50 hover:bg-slate-800/90
             text-white p-2 rounded-full shadow-lg hover:shadow-blue-500/20
             w-8 h-8 flex items-center justify-center text-xs font-bold
           `}
+          style={{
+            left: isMenuCollapsed
+              ? "max(0.5rem, env(safe-area-inset-left))"
+              : "calc(max(1rem, env(safe-area-inset-left)) + 18rem)",
+          }}
           title={isMenuCollapsed ? "Show Menu" : "Hide Menu"}
         >
           {isMenuCollapsed ? ">" : "<"}
         </button>
 
         <div
-          className={`fixed top-2 z-40 w-64 max-w-[80vw] transition-all duration-300 ease-in-out
-          ${isMenuCollapsed ? "-left-64 opacity-0" : "left-2 opacity-100"}
+          className={`fixed top-4 bottom-4 z-40 w-72 max-w-[85vw] max-h-[calc(100vh-2rem)] transition-all duration-300 ease-in-out
+          ${isMenuCollapsed ? "-left-72 opacity-0" : "left-4 opacity-100"}
         `}
+          style={{
+            maxHeight:
+              "calc(100vh - max(1rem, env(safe-area-inset-top)) - max(1rem, env(safe-area-inset-bottom)))",
+            left: isMenuCollapsed
+              ? "-18rem"
+              : "max(1rem, env(safe-area-inset-left))",
+          }}
         >
-          <div className="bg-slate-900/95 backdrop-blur-lg rounded-lg border border-blue-400/30 overflow-hidden shadow-2xl shadow-blue-500/20">
-            {/* Compact Mobile Header */}
-            <div className="bg-gradient-to-r from-blue-900/95 to-purple-900/95 backdrop-blur-lg border-b border-blue-400/30 p-2">
-              <h2 className="text-white font-semibold text-sm text-center">
+          <div className="bg-slate-900/90 backdrop-blur-lg rounded-2xl border border-blue-400/30 h-full overflow-y-auto shadow-2xl shadow-blue-500/20">
+            {/* Mobile Header - aligned with desktop */}
+            <div className="text-center mb-4 mesh-pattern-dense p-3 rounded-xl border border-blue-400/20 m-3">
+              <h2 className="intellimesh-title text-white text-lg mb-1 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                 Intellimesh
               </h2>
+              <p className="text-blue-200/80 text-xs intellimesh-mono">
+                Smarter tools for 3D modeling, slicing, and fabrication
+              </p>
             </div>
 
             {/* Mobile Content with compact sections */}
-            <div className="p-2">
+            <div className="px-3 pb-3">
               <MobileWorkflowContent
                 activeToolMode={activeToolMode}
                 onToolModeChange={onToolModeChange}
@@ -2747,7 +2761,7 @@ function MobileWorkflowContent(props: any) {
   );
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-2">
       {/* Compact mobile content with collapsible sections */}
 
       {/* Enhanced Loading Progress Bar - Compact */}

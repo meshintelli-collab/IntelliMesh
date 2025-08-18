@@ -141,7 +141,6 @@ export class EdgeAdjacentMerger {
       adjacencyMap.set(i, new Set());
     }
 
-    console.log(`🔍 Building adjacency map for ${faces.length} faces...`);
     let edgeConnectionCount = 0;
 
     // Check every pair of faces
@@ -155,7 +154,6 @@ export class EdgeAdjacentMerger {
       }
     }
 
-    console.log(`📊 Found ${edgeConnectionCount} edge connections`);
 
     // Debug connectivity statistics
     let connectedFaces = 0;
@@ -167,10 +165,7 @@ export class EdgeAdjacentMerger {
       }
     }
 
-    console.log(`📊 ${connectedFaces}/${faces.length} faces are connected`);
-    console.log(
-      `📊 Average connections per connected face: ${connectedFaces > 0 ? (totalConnections / connectedFaces).toFixed(1) : 0}`,
-    );
+
 
     return adjacencyMap;
   }
@@ -337,9 +332,7 @@ export class EdgeAdjacentMerger {
     if (componentIndices.length === 0) return null;
     if (componentIndices.length === 1) return faces[componentIndices[0]];
 
-    console.log(
-      `🔧 Merging component with ${componentIndices.length} triangles`,
-    );
+
 
     try {
       // Collect all vertices from component triangles
@@ -356,21 +349,16 @@ export class EdgeAdjacentMerger {
 
       // Find unique vertices
       const uniqueVertices = this.removeDuplicateVertices(allVertices);
-      console.log(
-        `   Found ${uniqueVertices.length} unique vertices from ${allVertices.length} total`,
-      );
+
 
       // Build perimeter by tracing edges
       const perimeterVertices = this.tracePerimeter(componentIndices, faces);
 
       if (!perimeterVertices || perimeterVertices.length < 3) {
-        console.log(`   ❌ Failed to trace perimeter`);
         return null;
       }
 
-      console.log(
-        `   Traced perimeter with ${perimeterVertices.length} vertices`,
-      );
+
 
       // Get normal from first triangle
       const normal = this.ensureVector3(faces[componentIndices[0]].normal);
@@ -398,7 +386,6 @@ export class EdgeAdjacentMerger {
 
       return mergedFace;
     } catch (error) {
-      console.log(`   ❌ Error merging component: ${error}`);
       return null;
     }
   }
@@ -438,11 +425,9 @@ export class EdgeAdjacentMerger {
     }
 
     if (boundaryEdges.length === 0) {
-      console.log(`   ⚠️ No boundary edges found`);
       return null;
     }
 
-    console.log(`   Found ${boundaryEdges.length} boundary edges`);
 
     // Trace the perimeter by connecting boundary edges
     return this.connectBoundaryEdges(boundaryEdges);
@@ -490,7 +475,6 @@ export class EdgeAdjacentMerger {
       }
 
       if (!foundConnection) {
-        console.log(`   ⚠️ Failed to connect boundary edges`);
         break;
       }
     }

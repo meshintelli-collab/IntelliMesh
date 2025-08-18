@@ -1194,9 +1194,6 @@ function STLMesh() {
       // Analyze normals for flatness
       if (geometry.attributes.normal) {
         const normals = geometry.attributes.normal.array;
-        console.log(`   📐 Normal analysis:`);
-        console.log(`      Normal count: ${geometry.attributes.normal.count}`);
-        console.log(`      Array length: ${normals.length}`);
 
         // Check if normals are flat per triangle
         let flatTriangles = 0;
@@ -1245,12 +1242,7 @@ function STLMesh() {
             }
           }
         }
-        console.log(
-          `      ✅ Flat triangles: ${flatTriangles}/${totalTriangles} (${((flatTriangles / totalTriangles) * 100).toFixed(1)}%)`,
-        );
-        console.log(
-          `      ❌ Blended triangles: ${blendedTriangles}/${totalTriangles} (${((blendedTriangles / totalTriangles) * 100).toFixed(1)}%)`,
-        );
+
 
         if (blendedTriangles > 0) {
           console.log(
@@ -1262,12 +1254,6 @@ function STLMesh() {
       const colors = new Float32Array(geometry.attributes.position.count * 3);
       const polygonFaces = (geometry as any).polygonFaces;
 
-      console.log(`   🎨 Polygon faces info:`);
-      console.log(`      Available: ${!!polygonFaces}`);
-      console.log(`      Count: ${polygonFaces?.length || 0}`);
-      console.log(
-        `      Type: ${Array.isArray(polygonFaces) ? "Array" : typeof polygonFaces}`,
-      );
 
       if (polygonFaces && Array.isArray(polygonFaces)) {
         for (let faceIndex = 0; faceIndex < polygonFaces.length; faceIndex++) {
@@ -1302,9 +1288,7 @@ function STLMesh() {
           } else {
             // Fallback to sequential indexing for faces without triangleIndices
             const triangleCount = getTriangleCountForPolygon(face);
-            console.log(
-              `  Face ${faceIndex}: Fallback sequential coloring for ${triangleCount} triangles`,
-            );
+
 
             let triangleOffset = 0;
             // Calculate offset by summing previous faces
@@ -1337,9 +1321,7 @@ function STLMesh() {
             colors[i + j + 2] = color.b;
           }
         }
-        console.log(
-          "🎨 ❌ Applied TRIANGLE-BASED coloring - this is the problem!",
-        );
+
       }
 
       // Store original colors for highlighting
@@ -1353,7 +1335,6 @@ function STLMesh() {
       // Since we now use non-indexed geometry for viewing, just ensure flat normals
       computePolygonAwareFlatNormals(geometry, polygonFaces);
 
-      console.log("🔍 POST-COLORING VERIFICATION:");
 
       // Verify colors are face-based (same for all 3 vertices of each triangle)
       let solidColorTriangles = 0;
@@ -1383,15 +1364,11 @@ function STLMesh() {
           solidColorTriangles++;
         } else {
           blendedColorTriangles++;
-          console.log(
-            `   ⚠️ Triangle ${i} has blended colors: v1[${c1.map((c) => c.toFixed(3)).join(",")}] v2[${c2.map((c) => c.toFixed(3)).join(",")}] v3[${c3.map((c) => c.toFixed(3)).join(",")}]`,
-          );
+
         }
       }
 
-      console.log(
-        `   🎨 Color consistency: ${solidColorTriangles} solid, ${blendedColorTriangles} blended (of first 10 triangles)`,
-      );
+
 
       // Re-verify normals after computePolygonAwareFlatNormals
       if (geometry.attributes.normal) {
@@ -1448,14 +1425,10 @@ function STLMesh() {
           colors.length >= 12
             ? `[${colors[9]?.toFixed(3) || "?"}, ${colors[10]?.toFixed(3) || "?"}, ${colors[11]?.toFixed(3) || "?"}]`
             : "[insufficient colors]";
-        console.log(
-          `   🎨 Sample colors: First vertex ${firstColors}, Fourth vertex ${laterColors}`,
-        );
+
       }
 
-      console.log(
-        `✅ Applied ${polygonFaces ? "polygon-aware" : "triangle-based"} coloring to ${geometry.attributes.position.count / 3} triangles`,
-      );
+
     } else if (geometry && geometry.attributes.color) {
       // Remove color attribute if not using random colors
       geometry.deleteAttribute("color");
@@ -1843,12 +1816,6 @@ function STLMesh() {
     const handleClick = async (event: MouseEvent) => {
       if (highlightedEdge) {
         // Validate edge indices before attempting decimation
-        console.log(`🔍 Attempting to decimate edge:`, {
-          vertexIndex1: highlightedEdge.vertexIndex1,
-          vertexIndex2: highlightedEdge.vertexIndex2,
-          geometryVertexCount:
-            geometry?.attributes?.position?.count || "unknown",
-        });
 
         try {
           // Perform single edge decimation

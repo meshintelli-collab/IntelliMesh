@@ -25,7 +25,6 @@ export class ModelFileHandler {
    * 4. Maintain both formats
    */
   static async processFile(file: File): Promise<ProcessedModel> {
-    console.log(`🚀 Processing file: ${file.name}`);
     const startTime = Date.now();
 
     // Validate file format
@@ -55,7 +54,6 @@ export class ModelFileHandler {
     }
 
     // MANDATORY: Geometry cleanup routine (as per specifications)
-    console.log("🧹 Running mandatory geometry cleanup...");
     const cleanupResults = GeometryCleanup.cleanGeometry(geometry);
 
     // Center and scale the geometry
@@ -63,7 +61,6 @@ export class ModelFileHandler {
 
     // Different polygon handling for STL vs OBJ files
     if (originalFormat === "stl") {
-      console.log("🔄 Reconstructing polygon faces from STL triangulation...");
       const reconstructedFaces =
         PolygonFaceReconstructor.reconstructPolygonFaces(geometry);
       if (reconstructedFaces.length > 0) {
@@ -71,23 +68,18 @@ export class ModelFileHandler {
           geometry,
           reconstructedFaces,
         );
-        console.log(
-          `✅ Reconstructed ${reconstructedFaces.length} polygon faces`,
-        );
+
       }
     } else {
       // OBJ files should already have polygon structure preserved
       const polygonFaces = (geometry as any).polygonFaces;
       if (polygonFaces && polygonFaces.length > 0) {
-        console.log(
-          `✅ OBJ polygon structure preserved: ${polygonFaces.length} faces`,
-        );
+
       } else {
       }
     }
 
     // Convert to OBJ format for internal processing (always maintain OBJ)
-    console.log("📄 Converting to OBJ format for internal processing...");
     const objConversion = OBJConverter.geometryToOBJ(geometry);
 
     // Validate OBJ conversion was successful
@@ -97,14 +89,8 @@ export class ModelFileHandler {
       );
     }
 
-    console.log(
-      `✅ OBJ conversion successful: ${objConversion.vertexCount} vertices, ${objConversion.faceCount} faces`,
-    );
-    if (objConversion.hasQuads) console.log("   📰 Contains quad faces");
-    if (objConversion.hasPolygons) console.log("   📰 Contains polygon faces");
 
     // Validate geometry
-    console.log("�� Validating processed geometry...");
     const validationResults = STLGeometryValidator.validateGeometry(geometry);
 
     const processingTime = Date.now() - startTime;
@@ -134,7 +120,6 @@ export class ModelFileHandler {
    * Load STL file using Three.js STLLoader
    */
   private static async loadSTLFile(file: File): Promise<THREE.BufferGeometry> {
-    console.log("📖 Loading STL file...");
 
     const { STLLoader } = await import("three/examples/jsm/loaders/STLLoader");
     const loader = new STLLoader();
@@ -149,9 +134,7 @@ export class ModelFileHandler {
       throw new Error("STL file contains no valid geometry data");
     }
 
-    console.log(
-      `✅ STL loaded: ${geometry.attributes.position.count / 3} vertices`,
-    );
+
     return geometry;
   }
 
@@ -160,8 +143,7 @@ export class ModelFileHandler {
    * ENHANCED: Ensures consistent indexing and polygon structure preservation
    */
   private static async loadOBJFile(file: File): Promise<THREE.BufferGeometry> {
-    console.log("📖 === ENHANCED OBJ LOADING ===");
-    console.log("📖 Loading OBJ file with polygon preservation...");
+
 
     const text = await file.text();
 
@@ -192,7 +174,6 @@ export class ModelFileHandler {
           (indexedGeometry as any).polygonType = (geometry as any).polygonType;
         }
 
-        console.log("✅ OBJ geometry converted to indexed format");
         return indexedGeometry;
       }
 
@@ -200,7 +181,6 @@ export class ModelFileHandler {
       const faceCount = geometry.index ? geometry.index.count / 3 : 0;
       const polygonFaces = (geometry as any).polygonFaces;
 
-      console.log(`✅ ENHANCED OBJ LOADED SUCCESSFULLY`);
 
       return geometry;
     } catch (parseError) {
@@ -241,9 +221,6 @@ export class ModelFileHandler {
         geometry = this.ensureIndexedGeometry(geometry);
       }
 
-      console.log(
-        `✅ OBJ loaded via fallback: ${geometry.attributes.position.count} vertices`,
-      );
       return geometry;
     }
   }
@@ -254,7 +231,6 @@ export class ModelFileHandler {
   private static ensureIndexedGeometry(
     geometry: THREE.BufferGeometry,
   ): THREE.BufferGeometry {
-    console.log("🔧 Converting to indexed geometry...");
 
     const positions = geometry.attributes.position.array as Float32Array;
     const vertexMap = new Map<string, number>();
@@ -296,9 +272,7 @@ export class ModelFileHandler {
       indexedGeometry.setAttribute("uv", geometry.attributes.uv);
     }
 
-    console.log(
-      `✅ Indexed geometry created: ${newPositions.length / 3} unique vertices, ${indices.length / 3} faces`,
-    );
+
     return indexedGeometry;
   }
 

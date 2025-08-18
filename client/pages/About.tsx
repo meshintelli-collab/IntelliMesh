@@ -30,26 +30,61 @@ export default function About() {
 
             <div className="text-lg leading-relaxed space-y-4 text-gray-300">
               <p>
-                Intellimesh is a next-generation platform for 3D mesh
-                manipulation and fabrication. Built for designers, engineers,
-                and 3D enthusiasts worldwide, we believe advanced mesh
-                manipulation should be accessible to all creators.
+                Intellimesh is a&nbsp; for 3D mesh manipulation and fabrication.
+                Built for designers, engineers, tinkerers, and 3D enthusiasts
+                worldwide.
               </p>
 
               <p>
-                Our platform provides powerful tools for analyzing, optimizing,
-                and fabricating 3D models with precision and professional-grade
-                results. We're bridging the gap between creative modeling and
-                precision fabrication, building the future where advanced mesh
-                processing enables seamless workflows from design concept to
-                physical creation.
+                We want to provide you with powerful tools for analyzing,
+                optimizing, and fabricating 3D models with precision and
+                professional-grade results.
+                <br />
               </p>
 
               <p>
                 Whether you're prototyping, manufacturing, or exploring 3D
-                design, Intellimesh offers advanced geometric processing tools
-                that make complex mesh operations simple and accessible.
+                design, we&nbsp; are trying to make complex mesh operations
+                simple and accessible.
+                <br />
               </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* What can I do here? Section */}
+        <Card className="bg-white/10 border-white/20 backdrop-blur-sm mb-8">
+          <CardContent className="p-6">
+            <h2 className="text-2xl font-bold mb-4 text-center">
+              What can I do here?
+            </h2>
+
+            <div className="text-lg leading-relaxed text-gray-300">
+              <p className="mb-4">
+                With the current form of the website you should be able to:
+              </p>
+              <ul className="space-y-3 ml-4">
+                <li className="flex items-start">
+                  <span className="text-blue-400 mr-3 text-xl">•</span>
+                  <span>Load your own models (or choose one of ours)</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-blue-400 mr-3 text-xl">•</span>
+                  <span>View and play around with it a bit</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-blue-400 mr-3 text-xl">•</span>
+                  <span>Perform mesh simplification steps</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-blue-400 mr-3 text-xl">•</span>
+                  <span>
+                    Export your simplified model as a whole, or all of its
+                    separate parts (so you can laser cut and weld, 3D print and
+                    glue, or whatever!)
+                  </span>
+                </li>
+              </ul>
             </div>
           </CardContent>
         </Card>
@@ -65,15 +100,15 @@ export default function About() {
             <div className="space-y-3 text-gray-300">
               <div className="flex items-center">
                 <span className="font-medium w-32">General:</span>
-                <span className="text-gray-500">Coming Soon</span>
+                <span className="text-white">meshintelli@gmail.com</span>
               </div>
               <div className="flex items-center">
                 <span className="font-medium w-32">Support:</span>
-                <span className="text-gray-500">Coming Soon</span>
+                <span className="text-white">meshintelli@gmail.com</span>
               </div>
               <div className="flex items-center">
                 <span className="font-medium w-32">Features:</span>
-                <span className="text-gray-500">Coming Soon</span>
+                <span className="text-white">meshintelli@gmail.com</span>
               </div>
             </div>
           </CardContent>
@@ -89,10 +124,11 @@ export default function About() {
 
             <div className="mb-6 text-gray-300">
               <p className="mb-4">
-                Intellimesh is a passion project built by developers who believe
-                in making 3D technology accessible to everyone. Your support
-                helps us maintain the platform, add new features, and keep it
-                free for the community.
+                Intellimesh is a passion project built by some guys who, whilst
+                they are terrified of women, want to make 3D computational
+                geometry tools accessible to everyone. Your support helps us
+                maintain the platform, add new features, and keep it free for
+                the community.
               </p>
             </div>
 
