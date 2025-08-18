@@ -102,8 +102,14 @@ export class TriangleExporter {
     console.log('Generating zip file...');
     const zipBlob = await zip.generateAsync({ type: 'blob' });
     
+    // Create clean filename: modelname_triangles_intellimesh.zip
+    const baseFilename = filename.replace(/\.[^/.]+$/, "").replace(/_triangles_intellimesh$/, "");
+    const zipFilename = filename.endsWith(".zip")
+      ? filename
+      : `${baseFilename}_triangles_intellimesh.zip`;
+
     // Download the zip file
-    this.downloadBlob(zipBlob, filename);
+    this.downloadBlob(zipBlob, zipFilename);
     
     const endTime = Date.now();
     console.log(`Triangle export completed in ${endTime - startTime}ms`);
