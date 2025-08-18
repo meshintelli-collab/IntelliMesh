@@ -68,26 +68,13 @@ export class PolygonExtruder {
     const polygonAny = polygon as any;
     let frontTriangles: THREE.Vector3[][];
 
-    console.log(
-      `🔍 DEBUGGING WINDMILLING: Polygon has ${frontVertices.length} vertices`,
-    );
-    console.log(
-      `🔍 originalTriangulation available:`,
-      !!polygonAny.originalTriangulation,
-    );
-    console.log(
-      `���� originalTriangulation length:`,
-      polygonAny.originalTriangulation?.length || 0,
-    );
+    
 
     if (
       polygonAny.originalTriangulation &&
       polygonAny.originalTriangulation.length > 0
     ) {
-      console.log(
-        `✅ USING ORIGINAL TRIANGULATION to preserve exact shape (${polygonAny.originalTriangulation.length} triangles)`,
-      );
-      console.log(`🎯 NO WINDMILLING: Using preserved triangulation pattern`);
+      
 
       // Use original triangulation with current vertices
       frontTriangles = [];
@@ -106,17 +93,11 @@ export class PolygonExtruder {
           );
         }
       }
-      console.log(
-        `✅ Created ${frontTriangles.length} triangles from original pattern`,
-      );
+
     } else {
-      console.log(`❌ NO ORIGINAL TRIANGULATION - WILL CAUSE WINDMILLING!`);
-      console.log(`🚨 Falling back to polygon triangulation (windmill risk)`);
       // Fallback to re-triangulation
       frontTriangles = this.triangulatePolygon(frontVertices, normal);
-      console.log(
-        `⚠️ Created ${frontTriangles.length} triangles via re-triangulation (may windmill)`,
-      );
+      
     }
 
     // Front face
@@ -192,18 +173,7 @@ export class PolygonExtruder {
 
     const backVertices = chamferedBackVertices; // BACK: Chamfered (smaller)
 
-    console.log(
-      `🔧 PARAMETRIC CHAMFERING: Front face FULL SIZE, back face PARAMETRICALLY CHAMFERED`,
-    );
-    console.log(
-      `🔧 Creates geometry with parametric vertex movements along edge directions`,
-    );
-    console.log(
-      `🔧 Maintains quad structure through ${thickness}mm thick part`,
-    );
-    console.log(
-      `🔧 All vertex movements applied simultaneously for geometric consistency`,
-    );
+    
 
     let stlContent = `solid chamfered_polygon_${polygon.index || 0}\n`;
 
@@ -215,9 +185,7 @@ export class PolygonExtruder {
       polygonAny.originalTriangulation &&
       polygonAny.originalTriangulation.length > 0
     ) {
-      console.log(
-        `   Using original triangulation for chamfered polygon (${polygonAny.originalTriangulation.length} triangles)`,
-      );
+      
 
       // Use original triangulation with ORIGINAL vertices (not chamfered ones)
       frontTriangles = [];
@@ -231,17 +199,13 @@ export class PolygonExtruder {
         }
       }
     } else {
-      console.log(
-        `   No original triangulation found for chamfered polygon, using fallback triangulation`,
-      );
+      
       // Fallback to re-triangulation
       frontTriangles = this.triangulatePolygon(frontVertices, normal);
     }
 
     // Front face - ORIGINAL vertices (full cross-sectional area for mating)
-    console.log(
-      `   Creating ${frontTriangles.length} front face triangles using ORIGINAL FULL-SIZE vertices`,
-    );
+    
 
     for (const triangle of frontTriangles) {
       stlContent += this.addTriangleToSTL(
@@ -261,9 +225,7 @@ export class PolygonExtruder {
       polygonAny.originalTriangulation.length > 0
     ) {
       // Use original triangulation with PARAMETRICALLY CHAMFERED vertices
-      console.log(
-        `   Using original triangulation for PARAMETRIC back face (${polygonAny.originalTriangulation.length} triangles)`,
-      );
+      
 
       for (const triangle of polygonAny.originalTriangulation) {
         const v1 = backVertices[triangle[0]];
@@ -277,7 +239,6 @@ export class PolygonExtruder {
       }
     } else {
       // Fallback: triangulate the parametrically chamfered vertices
-      console.log(`   Triangulating PARAMETRIC back face vertices`);
       const chamferedBackTriangles = this.triangulatePolygon(
         backVertices,
         normal,
@@ -288,9 +249,7 @@ export class PolygonExtruder {
       );
     }
 
-    console.log(
-      `   Creating ${backTriangles.length} back face triangles using PARAMETRICALLY CHAMFERED vertices`,
-    );
+    
 
     for (const triangle of backTriangles) {
       stlContent += this.addTriangleToSTL(
@@ -302,7 +261,6 @@ export class PolygonExtruder {
     }
 
     // CHAMFERED side walls - this is where the chamfering happens
-    console.log(`🔧 About to create chamfered side walls...`);
     const sideWallsContent = this.createChamferedSideWalls(
       frontVertices,
       backVertices,
@@ -311,9 +269,7 @@ export class PolygonExtruder {
       edgeAngles !== undefined ? edgeAngles : Array(originalVertices.length).fill(defaultChamferAngle),
     );
 
-    console.log(
-      `🔧 Chamfered side walls content length: ${sideWallsContent.length} characters`,
-    );
+    
     if (sideWallsContent.length === 0) {
       console.error(
         `❌ CRITICAL: No side walls content generated! This is why STL has no side faces.`,
@@ -324,7 +280,6 @@ export class PolygonExtruder {
 
     stlContent += `endsolid chamfered_polygon_${polygon.index || 0}\n`;
 
-    console.log(`✅ Total STL content length: ${stlContent.length} characters`);
     return stlContent;
   }
 
@@ -338,13 +293,7 @@ export class PolygonExtruder {
     chamferDepth: number,
     chamferAngles: number[],
   ): THREE.Vector3[] {
-    console.log(
-      `🔧 Generating PARAMETRIC chamfered vertices with edge-direction movements`,
-    );
-    console.log(
-      `🔧 Mathematical approach: Move vertices along adjacent edge directions`,
-    );
-    console.log(`🔧 All movements happen parametrically (simultaneously)`);
+
 
     const partThickness = chamferDepth; // chamferDepth is actually the part thickness
     const numVertices = originalVertices.length;
@@ -384,25 +333,6 @@ export class PolygonExtruder {
         .multiplyScalar(-chamferOffset);
       vertexMovements[nextVertexIndex].add(nextVertexMovement);
 
-      if (edgeIndex < 3) {
-        console.log(`🔢 PARAMETRIC CHAMFER Edge ${edgeIndex}:`);
-        console.log(
-          `   📐 Edge chamfer angle: ${edgeChamferAngle.toFixed(1)}°`,
-        );
-        console.log(`   📏 Part thickness: ${partThickness.toFixed(3)}mm`);
-        console.log(
-          `   🧮 Formula: offset = thickness × tan(angle) = ${partThickness.toFixed(3)} × tan(${edgeChamferAngle.toFixed(1)}°) = ${chamferOffset.toFixed(3)}`,
-        );
-        console.log(
-          `   ↗️ Edge direction: (${edgeDirection.x.toFixed(3)}, ${edgeDirection.y.toFixed(3)})`,
-        );
-        console.log(
-          `   🎯 Vertex ${edgeIndex} moves: (${currentVertexMovement.x.toFixed(3)}, ${currentVertexMovement.y.toFixed(3)})`,
-        );
-        console.log(
-          `   🎯 Vertex ${nextVertexIndex} moves: (${nextVertexMovement.x.toFixed(3)}, ${nextVertexMovement.y.toFixed(3)})`,
-        );
-      }
     }
 
     // Apply all parametric movements simultaneously to create chamfered vertices
@@ -413,26 +343,9 @@ export class PolygonExtruder {
         .add(vertexMovements[i]);
       chamferedVertices.push(chamferedVertex);
 
-      if (i < 3) {
-        console.log(`📊 FINAL Vertex ${i}:`);
-        console.log(
-          `   Original: (${originalVertices[i].x.toFixed(3)}, ${originalVertices[i].y.toFixed(3)})`,
-        );
-        console.log(
-          `   Total movement: (${vertexMovements[i].x.toFixed(3)}, ${vertexMovements[i].y.toFixed(3)})`,
-        );
-        console.log(
-          `   Final: (${chamferedVertex.x.toFixed(3)}, ${chamferedVertex.y.toFixed(3)})`,
-        );
-      }
     }
 
-    console.log(
-      `✅ Generated ${chamferedVertices.length} chamfered vertices using parametric edge-direction movements`,
-    );
-    console.log(
-      `✅ All movements applied simultaneously - maintains quad side face structure`,
-    );
+
     return chamferedVertices;
   }
 
@@ -662,10 +575,7 @@ export class PolygonExtruder {
     chamferDepth: number,
     chamferAngles: number[],
   ): string {
-    console.log(
-      `🔧 Creating PARAMETRIC chamfer walls: FULL front → PARAMETRICALLY CHAMFERED back`,
-    );
-    console.log(`🔧 Maintaining QUAD structure for geometric consistency`);
+
 
     let content = "";
     let triangleCount = 0;
@@ -683,9 +593,7 @@ export class PolygonExtruder {
 
       // Validate vertices before creating the parametric chamfer quad
       if (!ff1 || !ff2 || !cb1 || !cb2) {
-        console.error(
-          `❌ Invalid vertices for wall ${i}: ff1=${!!ff1}, ff2=${!!ff2}, cb1=${!!cb1}, cb2=${!!cb2}`,
-        );
+
         continue;
       }
 
@@ -715,29 +623,10 @@ export class PolygonExtruder {
       content += triangle2;
       triangleCount += 2;
 
-      if (i < 3) {
-        console.log(
-          `   PARAMETRIC Chamfer Wall ${i}: ${chamferAngles[i] !== undefined ? chamferAngles[i] : 45}° parametric movement`,
-        );
-        console.log(
-          `   FULL front(${ff1.x.toFixed(2)}, ${ff1.y.toFixed(2)}) → PARAMETRIC back(${cb1.x.toFixed(2)}, ${cb1.y.toFixed(2)})`,
-        );
-        console.log(`   Maintains quad structure for geometric consistency`);
-      }
+
     }
 
-    console.log(
-      `✅ Generated ${triangleCount} PARAMETRIC CHAMFER wall triangles (${content.length} characters of STL content)`,
-    );
-    if (content.length === 0) {
-      console.error(
-        `❌ NO WALL CONTENT GENERATED! This is why STL is missing side faces.`,
-      );
-    }
-
-    console.log(
-      `✅ Created ${frontVertices.length} parametric chamfer walls with quad structure maintained`,
-    );
+ 
     return content;
   }
 
@@ -754,9 +643,7 @@ export class PolygonExtruder {
     const chamferedBackVertices: THREE.Vector3[] = [];
     const numVertices = frontVertices.length;
 
-    console.log(
-      `🔧 Calculating chamfered vertices using plane intersections for ${numVertices} vertices`,
-    );
+
 
     for (let i = 0; i < numVertices; i++) {
       // Get the two edges that meet at this vertex
@@ -779,11 +666,6 @@ export class PolygonExtruder {
 
       chamferedBackVertices.push(chamferedVertex);
 
-      if (i < 3) {
-        console.log(
-          `   Vertex ${i}: original(${backVertices[i].x.toFixed(3)}, ${backVertices[i].y.toFixed(3)}) → chamfered(${chamferedVertex.x.toFixed(3)}, ${chamferedVertex.y.toFixed(3)})`,
-        );
-      }
     }
 
     return chamferedBackVertices;
@@ -840,14 +722,7 @@ export class PolygonExtruder {
     const prevChamferOffset = chamferDepth * Math.tan(prevChamferRadians);
     const currentChamferOffset = chamferDepth * Math.tan(currentChamferRadians);
 
-    if (vertexIndex < 3) {
-      console.log(
-        `   Vertex ${vertexIndex}: prevAngle=${prevChamferAngle.toFixed(1)}°, currentAngle=${currentChamferAngle.toFixed(1)}°`,
-      );
-      console.log(
-        `   Offsets: prev=${prevChamferOffset.toFixed(3)}, current=${currentChamferOffset.toFixed(3)}`,
-      );
-    }
+
 
     // Calculate the two chamfer plane movements
     const prevInwardDirection = prevOutwardNormal.clone().negate();
@@ -871,14 +746,7 @@ export class PolygonExtruder {
       )
       .multiplyScalar(0.5);
 
-    if (vertexIndex < 3) {
-      console.log(
-        `   VERTEX ${vertexIndex}: Using individual angles prev=${prevChamferAngle.toFixed(1)}°, current=${currentChamferAngle.toFixed(1)}°`,
-      );
-      console.log(
-        `   VERTEX ${vertexIndex}: Averaging MOVEMENTS (not angles) to find intersection point`,
-      );
-    }
+
 
     // Apply the movement to get the final chamfered vertex position
     const chamferedVertex = currentVertex.clone().add(averageMovement);
@@ -970,23 +838,11 @@ export class PolygonExtruder {
       return [];
     }
 
-    console.log(
-      `🔍 EXTRACTING ${polygonFaces.length} polygon faces from merged geometry:`,
-    );
+
 
     return polygonFaces.map((faceInfo: any, index: number) => {
-      console.log(
-        `   Face ${index}: ${faceInfo.type}, ${faceInfo.originalVertices?.length || 0} vertices`,
-      );
-      if (faceInfo.originalVertices && faceInfo.originalVertices.length > 0) {
-        console.log(
-          `     Vertices:`,
-          faceInfo.originalVertices.map(
-            (v: any, i: number) =>
-              `${i}: (${v.x?.toFixed(2) || "N/A"}, ${v.y?.toFixed(2) || "N/A"}, ${v.z?.toFixed(2) || "N/A"})`,
-          ),
-        );
-      }
+
+
 
       return {
         vertices: faceInfo.originalVertices || [],
