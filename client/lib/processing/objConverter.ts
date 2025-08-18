@@ -23,8 +23,7 @@ export class OBJConverter {
     geometry: THREE.BufferGeometry,
     filename?: string,
   ): OBJConversionResult {
-    console.log("🔄 === ENHANCED OBJ CONVERSION ===");
-    console.log(`🔄 Converting geometry to OBJ format with proper indexing...`);
+
 
     // Validate geometry exists
     if (!geometry) {
@@ -112,9 +111,7 @@ export class OBJConverter {
 
     // CRITICAL: Check if geometry has proper indexing for decimation
     const isIndexed = !!indices && indices.length > 0;
-    console.log(
-      `📋 Geometry indexing status: ${isIndexed ? "INDEXED" : "NON-INDEXED"}`,
-    );
+
 
     if (!isIndexed) {
     }
@@ -229,9 +226,7 @@ export class OBJConverter {
       faceCount += polygonFaceCount;
     }
 
-    console.log(
-      `   📐 Polygon types: ${hasQuads ? "quads" : "no quads"}, ${hasPolygons ? "polygons" : "no polygons"}`,
-    );
+
 
     return {
       success: true,
@@ -256,8 +251,7 @@ export class OBJConverter {
    * ENHANCED: Ensures proper indexing and polygon preservation for decimation consistency
    */
   static parseOBJ(objString: string): THREE.BufferGeometry {
-    console.log("📖 === ENHANCED OBJ PARSING ===");
-    console.log("📖 Parsing OBJ format with polygon preservation...");
+
 
     const geometry = new THREE.BufferGeometry();
     const vertices: number[] = [];
@@ -401,9 +395,7 @@ export class OBJConverter {
       throw new Error("No valid vertices found in OBJ file");
     }
 
-    console.log(
-      `📊 Parsing summary: ${vertexCount} vertices, ${polygonFaceCount} polygon faces, ${faceCount} triangulated faces`,
-    );
+
 
     geometry.setAttribute(
       "position",
@@ -423,7 +415,6 @@ export class OBJConverter {
         "normal",
         new THREE.Float32BufferAttribute(normals, 3),
       );
-      console.log("��� Using OBJ file normals");
     } else {
       computeFlatNormals(geometry);
     }
@@ -437,14 +428,9 @@ export class OBJConverter {
       (geometry as any).isPolygonPreserved = true;
       (geometry as any).originalFormat = "obj";
 
-      console.log(`✅ ENHANCED OBJ PARSING COMPLETED`);
-      console.log(
-        `   �� Results: ${vertexCount} vertices, ${faceCount} triangulated faces`,
-      );
+
     } else {
-      console.log(
-        `✅ OBJ parsing completed: ${vertexCount} vertices, ${faceCount} triangle faces (no polygons)`,
-      );
+
     }
 
     return geometry;
