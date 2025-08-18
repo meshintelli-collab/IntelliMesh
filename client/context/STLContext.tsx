@@ -920,31 +920,37 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
       scale?: number;
       useTriangulated?: boolean;
     }) => {
-      if (!previewMeshMerged) {
-        console.error("No 3D model loaded for chamfered parts export");
-        addError("No 3D model loaded for chamfered parts export");
+      // Choose the correct mesh based on useTriangulated parameter
+      const meshToUse = options?.useTriangulated ? workingMeshTri : previewMeshMerged;
+
+      if (!meshToUse) {
+        console.error(
+          `No 3D model loaded for chamfered parts export (${options?.useTriangulated ? 'triangulated' : 'merged'} mode)`
+        );
+        addError(
+          `No 3D model loaded for chamfered parts export (${options?.useTriangulated ? 'triangulated' : 'merged'} mode)`
+        );
         return;
       }
 
-      // Check if geometry has polygon faces (required for chamfering)
-      const polygonFaces = (previewMeshMerged as any).polygonFaces;
+      // Check if geometry has polygon faces (required for chamfering in non-triangulated mode)
+      const polygonFaces = (meshToUse as any).polygonFaces;
       if (
-        !polygonFaces ||
-        !Array.isArray(polygonFaces) ||
-        polygonFaces.length === 0
+        !options?.useTriangulated &&
+        (!polygonFaces || !Array.isArray(polygonFaces) || polygonFaces.length === 0)
       ) {
         console.error(
           "Chamfered export requires polygon faces. Please ensure model is properly processed.",
         );
         addError(
-          "Chamfered export requires polygon faces. Please ensure model is properly processed with merging enabled.",
+          "Chamfered export requires polygon faces. Please ensure model is properly processed with merging enabled, or use Triangle mode.",
         );
         return;
       }
 
       try {
         await ChamferedPartsExporter.exportChamferedPartsAsZip(
-          previewMeshMerged,
+          meshToUse,
           fileName || "model",
           options,
         );
@@ -955,7 +961,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         );
       }
     },
-    [previewMeshMerged, fileName, addError],
+    [previewMeshMerged, workingMeshTri, fileName, addError],
   );
 
   const clearError = useCallback(() => {
