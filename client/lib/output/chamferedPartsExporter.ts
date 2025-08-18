@@ -78,7 +78,7 @@ export class ChamferedPartsExporter {
    */
   static async exportChamferedPartsAsZip(
     geometry: THREE.BufferGeometry,
-    filename: string = "chamfered_parts.zip",
+    filename: string = "model_chamfered.zip",
     options: {
       format?: "stl" | "obj";
       partThickness?: number; // mm thickness for each polygon piece
