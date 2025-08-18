@@ -437,6 +437,7 @@ export default function STLWorkflowPanel({
         `}
           style={{
             maxHeight: 'calc(100vh - max(1rem, env(safe-area-inset-top)) - max(1rem, env(safe-area-inset-bottom)))',
+            left: isMenuCollapsed ? '-18rem' : 'max(1rem, env(safe-area-inset-left))',
           }}
         >
           <div className="bg-slate-900/90 backdrop-blur-lg rounded-2xl border border-blue-400/30 h-full overflow-y-auto shadow-2xl shadow-blue-500/20">
