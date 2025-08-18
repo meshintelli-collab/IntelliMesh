@@ -54,7 +54,7 @@ export class PolygonPartsExporter {
    */
   static async exportPartsAsZip(
     geometry: THREE.BufferGeometry,
-    filename: string = "model_parts.zip",
+    filename: string = "model_polygon_intellimesh.zip",
     options: {
       format?: "stl" | "obj"; // export format
       partThickness?: number; // mm thickness for each polygon piece
