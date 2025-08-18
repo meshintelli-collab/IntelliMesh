@@ -1067,7 +1067,7 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         setIsProcessingTool(false);
       }
     },
-    [workingMeshTri],
+    [workingMeshTri, hasBackup, originalMesh, previewMeshMerged, createBackup],
   );
 
   const getGeometryStats = useCallback(() => {
