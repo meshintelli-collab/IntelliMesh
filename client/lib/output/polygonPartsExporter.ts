@@ -195,7 +195,7 @@ export class PolygonPartsExporter {
           ? FaceExtruder.extrudedFaceToOBJ(extrudedFace, `part_${i + 1}`)
           : FaceExtruder.extrudedFaceToSTL(extrudedFace, `part_${i + 1}`);
 
-      const partFilename = `part_${String(i + 1).padStart(4, "0")}_${polygonFace.type || "polygon"}.${fileExtension}`;
+      const partFilename = `part_${String(i + 1).padStart(4, "0")}.${fileExtension}`;
 
       // Calculate part geometry and metrics
       const partInfo = this.calculatePolygonPartInfo(
