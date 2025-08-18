@@ -974,6 +974,12 @@ export const STLProvider: React.FC<STLProviderProps> = ({ children }) => {
         throw new Error("No triangulated mesh available for reduction");
       }
 
+      // Automatically create backup before simplification if we don't have one
+      if (!hasBackup && originalMesh && workingMeshTri && previewMeshMerged) {
+        console.log("📦 Creating automatic backup before simplification...");
+        createBackup();
+      }
+
       setIsProcessingTool(true);
 
       try {
